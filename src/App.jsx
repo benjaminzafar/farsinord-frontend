@@ -301,20 +301,6 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [ads, selectedCategory]);
 
-  // Sync initial URL on ads fetch if ad is specified
-  useEffect(() => {
-    if (ads.length > 0 && !activeAdDetail) {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const adParam = params.get('ad');
-        if (adParam) {
-          const found = ads.find(a => a.reference_number === adParam || a.id === adParam);
-          if (found) setActiveAdDetail(found);
-        }
-      } catch {}
-    }
-  }, [ads]);
-
   // Modal Open / Close Handlers with Browser History Support
   const handleOpenPostAd = (catId = 'bostad') => {
     setPostAdCategory(catId);
@@ -592,6 +578,7 @@ export default function App() {
       {activeAdDetail ? (
         <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-12 text-center text-xs text-slate-400">در حال بارگذاری جزئیات آگهی...</div>}>
           <AdDetailPage
+            key={activeAdDetail.id}
             ad={activeAdDetail}
             allAds={ads}
             lang={lang}

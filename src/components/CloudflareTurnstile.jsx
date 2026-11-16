@@ -27,7 +27,7 @@ export default function CloudflareTurnstile({
 }) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(() => typeof window !== 'undefined' && Boolean(window.turnstile));
   const [error, setError] = useState('');
 
   // Determine effective sitekey
@@ -50,10 +50,7 @@ export default function CloudflareTurnstile({
 
   // 1. Ensure Cloudflare Turnstile script is loaded in document
   useEffect(() => {
-    if (window.turnstile) {
-      setLoaded(true);
-      return;
-    }
+    if (window.turnstile) return;
 
     const existingScript = document.querySelector('script[src*="challenges.cloudflare.com/turnstile"]');
     if (existingScript) {

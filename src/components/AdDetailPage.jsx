@@ -35,12 +35,9 @@ export default function AdDetailPage({
   const [showTurnstileGate, setShowTurnstileGate] = useState(false);
   const currentT = t[lang] || t.fa;
 
-  // Scroll to top and reset contact verification when ad changes
+  // Scroll to top when ad changes (state resets via key={ad.id})
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    setActiveImageIdx(0);
-    setContactRevealed(false);
-    setShowTurnstileGate(false);
   }, [ad?.id]);
 
   if (!ad) return null;

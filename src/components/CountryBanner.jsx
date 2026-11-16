@@ -2,72 +2,50 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, X, Check, Globe, ArrowLeft } from 'lucide-react';
 import { COUNTRIES } from '../lib/translations';
 
+function detectBrowserCountry() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (tz.includes('Oslo')) return 'no';
+    if (tz.includes('Copenhagen')) return 'dk';
+    if (tz.includes('Helsinki')) return 'fi';
+    if (tz.includes('Stockholm')) return 'se';
+    const langs = navigator.languages || [navigator.language || ''];
+    if (langs.some(l => l.startsWith('nb') || l.startsWith('nn') || l.startsWith('no'))) return 'no';
+    if (langs.some(l => l.startsWith('da'))) return 'dk';
+    if (langs.some(l => l.startsWith('fi'))) return 'fi';
+  } catch {}
+  return 'se';
+}
+
 export default function CountryBanner({ 
   isOpen, 
   onClose, 
   selectedCountry, 
   onSelectCountry 
 }) {
-  const [detectedCountryId, setDetectedCountryId] = useState('se');
-  const [activeChoice, setActiveChoice] = useState(selectedCountry || 'se');
+  const [detectedCountryId, setDetectedCountryId] = useState(detectBrowserCountry);
+  const [activeChoice, setActiveChoice] = useState(() => {
+    if (selectedCountry && selectedCountry !== 'all') return selectedCountry;
+    return detectBrowserCountry();
+  });
 
-  // Keep activeChoice synced with selectedCountry when opened
+  // Progressive IP check (async only)
   useEffect(() => {
-    if (selectedCountry && selectedCountry !== 'all') {
-      setActiveChoice(selectedCountry);
-    }
-  }, [selectedCountry, isOpen]);
-
-  // Detect location via Timezone & IP
-  useEffect(() => {
-    let detected = 'se';
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      if (tz.includes('Oslo')) {
-        detected = 'no';
-      } else if (tz.includes('Copenhagen')) {
-        detected = 'dk';
-      } else if (tz.includes('Helsinki')) {
-        detected = 'fi';
-      } else if (tz.includes('Stockholm')) {
-        detected = 'se';
-      } else {
-        const langs = navigator.languages || [navigator.language || ''];
-        const isNorwegian = langs.some(l => l.startsWith('nb') || l.startsWith('nn') || l.startsWith('no'));
-        const isDanish = langs.some(l => l.startsWith('da'));
-        const isFinnish = langs.some(l => l.startsWith('fi'));
-        if (isNorwegian) detected = 'no';
-        else if (isDanish) detected = 'dk';
-        else if (isFinnish) detected = 'fi';
-        else detected = 'se';
-      }
-    } catch {
-      detected = 'se';
-    }
-
-    setDetectedCountryId(detected);
-
-    // If first-time visitor with no prior selection, pre-select the detected country
-    const saved = localStorage.getItem('scandi_country_selected');
-    if (!saved) {
-      setActiveChoice(detected);
-    }
-
-    // Progressive IP check
+    let active = true;
     fetch('https://api.country.is/')
       .then(res => res.json())
       .then(data => {
-        if (data && data.country) {
-          const code = data.country.toLowerCase();
-          if (['se', 'no', 'dk', 'fi'].includes(code)) {
-            setDetectedCountryId(code);
-            if (!localStorage.getItem('scandi_country_selected')) {
-              setActiveChoice(code);
-            }
+        if (!active || !data || !data.country) return;
+        const code = data.country.toLowerCase();
+        if (['se', 'no', 'dk', 'fi'].includes(code)) {
+          setDetectedCountryId(code);
+          if (!localStorage.getItem('scandi_country_selected')) {
+            setActiveChoice(code);
           }
         }
       })
       .catch(() => {});
+    return () => { active = false; };
   }, []);
 
   const handleConfirm = (countryId) => {
@@ -88,12 +66,13 @@ export default function CountryBanner({
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && isOpen) {
-        handleDismiss();
+        localStorage.setItem('scandi_country_popup_seen', 'true');
+        if (onClose) onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
