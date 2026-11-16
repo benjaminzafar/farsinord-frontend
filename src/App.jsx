@@ -469,6 +469,8 @@ export default function App() {
         onOpenPostAd={handleOpenPostAd}
         onOpenManageAd={handleOpenManageAd}
         onSelectCategory={handleCategoryChange}
+        selectedCategory={selectedCategory}
+        selectedCountryObj={currentCountryObj}
       />
 
       {/* Spacer for Fixed Top Navbar */}
@@ -528,7 +530,7 @@ export default function App() {
 
             {/* Meta Floating Search Capsule (Desktop Only) */}
             <div className="pt-2 px-1 hidden md:block">
-              <div className="bg-white/95 backdrop-blur-md rounded-full p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] border border-white/20 max-w-2xl mx-auto flex flex-row gap-1.5 transition-all">
+              <div className="bg-white/95 backdrop-blur-md rounded-full p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] border border-white/20 max-w-3xl mx-auto flex flex-row gap-1.5 transition-all">
                 
                 {/* City Dropdown */}
                 <div className="relative w-48 shrink-0">
@@ -555,8 +557,18 @@ export default function App() {
                     placeholder={currentT.searchPlaceholder}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-11 rounded-full bg-transparent border-0 ps-8 pe-4 text-xs text-slate-900 placeholder-slate-400 focus:outline-none text-right"
+                    className="w-full h-11 rounded-full bg-transparent border-0 ps-9 pe-9 text-xs text-slate-900 placeholder-slate-400 focus:outline-none text-right"
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute end-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
+                      aria-label="پاک کردن جستجو"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
 
                 {/* CTA Button (Meta Blue) */}
@@ -601,7 +613,7 @@ export default function App() {
       
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-hidden">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-visible">
         
         {/* VIP / Featured Section */}
         {featuredAds.length > 0 && (
@@ -615,7 +627,7 @@ export default function App() {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4 lg:gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
               {featuredAds.map(ad => (
                 <AdCard
                   key={ad.id}
@@ -635,6 +647,9 @@ export default function App() {
               <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 {currentT.recentAds}
               </h2>
+              <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold tabular-nums">
+                {filteredAds.length} آگهی
+              </span>
               {selectedCategory !== 'all' && (
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">
                   <span>{CATEGORIES.find(c => c.id === selectedCategory)?.fa}</span>
@@ -669,8 +684,8 @@ export default function App() {
 
           {loading ? (
             /* Loading skeletons */
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4 lg:gap-5">
-              {[1, 2, 3, 4, 5, 6].map(i => (
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
                 <div key={i} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-stone-200/60 animate-pulse" />
               ))}
             </div>
@@ -701,7 +716,7 @@ export default function App() {
             </div>
           ) : (
             /* Ads Grid */
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4 lg:gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
               {filteredAds.map(ad => (
                 <AdCard
                   key={ad.id}

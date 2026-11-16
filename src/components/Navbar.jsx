@@ -27,7 +27,9 @@ export default function Navbar({
   onOpenCountryModal,
   onOpenPostAd, 
   onOpenManageAd,
-  onSelectCategory
+  onSelectCategory,
+  selectedCategory = 'all',
+  selectedCountryObj = null
 }) {
   const [adDropdownOpen, setAdDropdownOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
@@ -50,10 +52,10 @@ export default function Navbar({
   }, []);
 
   const mainNavItems = [
-    { id: 'bostad', title: 'مسکن و اجاره', Icon: Home },
-    { id: 'restaurang', title: 'رستوران و خوراک', Icon: Utensils },
-    { id: 'tjanster', title: 'خدمات و دارالترجمه', Icon: Briefcase },
-    { id: 'jobb', title: 'کار و استخدام', Icon: GraduationCap },
+    { id: 'bostad', title: 'مسکن', Icon: Home },
+    { id: 'restaurang', title: 'رستوران', Icon: Utensils },
+    { id: 'tjanster', title: 'خدمات', Icon: Briefcase },
+    { id: 'jobb', title: 'استخدام', Icon: GraduationCap },
   ];
 
   // Selected city display label
@@ -183,18 +185,25 @@ export default function Navbar({
 
             {/* Desktop Category Navigation */}
             <nav className="hidden xl:flex items-center gap-1">
-              {mainNavItems.map(item => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    if (onSelectCategory) onSelectCategory(item.id);
-                  }}
-                  className="px-3 py-1.5 rounded-full text-[13px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-all cursor-pointer"
-                >
-                  {item.title}
-                </button>
-              ))}
+              {mainNavItems.map(item => {
+                const isCurr = selectedCategory === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      if (onSelectCategory) onSelectCategory(item.id);
+                    }}
+                    className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
+                      isCurr
+                        ? 'bg-slate-950 text-white shadow-2xs'
+                        : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+                    }`}
+                  >
+                    {item.title}
+                  </button>
+                );
+              })}
 
               {/* More Categories Dropdown */}
               <div className="relative" ref={categoriesMenuRef}>
@@ -239,7 +248,8 @@ export default function Navbar({
               title="انتخاب کشور در اسکاندیناوی"
             >
               <Globe2 size={15} className="text-slate-500 group-hover:text-[#1877F2] transition-colors" />
-              <span>انتخاب کشور</span>
+              <span>{selectedCountryObj?.nameFa || 'انتخاب کشور'}</span>
+              <ChevronDown size={13} className="text-slate-400" />
             </button>
 
             <div className="relative" ref={adMenuRef}>

@@ -320,7 +320,7 @@ export default function AdDetailPage({
           </main>
 
           {/* SIDEBAR: 4 VIP PROMOTED ADS & MONETIZATION SLOTS (4 cols on Desktop) */}
-          <aside className="lg:col-span-4 space-y-5">
+          <aside className="lg:col-span-4 lg:sticky lg:top-32 space-y-5">
             
             {/* VIP Sponsored Ads Box */}
             <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
