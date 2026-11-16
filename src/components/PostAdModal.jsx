@@ -10,11 +10,56 @@ import {
   ChevronRight,
   MapPin,
   FileText,
-  UserCheck
+  UserCheck,
+  Upload,
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
 import { supabase, generateReferenceNumber, generatePinCode, isSafeHttpUrl } from '../lib/supabase';
+import { publicApi } from '../lib/apiClient';
 import { COUNTRIES, CATEGORIES, t } from '../lib/translations';
+
+const MAX_PHOTOS = 4;
+const MAX_FILE_BYTES = 1048576; // 1 MB
+
+async function compressImageUnder1MB(file) {
+  if (file.size <= MAX_FILE_BYTES && ['image/webp', 'image/jpeg', 'image/png', 'image/avif'].includes(file.type)) {
+    return file;
+  }
+  const imgUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = imgUrl;
+    });
+    const maxDim = 1600;
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const width = Math.max(1, Math.round(img.width * scale));
+    const height = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    for (const quality of [0.85, 0.72, 0.58]) {
+      const blob = await new Promise((res) => canvas.toBlob(res, 'image/webp', quality));
+      if (blob && blob.size <= MAX_FILE_BYTES) {
+        return new File([blob], `${Date.now()}.webp`, { type: 'image/webp' });
+      }
+    }
+    const fallbackBlob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.55));
+    if (fallbackBlob && fallbackBlob.size <= MAX_FILE_BYTES) {
+      return new File([fallbackBlob], `${Date.now()}.jpg`, { type: 'image/jpeg' });
+    }
+    throw new Error('حجم تصویر حتی پس از فشرده‌سازی بیشتر از ۱ مگابایت است.');
+  } finally {
+    URL.revokeObjectURL(imgUrl);
+  }
+}
 
 export default function PostAdModal({ 
   initialCategory = 'bostad', 
@@ -63,12 +108,19 @@ export default function PostAdModal({
   const [contactEmail, setContactEmail] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imagesList, setImagesList] = useState([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [showUrlFallback, setShowUrlFallback] = useState(false);
   const [pinCode, setPinCode] = useState(generatePinCode());
 
   const currentCountryObj = COUNTRIES.find(c => c.id === adCountry) || COUNTRIES[0];
 
-  // Add image to list (only safe http/https URLs)
+  // Add image to list (only safe http/https URLs, max 4 photos)
   const addImage = () => {
+    setErrorMsg('');
+    if (imagesList.length >= MAX_PHOTOS) {
+      setErrorMsg('حداکثر ۴ تصویر برای هر آگهی مجاز است.');
+      return;
+    }
     const trimmed = imageUrl.trim();
     if (trimmed) {
       if (!isSafeHttpUrl(trimmed)) {
@@ -77,6 +129,59 @@ export default function PostAdModal({
       }
       setImagesList([...imagesList, trimmed]);
       setImageUrl('');
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (selectedFiles.length === 0) return;
+
+    setErrorMsg('');
+    const remainingSlots = MAX_PHOTOS - imagesList.length;
+    if (remainingSlots <= 0) {
+      setErrorMsg('حداکثر ۴ تصویر برای هر آگهی مجاز است.');
+      return;
+    }
+
+    const filesToUpload = selectedFiles.slice(0, remainingSlots);
+    if (selectedFiles.length > remainingSlots) {
+      setErrorMsg(`فقط ${remainingSlots} تصویر دیگر می‌توانید اضافه کنید (حداکثر ۴ تصویر).`);
+    }
+
+    setUploadingPhotos(true);
+    try {
+      const uploadedUrls = [];
+      for (const rawFile of filesToUpload) {
+        if (!rawFile.type.startsWith('image/')) {
+          throw new Error('فقط فایل‌های تصویری مجاز هستند.');
+        }
+        const readyFile = await compressImageUnder1MB(rawFile);
+        if (readyFile.size > MAX_FILE_BYTES) {
+          throw new Error('حجم هر تصویر باید حداکثر ۱ مگابایت باشد.');
+        }
+        const { uploadUrl, publicUrl } = await publicApi.presignUpload({
+          fileName: readyFile.name,
+          contentType: readyFile.type,
+          fileSize: readyFile.size,
+        });
+        const putRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': readyFile.type },
+          body: readyFile,
+        });
+        if (!putRes.ok) {
+          throw new Error('خطا در ارسال تصویر به فضای ابری');
+        }
+        uploadedUrls.push(publicUrl);
+      }
+      if (uploadedUrls.length > 0) {
+        setImagesList((prev) => [...prev, ...uploadedUrls].slice(0, MAX_PHOTOS));
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'خطا در آپلود تصویر');
+    } finally {
+      setUploadingPhotos(false);
     }
   };
 
@@ -543,37 +648,64 @@ export default function PostAdModal({
                 />
               </div>
 
-              {/* Photos */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700">
-                  تصویر آگهی (لینک اینترنتی عکس)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    placeholder="https://... آدرس اینترنتی تصویر را وارد کنید"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={addImage}
-                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold active:scale-95 transition-all cursor-pointer"
-                  >
-                    افزودن
-                  </button>
+              {/* Photos (Cloudflare R2 Direct Upload: Max 4 photos, Max 1 MB each) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">
+                    تصاویر آگهی
+                  </label>
+                  <span className="text-[11px] font-bold text-slate-500 tabular-nums">
+                    {imagesList.length} از {MAX_PHOTOS} تصویر • حداکثر ۱ مگابایت
+                  </span>
                 </div>
 
+                {imagesList.length < MAX_PHOTOS && (
+                  <label className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-5 text-center transition-all cursor-pointer ${
+                    uploadingPhotos
+                      ? 'border-blue-300 bg-blue-50/50 pointer-events-none'
+                      : 'border-slate-200 hover:border-blue-400 bg-slate-50/70 hover:bg-blue-50/30'
+                  }`}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      multiple
+                      disabled={uploadingPhotos}
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    {uploadingPhotos ? (
+                      <>
+                        <Loader2 size={22} className="text-blue-600 animate-spin" />
+                        <span className="text-xs font-bold text-blue-700">در حال فشرده‌سازی و آپلود تصویر...</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-blue-600 border border-slate-200 shadow-2xs">
+                          <Upload size={18} />
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="block text-xs font-bold text-slate-800">
+                            انتخاب تصاویر از گالری یا کامپیوتر
+                          </span>
+                          <span className="block text-[10.5px] text-slate-400">
+                            حداکثر ۴ عکس • فشرده‌سازی خودکار زیر ۱ مگابایت
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </label>
+                )}
+
                 {imagesList.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto py-1">
+                  <div className="grid grid-cols-4 gap-2.5 pt-1">
                     {imagesList.map((url, idx) => (
-                      <div key={idx} className="relative h-16 w-16 rounded-xl overflow-hidden border border-slate-200 shrink-0">
-                        <img src={url} alt={`پیش‌نمایش ${idx}`} className="h-full w-full object-cover" />
+                      <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs group">
+                        <img src={url} alt={`پیش‌نمایش ${idx + 1}`} className="h-full w-full object-cover" />
                         <button
                           type="button"
                           onClick={() => removeImage(idx)}
-                          className="absolute top-1 end-1 rounded-full bg-black/75 p-0.5 text-white hover:bg-red-600"
+                          className="absolute top-1.5 end-1.5 h-6 w-6 rounded-full bg-black/75 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                          title="حذف تصویر"
                         >
                           <X size={12} />
                         </button>
@@ -581,6 +713,37 @@ export default function PostAdModal({
                     ))}
                   </div>
                 )}
+
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowUrlFallback(!showUrlFallback)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
+                  >
+                    <ImageIcon size={12} />
+                    <span>{showUrlFallback ? 'بستن افزودن با لینک' : 'یا افزودن تصویر با لینک مستقیم'}</span>
+                  </button>
+
+                  {showUrlFallback && (
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="url"
+                        dir="ltr"
+                        placeholder="https://..."
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={addImage}
+                        className="px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+                      >
+                        افزودن
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="pt-2 flex items-center gap-2.5">

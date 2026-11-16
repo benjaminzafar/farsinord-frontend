@@ -90,5 +90,18 @@ export const publicApi = {
       .from('swedpersiska_ads')
       .update({ views_count: (Number(currentViews) || 0) + 1 })
       .eq('id', id);
+  },
+
+  async presignUpload({ fileName, contentType, fileSize }) {
+    const res = await fetch(`${API_BASE}/api/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName, contentType, fileSize })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.ok) {
+      throw new Error(json.error || 'خطا در دریافت مجوز آپلود تصویر');
+    }
+    return json;
   }
 };
