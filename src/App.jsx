@@ -135,6 +135,7 @@ export default function App() {
   });
   const [siteName, setSiteName] = useState('سوئد پرشیا');
   const [logoUrl, setLogoUrl] = useState('');
+  const [turnstileSettings, setTurnstileSettings] = useState({ enabled: true, mode: 'test', siteKey: '' });
 
   // Fetch Site Branding & Public Settings via Secure Public API
   const fetchSettings = async () => {
@@ -157,6 +158,9 @@ export default function App() {
             vipDurationDays: stripe.vipDurationDays,
             vipBadgeText: stripe.vipBadgeText
           });
+        }
+        if (settings.turnstile_settings) {
+          setTurnstileSettings(prev => ({ ...prev, ...settings.turnstile_settings }));
         }
       }
     } catch {}
@@ -559,6 +563,7 @@ export default function App() {
             ad={activeAdDetail}
             allAds={ads}
             lang={lang}
+            turnstileSettings={turnstileSettings}
             onBack={handleBackToFeed}
             onSelectAd={handleSelectAd}
             onOpenPromote={(targetAd) => handleOpenPayment(targetAd)}

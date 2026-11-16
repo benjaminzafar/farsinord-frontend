@@ -14,26 +14,33 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Crown
+  Crown,
+  Lock
 } from 'lucide-react';
+import CloudflareTurnstile from './CloudflareTurnstile';
 import { CATEGORIES, t } from '../lib/translations';
 
 export default function AdDetailPage({ 
   ad, 
   allAds = [], 
   lang = 'fa', 
+  turnstileSettings = { enabled: true, mode: 'test', siteKey: '' },
   onBack, 
   onSelectAd,
   onOpenPromote 
 }) {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [contactRevealed, setContactRevealed] = useState(false);
+  const [showTurnstileGate, setShowTurnstileGate] = useState(false);
   const currentT = t[lang] || t.fa;
 
-  // Scroll to top when ad changes
+  // Scroll to top and reset contact verification when ad changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setActiveImageIdx(0);
+    setContactRevealed(false);
+    setShowTurnstileGate(false);
   }, [ad?.id]);
 
   if (!ad) return null;
@@ -243,64 +250,114 @@ export default function AdDetailPage({
                 </div>
               </div>
 
-              {/* Contact Seller Action Buttons */}
+              {/* Contact Seller Action Buttons (Hidden & Protected with Cloudflare Turnstile) */}
               <div className="pt-4 border-t border-slate-100 space-y-3">
                 <h3 className="text-sm font-bold text-slate-900">راه‌های ارتباط با آگهی‌دهنده:</h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {/* Phone */}
-                  {ad.contact_phone && (
-                    <a
-                      href={`tel:${ad.contact_phone.replace(/[^0-9+]/g, '')}`}
-                      className="flex items-center justify-center gap-2 h-12 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-xs active:scale-95 transition-all"
-                    >
-                      <Phone size={17} />
-                      <span>تماس مستقیم: <bdi dir="ltr" className="font-mono">{ad.contact_phone}</bdi></span>
-                    </a>
-                  )}
 
-                  {/* WhatsApp */}
-                  {ad.contact_whatsapp && (
-                    <a
-                      href={`https://wa.me/${ad.contact_whatsapp.replace(/[^0-9]/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 h-12 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-sm font-bold shadow-xs active:scale-95 transition-all"
-                    >
-                      <MessageSquare size={17} />
-                      <span>پیام در واتساپ (WhatsApp)</span>
-                    </a>
-                  )}
+                {!contactRevealed ? (
+                  <div className="rounded-2xl bg-slate-50/90 border border-slate-200/80 p-4 sm:p-5 space-y-3.5">
+                    {!showTurnstileGate ? (
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 border border-blue-200/70">
+                            <Lock size={17} />
+                          </div>
+                          <div>
+                            <p className="text-xs sm:text-[13px] font-bold text-slate-900">
+                              اطلاعات تماس برای جلوگیری از ربات‌ها محافظت شده است
+                            </p>
+                            <p className="text-[11px] text-slate-500">
+                              برای مشاهده دکمه‌های ارتباطی کلیک کنید
+                            </p>
+                          </div>
+                        </div>
 
-                  {/* Telegram */}
-                  {ad.contact_telegram && (
-                    <a
-                      href={/^https?:\/\//i.test(ad.contact_telegram.trim()) ? ad.contact_telegram.trim() : `https://t.me/${ad.contact_telegram.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 h-12 px-4 rounded-xl bg-[#229ED9] hover:bg-[#1e8ec3] text-white text-sm font-bold shadow-xs active:scale-95 transition-all"
-                    >
-                      <Send size={17} />
-                      <span>گفتگو در تلگرام (Telegram)</span>
-                    </a>
-                  )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (turnstileSettings?.enabled === false) {
+                              setContactRevealed(true);
+                            } else {
+                              setShowTurnstileGate(true);
+                            }
+                          }}
+                          className="h-11 px-5 rounded-full bg-[#1877F2] hover:bg-[#166fe5] text-white text-xs sm:text-[13px] font-bold inline-flex items-center justify-center gap-2 shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer shrink-0"
+                        >
+                          <ShieldCheck size={16} />
+                          <span>مشاهده اطلاعات تماس</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center space-y-2.5 py-1 animate-in fade-in duration-200">
+                        <p className="text-xs font-bold text-slate-700">
+                          تایید امنیتی جهت نمایش اطلاعات تماس آگهی‌دهنده
+                        </p>
+                        <CloudflareTurnstile
+                          theme="light"
+                          siteKey={turnstileSettings?.mode === 'live' ? turnstileSettings?.siteKey : undefined}
+                          onVerify={() => setContactRevealed(true)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {/* Phone (No raw phone number displayed) */}
+                      {ad.contact_phone && (
+                        <a
+                          href={`tel:${ad.contact_phone.replace(/[^0-9+]/g, '')}`}
+                          className="flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94]"
+                        >
+                          <Phone size={17} />
+                          <span>تماس مستقیم</span>
+                        </a>
+                      )}
 
-                  {/* Email */}
-                  {ad.contact_email && (
-                    <a
-                      href={`mailto:${ad.contact_email}?subject=پرسش درباره آگهی ${ad.reference_number}`}
-                      className="flex items-center justify-center gap-2 h-12 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold shadow-xs active:scale-95 transition-all"
-                    >
-                      <Mail size={17} />
-                      <span>ارسال ایمیل</span>
-                    </a>
-                  )}
-                </div>
+                      {/* WhatsApp */}
+                      {ad.contact_whatsapp && (
+                        <a
+                          href={`https://wa.me/${ad.contact_whatsapp.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white text-sm font-bold shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94]"
+                        >
+                          <MessageSquare size={17} />
+                          <span>پیام در واتساپ</span>
+                        </a>
+                      )}
 
-                {ad.contact_name && (
-                  <p className="text-xs text-slate-500 pt-1 text-center sm:text-right">
-                    نام آگهی‌دهنده: <span className="font-semibold text-slate-800">{ad.contact_name}</span>
-                  </p>
+                      {/* Telegram */}
+                      {ad.contact_telegram && (
+                        <a
+                          href={/^https?:\/\//i.test(ad.contact_telegram.trim()) ? ad.contact_telegram.trim() : `https://t.me/${ad.contact_telegram.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-[#229ED9] hover:bg-[#1e8ec3] text-white text-sm font-bold shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94]"
+                        >
+                          <Send size={17} />
+                          <span>گفتگو در تلگرام</span>
+                        </a>
+                      )}
+
+                      {/* Email */}
+                      {ad.contact_email && (
+                        <a
+                          href={`mailto:${ad.contact_email}?subject=پرسش درباره آگهی ${ad.reference_number}`}
+                          className="flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94]"
+                        >
+                          <Mail size={17} />
+                          <span>ارسال ایمیل</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {ad.contact_name && (
+                      <p className="text-xs text-slate-500 pt-1 text-center sm:text-right">
+                        نام آگهی‌دهنده: <span className="font-semibold text-slate-800">{ad.contact_name}</span>
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
 
