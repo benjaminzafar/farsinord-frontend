@@ -21,7 +21,6 @@ export default class ErrorBoundary extends React.Component {
 
   handleGoHome = () => {
     try {
-      localStorage.removeItem('swedpersiska_admin_auth');
       window.location.href = window.location.origin;
     } catch {
       window.location.href = '/';

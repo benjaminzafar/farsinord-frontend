@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Lock, PlusCircle, KeyRound } from 'lucide-react';
+import { ShieldCheck, PlusCircle, KeyRound } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
 const currentYear = new Date().getFullYear();
@@ -10,8 +10,7 @@ export default function Footer({
   onSelectCategory, 
   onSelectCity, 
   onOpenPostAd,
-  onOpenManageAd,
-  onOpenAdmin 
+  onOpenManageAd
 }) {
   // Scandinavian cities without emoji flags to prevent Windows raw ISO code rendering
   const scandiCities = [
@@ -130,19 +129,6 @@ export default function Footer({
                   </button>
                 </li>
               )}
-              <li>
-                <a
-                  href="?admin=1"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onOpenAdmin?.();
-                  }}
-                  className="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors cursor-pointer font-medium"
-                >
-                  <Lock size={13} className="text-slate-400 shrink-0" />
-                  <span>ورود به پنل مدیریت</span>
-                </a>
-              </li>
             </ul>
           </div>
 

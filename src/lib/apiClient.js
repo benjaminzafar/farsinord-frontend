@@ -3,16 +3,6 @@ import { supabase, PUBLIC_AD_COLUMNS } from './supabase';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 /**
- * Resolve the Admin Portal Subdomain URL
- */
-export function getAdminPortalUrl() {
-  if (import.meta.env.VITE_ADMIN_SUBDOMAIN_URL) {
-    return import.meta.env.VITE_ADMIN_SUBDOMAIN_URL;
-  }
-  return 'https://admin.farsinord.com';
-}
-
-/**
  * Public Frontend API Client (communicates with /api/public, with resilient fallback)
  */
 export const publicApi = {

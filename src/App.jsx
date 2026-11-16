@@ -18,10 +18,7 @@ import PaymentModal from './components/PaymentModal';
 import PostAdModal from './components/PostAdModal';
 import ManageAdModal from './components/ManageAdModal';
 import { isSafeHttpUrl } from './lib/supabase';
-import {
-  publicApi,
-  getAdminPortalUrl
-} from './lib/apiClient';
+import { publicApi } from './lib/apiClient';
 import { COUNTRIES, CATEGORIES, t } from './lib/translations';
 
 
@@ -338,11 +335,6 @@ export default function App() {
         window.history.replaceState({}, '', url.toString());
       }
     } catch {}
-  };
-
-  const handleOpenAdmin = () => {
-    const targetUrl = getAdminPortalUrl();
-    window.location.href = /^https?:\/\//i.test(targetUrl) ? targetUrl : 'https://admin.farsinord.com';
   };
 
   const handleCategoryChange = (catId) => {
@@ -738,7 +730,6 @@ export default function App() {
         }}
         onOpenPostAd={() => handleOpenPostAd('bostad')}
         onOpenManageAd={handleOpenManageAd}
-        onOpenAdmin={handleOpenAdmin}
       />
 
       {/* Mobile Sticky Bottom Menu for Collections & Quick Actions */}
