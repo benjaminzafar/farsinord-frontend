@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, 
   PlusCircle, 
   KeyRound, 
   Check, 
   Copy, 
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  FileText,
+  UserCheck
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
 import { supabase, generateReferenceNumber, generatePinCode, isSafeHttpUrl } from '../lib/supabase';
@@ -20,6 +25,8 @@ export default function PostAdModal({
   const currentT = t.fa;
 
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // 1: Location & Category | 2: Details & Photos | 3: Contact & Publish
+  const bodyScrollRef = useRef(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [successData, setSuccessData] = useState(null);
   const [copiedRef, setCopiedRef] = useState(false);
@@ -75,6 +82,41 @@ export default function PostAdModal({
 
   const removeImage = (index) => {
     setImagesList(imagesList.filter((_, i) => i !== index));
+  };
+
+  const scrollBodyTop = () => {
+    try {
+      bodyScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {}
+  };
+
+  const handleNextStep = () => {
+    setErrorMsg('');
+    if (step === 1) {
+      if (!category || !city) {
+        setErrorMsg('لطفاً دسته‌بندی و شهر محل آگهی را انتخاب فرمایید.');
+        return;
+      }
+      setStep(2);
+      scrollBodyTop();
+      return;
+    }
+    if (step === 2) {
+      if (!title.trim() || !description.trim()) {
+        setErrorMsg('لطفاً عنوان و توضیحات کامل آگهی را وارد فرمایید.');
+        return;
+      }
+      setStep(3);
+      scrollBodyTop();
+    }
+  };
+
+  const handlePrevStep = () => {
+    setErrorMsg('');
+    if (step > 1) {
+      setStep(step - 1);
+      scrollBodyTop();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -205,8 +247,59 @@ export default function PostAdModal({
           </button>
         </div>
 
+        {/* 3-Step Apple-feel Stepper Header */}
+        {!successData && (
+          <div className="px-4 sm:px-6 pt-3 pb-3.5 bg-white border-b border-slate-100 shrink-0 space-y-2.5">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { num: 1, label: 'دسته و موقعیت', Icon: MapPin },
+                { num: 2, label: 'مشخصات و تصویر', Icon: FileText },
+                { num: 3, label: 'تماس و انتشار', Icon: UserCheck },
+              ].map((s) => {
+                const isDone = step > s.num;
+                const isCurrent = step === s.num;
+                const StepIcon = s.Icon;
+                return (
+                  <button
+                    key={s.num}
+                    type="button"
+                    disabled={s.num > step}
+                    onClick={() => {
+                      if (s.num < step) {
+                        setErrorMsg('');
+                        setStep(s.num);
+                        scrollBodyTop();
+                      }
+                    }}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                      isCurrent
+                        ? 'bg-[#1877F2] text-white shadow-xs'
+                        : isDone
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 cursor-pointer active:scale-95'
+                          : 'bg-slate-100/80 text-slate-400 cursor-default'
+                    }`}
+                  >
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
+                      isCurrent ? 'bg-white/20 text-white' : isDone ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'
+                    }`}>
+                      {isDone ? <Check size={11} strokeWidth={3} /> : <StepIcon size={11} />}
+                    </span>
+                    <span className="truncate">{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#1877F2] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                style={{ width: `${(step / 3) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Form Body or Success Screen */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+        <div ref={bodyScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
           
           {successData ? (
             /* Success Screen */
@@ -294,6 +387,9 @@ export default function PostAdModal({
                 </div>
               )}
 
+              {/* STEP 1: Country, Category, City & Area */}
+              {step === 1 && (
+                <div className="space-y-4 animate-in fade-in duration-200">
               {/* 1. Country Selection in Scandinavia */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -369,10 +465,26 @@ export default function PostAdModal({
                   placeholder="مثال: کیستا، سنتروم، مایورستوئن، نربرو..."
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-sm py-3.5 shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
+                >
+                  <span>مرحله بعدی: جزئیات آگهی</span>
+                  <ChevronLeft size={17} />
+                </button>
+              </div>
+                </div>
+              )}
+
+              {/* STEP 2: Title, Price, Description & Photos */}
+              {step === 2 && (
+                <div className="space-y-4 animate-in fade-in duration-200">
               {/* Title */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -471,6 +583,30 @@ export default function PostAdModal({
                 )}
               </div>
 
+              <div className="pt-2 flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="h-12 px-5 rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer shrink-0"
+                >
+                  <ChevronRight size={16} />
+                  <span>قبلی</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="flex-1 h-12 rounded-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
+                >
+                  <span>مرحله بعدی: اطلاعات تماس و انتشار</span>
+                  <ChevronLeft size={17} />
+                </button>
+              </div>
+                </div>
+              )}
+
+              {/* STEP 3: Contact Info, PIN, VIP & Publish */}
+              {step === 3 && (
+                <div className="space-y-4 animate-in fade-in duration-200">
               {/* Contact Info Header */}
               <div className="pt-2 border-t border-slate-100">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
@@ -541,7 +677,7 @@ export default function PostAdModal({
                   </label>
                   <input
                     type="email"
-                    placeholder="namn@exempel.se"
+                    placeholder="email@example.com"
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none text-left"
@@ -597,7 +733,7 @@ export default function PostAdModal({
                 </div>
 
                 <div className="text-left shrink-0">
-                  <span className="text-sm font-extrabold text-blue-700">۹۹ kr</span>
+                  <span className="text-sm font-extrabold text-blue-700">۹۹ کرون</span>
                 </div>
               </label>
 
@@ -617,20 +753,30 @@ export default function PostAdModal({
               )}
 
               {/* Submit CTA */}
-              <div className="pt-2">
+              <div className="pt-2 flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="h-12 px-5 rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer shrink-0"
+                >
+                  <ChevronRight size={16} />
+                  <span>قبلی</span>
+                </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#166fe5] disabled:opacity-50 text-white font-bold text-sm py-3.5 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+                  className="flex-1 h-12 flex items-center justify-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#166fe5] disabled:opacity-50 text-white font-bold text-sm shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
                 >
                   <PlusCircle size={16} />
                   <span>
                     {loading 
                       ? 'در حال ثبت...' 
-                      : (wantVipPromotion ? 'ثبت و پرداخت (۹۹ kr)' : currentT.postAdBtn)}
+                      : (wantVipPromotion ? 'ثبت و پرداخت (۹۹ کرون)' : 'انتشار رایگان آگهی')}
                   </span>
                 </button>
               </div>
+                </div>
+              )}
 
             </form>
           )}
