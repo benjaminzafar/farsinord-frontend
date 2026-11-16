@@ -116,6 +116,7 @@ export const CATEGORIES = [
   { id: 'jobb', fa: 'استخدام', icon: 'GraduationCap' },
   { id: 'kop-salj', fa: 'خرید و فروش', icon: 'ShoppingBag' },
   { id: 'fordon', fa: 'خودرو', icon: 'Car' },
+  { id: 'elektronik', fa: 'وسایل الکترونیکی', icon: 'Laptop' },
   { id: 'evenemang', fa: 'رویدادها', icon: 'Calendar' },
   { id: 'ovrigt', fa: 'سایر', icon: 'Tag' },
 ];
