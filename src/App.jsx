@@ -136,6 +136,7 @@ export default function App() {
   const [siteName, setSiteName] = useState('سوئد پرشیا');
   const [logoUrl, setLogoUrl] = useState('');
   const [turnstileSettings, setTurnstileSettings] = useState({ enabled: true, mode: 'test', siteKey: '' });
+  const [analyticsSettings, setAnalyticsSettings] = useState({ enabled: false, measurementId: '' });
 
   // Fetch Site Branding & Public Settings via Secure Public API
   const fetchSettings = async () => {
@@ -162,6 +163,9 @@ export default function App() {
         if (settings.turnstile_settings) {
           setTurnstileSettings(prev => ({ ...prev, ...settings.turnstile_settings }));
         }
+        if (settings.analytics_settings) {
+          setAnalyticsSettings(prev => ({ ...prev, ...settings.analytics_settings }));
+        }
       }
     } catch {}
   };
@@ -169,6 +173,34 @@ export default function App() {
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  // Load Google Analytics (GA4) dynamically when enabled in Admin & track pageviews
+  useEffect(() => {
+    const id = (analyticsSettings?.measurementId || '').trim().toUpperCase();
+    if (!analyticsSettings?.enabled || !/^G-[A-Z0-9]{4,}$/.test(id)) return;
+
+    if (!window.dataLayer) window.dataLayer = [];
+    if (!window.gtag) {
+      window.gtag = function gtag() {
+        window.dataLayer.push(arguments);
+      };
+    }
+
+    const scriptId = `ga4-script-${id}`;
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+      document.head.appendChild(script);
+      window.gtag('js', new Date());
+    }
+
+    window.gtag('config', id, {
+      page_path: window.location.pathname + window.location.search,
+      page_title: document.title,
+    });
+  }, [analyticsSettings.enabled, analyticsSettings.measurementId, selectedCountry, selectedCategory, activeAdDetail?.id]);
 
   // Dynamic Country SEO Document Title
   useEffect(() => {

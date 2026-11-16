@@ -62,7 +62,7 @@ export default async function handler(req, res) {
         const { data } = await supabase
           .from('swedpersiska_settings')
           .select('key, value')
-          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'stripe_settings', 'turnstile_settings']);
+          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'stripe_settings', 'turnstile_settings', 'analytics_settings']);
 
         const settings = {};
         (data || []).forEach((item) => {
