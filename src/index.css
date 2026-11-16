@@ -16,6 +16,10 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  button, a, [role="button"], select {
+    touch-action: manipulation;
+  }
+
   /* RTL / Persian typography craft (unslop rules) */
   [dir="rtl"] {
     font-family: 'Vazirmatn', -apple-system, sans-serif;

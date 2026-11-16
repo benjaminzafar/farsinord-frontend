@@ -206,7 +206,7 @@ export default function Navbar({
                     onClick={() => {
                       if (onSelectCategory) onSelectCategory(item.id);
                     }}
-                    className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer ${
                       isCurr
                         ? 'bg-slate-950 text-white shadow-2xs'
                         : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
@@ -264,7 +264,7 @@ export default function Navbar({
             <button
               type="button"
               onClick={onOpenCountryModal}
-              className="flex items-center gap-1.5 h-10 px-3.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 text-slate-700 hover:text-slate-950 text-[13px] font-semibold transition-all active:scale-95 cursor-pointer shadow-2xs group"
+              className="flex items-center gap-1.5 h-10 px-3.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 text-slate-700 hover:text-slate-950 text-[13px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer shadow-2xs group"
               title="انتخاب کشور در اسکاندیناوی"
             >
               <Globe2 size={15} className="text-slate-500 group-hover:text-[#1877F2] transition-colors" />
@@ -276,7 +276,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setAdDropdownOpen(!adDropdownOpen)}
-                className={`flex items-center gap-2 h-10 px-4 rounded-full text-[13px] font-bold text-white transition-all cursor-pointer shadow-xs active:scale-95 ${
+                className={`flex items-center gap-2 h-10 px-4 rounded-full text-[13px] font-bold text-white transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shadow-xs active:scale-[0.94] ${
                   adDropdownOpen 
                     ? 'bg-[#166fe5] ring-2 ring-blue-300' 
                     : 'bg-[#1877F2] hover:bg-[#166fe5]'
