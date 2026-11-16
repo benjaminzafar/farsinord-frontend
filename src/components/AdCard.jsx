@@ -2,7 +2,7 @@ import React from 'react';
 import { MapPin, Eye, Clock } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
-export default function AdCard({ ad, lang, onSelect }) {
+export default React.memo(function AdCard({ ad, lang, onSelect }) {
   const catObj = CATEGORIES.find(c => c.id === ad.category);
   const catName = catObj ? (lang === 'fa' ? catObj.fa : catObj.sv) : ad.category;
   
@@ -32,6 +32,7 @@ export default function AdCard({ ad, lang, onSelect }) {
           alt={ad.title}
           className="h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Featured pill (Meta Blue "ویژه") */}
@@ -91,4 +92,4 @@ export default function AdCard({ ad, lang, onSelect }) {
       </div>
     </article>
   );
-}
+});

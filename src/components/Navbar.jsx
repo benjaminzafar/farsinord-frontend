@@ -8,6 +8,10 @@ import {
   Utensils,
   Briefcase,
   GraduationCap,
+  ShoppingBag,
+  Car,
+  Laptop,
+  Calendar,
   Tag,
   Globe2,
   MapPin,
@@ -15,6 +19,14 @@ import {
   X
 } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
+
+const DROPDOWN_ICON_MAP = {
+  ShoppingBag,
+  Car,
+  Laptop,
+  Calendar,
+  Tag,
+};
 
 export default function Navbar({ 
   siteName = 'سوئد پرشیا',
@@ -218,20 +230,28 @@ export default function Navbar({
 
                 {categoriesDropdownOpen && (
                   <div className="absolute start-0 top-full mt-2 w-56 rounded-2xl bg-white border border-slate-200/90 shadow-[0_10px_35px_rgba(0,0,0,0.1)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
-                    {CATEGORIES.filter(c => !mainNavItems.some(m => m.id === c.id) && c.id !== 'all').map(cat => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          if (onSelectCategory) onSelectCategory(cat.id);
-                          setCategoriesDropdownOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-950 transition-colors text-right cursor-pointer"
-                      >
-                        <Tag size={13} className="text-slate-400 shrink-0" />
-                        <span>{cat.fa}</span>
-                      </button>
-                    ))}
+                    {CATEGORIES.filter(c => !mainNavItems.some(m => m.id === c.id) && c.id !== 'all').map(cat => {
+                      const CatIcon = DROPDOWN_ICON_MAP[cat.icon] || Tag;
+                      const isCurr = selectedCategory === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            if (onSelectCategory) onSelectCategory(cat.id);
+                            setCategoriesDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-right cursor-pointer ${
+                            isCurr
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+                          }`}
+                        >
+                          <CatIcon size={14} className={isCurr ? 'text-blue-600 shrink-0' : 'text-slate-400 shrink-0'} />
+                          <span>{cat.fa}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

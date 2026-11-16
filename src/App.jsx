@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { 
   Search, 
   MapPin, 
@@ -6,20 +6,44 @@ import {
   CheckCircle2, 
   RefreshCw,
   X,
-  ChevronDown
+  ChevronDown,
+  LayoutGrid,
+  Home,
+  Utensils,
+  Briefcase,
+  GraduationCap,
+  ShoppingBag,
+  Car,
+  Laptop,
+  Calendar,
+  Tag
 } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import MobileBottomNav from './components/MobileBottomNav';
-import CountryBanner from './components/CountryBanner';
 import AdCard from './components/AdCard';
-import AdDetailPage from './components/AdDetailPage';
-import PaymentModal from './components/PaymentModal';
-import PostAdModal from './components/PostAdModal';
-import ManageAdModal from './components/ManageAdModal';
 import { isSafeHttpUrl } from './lib/supabase';
 import { publicApi } from './lib/apiClient';
 import { COUNTRIES, CATEGORIES, t } from './lib/translations';
+
+const CountryBanner = lazy(() => import('./components/CountryBanner'));
+const AdDetailPage = lazy(() => import('./components/AdDetailPage'));
+const PaymentModal = lazy(() => import('./components/PaymentModal'));
+const PostAdModal = lazy(() => import('./components/PostAdModal'));
+const ManageAdModal = lazy(() => import('./components/ManageAdModal'));
+
+const CATEGORY_ICONS = {
+  all: LayoutGrid,
+  bostad: Home,
+  restaurang: Utensils,
+  tjanster: Briefcase,
+  jobb: GraduationCap,
+  'kop-salj': ShoppingBag,
+  fordon: Car,
+  elektronik: Laptop,
+  evenemang: Calendar,
+  ovrigt: Tag,
+};
 
 
 
@@ -425,36 +449,40 @@ export default function App() {
     heroSubheading = 'جامع‌ترین بازارچه و پرتال نیازمندی‌های فارسی‌زبانان در هلسینکی، اسپو، تامپره و سراسر فنلاند.';
   }
 
-  // Filter ads safely (handles nullable fields)
-  const filteredAds = ads.filter(ad => {
-    const matchCountry = ad.country === selectedCountry || (!ad.country && selectedCountry === 'se');
-    const matchCat = selectedCategory === 'all' || ad.category === selectedCategory;
-    const matchCity = selectedCity === 'all' || ad.city === selectedCity;
+  // Filter ads safely (handles nullable fields, memoized for performance)
+  const filteredAds = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    const matchSearch = !q || 
-      (ad.title && ad.title.toLowerCase().includes(q)) ||
-      (ad.title_fa && ad.title_fa.toLowerCase().includes(q)) ||
-      (ad.description && ad.description.toLowerCase().includes(q)) ||
-      (ad.city && ad.city.toLowerCase().includes(q)) ||
-      (ad.area && ad.area.toLowerCase().includes(q)) ||
-      (ad.reference_number && ad.reference_number.toLowerCase().includes(q));
+    return ads.filter(ad => {
+      const matchCountry = ad.country === selectedCountry || (!ad.country && selectedCountry === 'se');
+      const matchCat = selectedCategory === 'all' || ad.category === selectedCategory;
+      const matchCity = selectedCity === 'all' || ad.city === selectedCity;
+      const matchSearch = !q ||
+        (ad.title && ad.title.toLowerCase().includes(q)) ||
+        (ad.title_fa && ad.title_fa.toLowerCase().includes(q)) ||
+        (ad.description && ad.description.toLowerCase().includes(q)) ||
+        (ad.city && ad.city.toLowerCase().includes(q)) ||
+        (ad.area && ad.area.toLowerCase().includes(q)) ||
+        (ad.reference_number && ad.reference_number.toLowerCase().includes(q));
 
-    return matchCountry && matchCat && matchCity && matchSearch;
-  });
+      return matchCountry && matchCat && matchCity && matchSearch;
+    });
+  }, [ads, selectedCountry, selectedCategory, selectedCity, searchQuery]);
 
   // Featured ads subset
-  const featuredAds = filteredAds.filter(a => a.is_featured);
+  const featuredAds = useMemo(() => filteredAds.filter(a => a.is_featured), [filteredAds]);
 
   return (
     <div className={`min-h-screen flex flex-col bg-[#f8fafc] text-stone-900 overflow-x-hidden w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
       {/* Geolocation Scandinavian Detection Pop-Up Modal */}
-      <CountryBanner
-        isOpen={countryModalOpen}
-        onClose={handleCloseCountryModal}
-        selectedCountry={selectedCountry}
-        onSelectCountry={handleCountryChange}
-      />
+      <Suspense fallback={null}>
+        <CountryBanner
+          isOpen={countryModalOpen}
+          onClose={handleCloseCountryModal}
+          selectedCountry={selectedCountry}
+          onSelectCountry={handleCountryChange}
+        />
+      </Suspense>
 
       {/* Top Navbar */}
       <Navbar
@@ -484,16 +512,18 @@ export default function App() {
         </div>
       )}
 
-      {/* Full Page Ad View (No popup on desktop, No swipe on mobile) OR Home Feed */}
+      {/* Full Page Ad View (Lazy-loaded for fast initial paint) OR Home Feed */}
       {activeAdDetail ? (
-        <AdDetailPage
-          ad={activeAdDetail}
-          allAds={ads}
-          lang={lang}
-          onBack={handleBackToFeed}
-          onSelectAd={handleSelectAd}
-          onOpenPromote={(targetAd) => handleOpenPayment(targetAd)}
-        />
+        <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-12 text-center text-xs text-slate-400">در حال بارگذاری جزئیات آگهی...</div>}>
+          <AdDetailPage
+            ad={activeAdDetail}
+            allAds={ads}
+            lang={lang}
+            onBack={handleBackToFeed}
+            onSelectAd={handleSelectAd}
+            onOpenPromote={(targetAd) => handleOpenPayment(targetAd)}
+          />
+        </Suspense>
       ) : (
         <>
           {/* Hero Section - Displayed only on Home (selectedCategory === 'all') */}
@@ -587,23 +617,25 @@ export default function App() {
         </section>
       )}
 
-      {/* Horizontal Sticky Category Strip - Exactly matching user screenshot */}
+      {/* Horizontal Sticky Category Strip with crisp category icons */}
       <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
         <div className="max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth">
           {CATEGORIES.map(cat => {
             const isActive = selectedCategory === cat.id;
+            const CatIcon = CATEGORY_ICONS[cat.id] || Tag;
             return (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => handleCategoryChange(cat.id)}
-                className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 active:scale-95 ${
                   isActive
                     ? 'bg-[#1877F2] text-white shadow-xs'
                     : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-950'
                 }`}
               >
-                {cat.fa}
+                <CatIcon size={13} className={isActive ? 'text-white shrink-0' : 'text-slate-500 shrink-0'} />
+                <span>{cat.fa}</span>
               </button>
             );
           })}
@@ -757,58 +789,60 @@ export default function App() {
         onOpenManageAd={handleOpenManageAd}
       />
 
-      {/* MODAL: Stripe Payment for VIP Ad Promotion */}
-      {paymentAd && (
-        <PaymentModal
-          ad={paymentAd}
-          price={stripeSettings?.vipPrice || 99}
-          currency={stripeSettings?.currency || 'SEK'}
-          stripeSettings={stripeSettings}
-          onClose={handleClosePayment}
-          onSuccess={(promotedAd) => {
-            fetchAds();
-            if (activeAdDetail && activeAdDetail.id === promotedAd.id) {
-              setActiveAdDetail(promotedAd);
-            }
-            showToast(`آگهی "${promotedAd.title}" با موفقیت به رتبه ویژه (VIP) ارتقا یافت!`);
-          }}
-        />
-      )}
+      <Suspense fallback={null}>
+        {/* MODAL: Stripe Payment for VIP Ad Promotion */}
+        {paymentAd && (
+          <PaymentModal
+            ad={paymentAd}
+            price={stripeSettings?.vipPrice || 99}
+            currency={stripeSettings?.currency || 'SEK'}
+            stripeSettings={stripeSettings}
+            onClose={handleClosePayment}
+            onSuccess={(promotedAd) => {
+              fetchAds();
+              if (activeAdDetail && activeAdDetail.id === promotedAd.id) {
+                setActiveAdDetail(promotedAd);
+              }
+              showToast(`آگهی "${promotedAd.title}" با موفقیت به رتبه ویژه (VIP) ارتقا یافت!`);
+            }}
+          />
+        )}
 
-      {/* MODAL 2: Post Ad */}
-      {postAdOpen && (
-        <PostAdModal
-          lang={lang}
-          initialCategory={postAdCategory}
-          selectedCountry={selectedCountry}
-          onClose={handleClosePostAd}
-          onCreated={(newAd, wantVip) => {
-            fetchAds();
-            if (wantVip) {
-              handleClosePostAd();
-              handleOpenPayment(newAd);
-            } else {
-              showToast(`آگهی با کد مرجع ${newAd.reference_number} با موفقیت ثبت شد.`);
-            }
-          }}
-        />
-      )}
+        {/* MODAL 2: Post Ad */}
+        {postAdOpen && (
+          <PostAdModal
+            lang={lang}
+            initialCategory={postAdCategory}
+            selectedCountry={selectedCountry}
+            onClose={handleClosePostAd}
+            onCreated={(newAd, wantVip) => {
+              fetchAds();
+              if (wantVip) {
+                handleClosePostAd();
+                handleOpenPayment(newAd);
+              } else {
+                showToast(`آگهی با کد مرجع ${newAd.reference_number} با موفقیت ثبت شد.`);
+              }
+            }}
+          />
+        )}
 
-      {/* MODAL 3: Manage / Delete Ad with Ref & PIN */}
-      {manageAdOpen && (
-        <ManageAdModal
-          lang={lang}
-          onClose={handleCloseManageAd}
-          onDeleted={(deletedId) => {
-            setAds(ads.filter(a => a.id !== deletedId));
-            showToast(lang === 'fa' ? 'آگهی حذف شد.' : 'Annonsen har raderats.');
-          }}
-          onUpdated={(updatedAd) => {
-            setAds(ads.map(a => a.id === updatedAd.id ? updatedAd : a));
-            showToast(lang === 'fa' ? 'آگهی بروزرسانی شد.' : 'Annonsen har uppdaterats.');
-          }}
-        />
-      )}
+        {/* MODAL 3: Manage / Delete Ad with Ref & PIN */}
+        {manageAdOpen && (
+          <ManageAdModal
+            lang={lang}
+            onClose={handleCloseManageAd}
+            onDeleted={(deletedId) => {
+              setAds(ads.filter(a => a.id !== deletedId));
+              showToast(lang === 'fa' ? 'آگهی حذف شد.' : 'Annonsen har raderats.');
+            }}
+            onUpdated={(updatedAd) => {
+              setAds(ads.map(a => a.id === updatedAd.id ? updatedAd : a));
+              showToast(lang === 'fa' ? 'آگهی بروزرسانی شد.' : 'Annonsen har uppdaterats.');
+            }}
+          />
+        )}
+      </Suspense>
 
     </div>
   );
