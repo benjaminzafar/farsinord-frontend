@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { 
   Search, 
   MapPin, 
@@ -376,6 +376,46 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Apple-like sliding active category pill & touch-swipe navigation refs
+  const categoryStripRef = useRef(null);
+  const categoryPillRefs = useRef({});
+  const touchSwipeRef = useRef({ x: 0, y: 0 });
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, ready: false });
+
+  useEffect(() => {
+    const el = categoryPillRefs.current[selectedCategory];
+    if (!el) return;
+    const updatePill = () => {
+      setPillStyle({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
+    };
+    updatePill();
+    try {
+      el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    } catch {}
+    window.addEventListener('resize', updatePill);
+    return () => window.removeEventListener('resize', updatePill);
+  }, [selectedCategory, activeAdDetail]);
+
+  const handleFeedTouchStart = (e) => {
+    if (e.touches && e.touches.length === 1) {
+      touchSwipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  const handleFeedTouchEnd = (e) => {
+    if (!e.changedTouches || e.changedTouches.length !== 1) return;
+    const dx = e.changedTouches[0].clientX - touchSwipeRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchSwipeRef.current.y;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    const currIdx = CATEGORIES.findIndex(c => c.id === selectedCategory);
+    if (currIdx === -1) return;
+    // In RTL: swiping finger right-to-left (dx < 0) goes back toward index 0; left-to-right (dx > 0) advances to next category
+    const nextIdx = dx > 0 ? currIdx + 1 : currIdx - 1;
+    if (nextIdx >= 0 && nextIdx < CATEGORIES.length) {
+      handleCategoryChange(CATEGORIES[nextIdx].id);
+    }
+  };
+
   // When clicking an ad, open full page view and update URL history
   const handleSelectAd = (ad) => {
     setActiveAdDetail(ad);
@@ -617,24 +657,39 @@ export default function App() {
         </section>
       )}
 
-      {/* Horizontal Sticky Category Strip with crisp category icons */}
-      <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
-        <div className="max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth">
+      {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
+      <div className="sticky top-16 z-30 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
+        <div
+          ref={categoryStripRef}
+          className="relative max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5"
+        >
+          {pillStyle.ready && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-full bg-[#1877F2] shadow-[0_2px_10px_rgba(24,119,242,0.28)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+              style={{
+                width: `${pillStyle.width}px`,
+                transform: `translate3d(${pillStyle.left}px, 0, 0)`,
+                left: 0,
+              }}
+            />
+          )}
           {CATEGORIES.map(cat => {
             const isActive = selectedCategory === cat.id;
             const CatIcon = CATEGORY_ICONS[cat.id] || Tag;
             return (
               <button
                 key={cat.id}
+                ref={(el) => { if (el) categoryPillRefs.current[cat.id] = el; }}
                 type="button"
                 onClick={() => handleCategoryChange(cat.id)}
-                className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 active:scale-95 ${
+                className={`relative z-10 inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
                   isActive
-                    ? 'bg-[#1877F2] text-white shadow-xs'
-                    : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-950'
+                    ? (pillStyle.ready ? 'text-white' : 'bg-[#1877F2] text-white shadow-xs')
+                    : 'bg-slate-100/85 hover:bg-slate-200/80 text-slate-700 hover:text-slate-950'
                 }`}
               >
-                <CatIcon size={13} className={isActive ? 'text-white shrink-0' : 'text-slate-500 shrink-0'} />
+                <CatIcon size={13} className={`transition-transform duration-200 ${isActive ? 'text-white scale-105 shrink-0' : 'text-slate-500 shrink-0'}`} />
                 <span>{cat.fa}</span>
               </button>
             );
@@ -645,7 +700,12 @@ export default function App() {
       
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-visible">
+      <main
+        onTouchStart={handleFeedTouchStart}
+        onTouchEnd={handleFeedTouchEnd}
+        className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-visible"
+      >
+        <div key={selectedCategory} className="space-y-6 sm:space-y-8 animate-in fade-in duration-200 ease-out">
         
         {/* VIP / Featured Section */}
         {featuredAds.length > 0 && (
@@ -761,7 +821,7 @@ export default function App() {
           )}
 
         </section>
-
+        </div>
       </main>
         </>
       )}
