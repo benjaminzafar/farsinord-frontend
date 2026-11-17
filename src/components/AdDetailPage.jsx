@@ -252,12 +252,12 @@ export default function AdDetailPage({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
           {/* MAIN CONTENT COLUMN (8 cols on Desktop) */}
-          <main className="lg:col-span-8 space-y-6">
+          <main className="lg:col-span-8 space-y-5">
             
-            {/* Gallery Card */}
-            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-3 sm:p-5 overflow-hidden space-y-3">
+            {/* Frameless Image Gallery (No outer box around photo) */}
+            <div className="space-y-2.5">
               {/* Big Stage Image (click to zoom) */}
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 group">
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#ECECEF] group">
                 <img
                   src={images[activeImageIdx]}
                   alt={ad.title}
@@ -266,7 +266,7 @@ export default function AdDetailPage({
                     setZoomed(false);
                     setZoomOpen(true);
                   }}
-                  className="w-full h-full object-contain sm:object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
+                  className="w-full h-full object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
                 />
 
                 {/* Subtle Circular Zoom Button */}
@@ -277,7 +277,7 @@ export default function AdDetailPage({
                     setZoomed(false);
                     setZoomOpen(true);
                   }}
-                  className="absolute bottom-3 end-3 h-9 w-9 rounded-full bg-[#1D1D1F]/70 hover:bg-[#1D1D1F] text-white flex items-center justify-center shadow-md transition-all cursor-pointer"
+                  className="absolute bottom-3 end-3 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer"
                   title="مشاهده تمام‌صفحه"
                 >
                   <ZoomIn size={16} />
@@ -285,14 +285,14 @@ export default function AdDetailPage({
 
                 {/* VIP / Featured Badge */}
                 {ad.is_featured && (
-                  <div className="absolute top-3 start-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1877F2] text-white text-xs font-black shadow-md backdrop-blur-xs">
-                    <Crown size={13} className="text-white/80" />
-                    <span>آگهی ویژه (VIP)</span>
+                  <div className="absolute top-3 start-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0066CC] text-white text-xs font-bold backdrop-blur-xs">
+                    <Crown size={13} className="text-white/90" />
+                    <span>ویژه</span>
                   </div>
                 )}
 
                 {/* Category Badge */}
-                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC] text-[#1D1D1F] text-xs font-bold shadow-md border border-[#E5E5EA]">
+                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC]/90 backdrop-blur-md text-[#1D1D1F] text-xs font-bold">
                   {catName}
                 </div>
 
@@ -302,14 +302,14 @@ export default function AdDetailPage({
                     <button
                       type="button"
                       onClick={() => setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
-                      className="absolute start-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs shadow-md"
+                      className="absolute start-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
                     >
                       <ChevronRight size={18} />
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
-                      className="absolute end-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs shadow-md"
+                      className="absolute end-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
                     >
                       <ChevronLeft size={18} />
                     </button>
@@ -325,10 +325,10 @@ export default function AdDetailPage({
                       key={idx}
                       type="button"
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`relative h-16 sm:h-20 aspect-[4/3] rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                      className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer ${
                         activeImageIdx === idx 
-                          ? 'border-blue-600 ring-2 ring-blue-200 scale-95' 
-                          : 'border-slate-200 opacity-70 hover:opacity-100'
+                          ? 'ring-2 ring-[#0066CC] opacity-100' 
+                          : 'opacity-55 hover:opacity-90'
                       }`}
                     >
                       <img src={img} alt={`thumbnail-${idx}`} className="w-full h-full object-cover" />
@@ -339,79 +339,77 @@ export default function AdDetailPage({
             </div>
 
             {/* Title, Price & Details Card */}
-            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-5 sm:p-7 space-y-5">
+            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-5 sm:p-8 space-y-6">
               
-              {/* Header: Title & Price */}
-              <div className="space-y-3 pb-5 border-b border-[#E5E5EA]">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#1D1D1F] leading-snug">
+              {/* Header: Title, Price & Unified Meta Row */}
+              <div className="space-y-3.5 pb-6 border-b border-[#E5E5EA]">
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 sm:gap-4">
+                  <h1 className="text-xl sm:text-2xl font-black text-[#1D1D1F] leading-snug">
                     {lang === 'fa' && ad.title_fa ? ad.title_fa : ad.title}
                   </h1>
                   
                   {/* Price Clean Display */}
-                  <div className="text-right sm:text-left shrink-0 pt-0.5">
-                    <span className="text-2xl sm:text-3xl font-black text-[#0066CC] tabular-nums tracking-tight">
+                  <div className="shrink-0">
+                    <span className="text-xl sm:text-2xl font-black text-[#0066CC] tabular-nums tracking-tight">
                       <bdi>{displayPrice}</bdi>
                     </span>
                   </div>
                 </div>
 
-                {/* Meta info tags */}
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-1">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
-                    <MapPin size={13} className="text-[#86868B] shrink-0" />
-                    <span>{ad.city}{ad.area ? ` • ${ad.area}` : ''}</span>
-                  </div>
+                {/* Clean Inline Meta Row (No mismatched pills) */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#6E6E73]">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-[#1D1D1F]">
+                    <MapPin size={13.5} className="text-[#86868B] shrink-0" />
+                    <span>{ad.city}{ad.area ? `، ${ad.area}` : ''}</span>
+                  </span>
 
-                  <div className="inline-flex items-center gap-1 px-2.5 py-1 text-slate-500">
-                    <Clock size={13} className="shrink-0" />
-                    <span>ثبت: {dateStr}</span>
-                  </div>
+                  <span className="inline-flex items-center gap-1">
+                    <Clock size={13} className="text-[#86868B] shrink-0" />
+                    <span>{dateStr}</span>
+                  </span>
 
-                  <div className="inline-flex items-center gap-1 px-2.5 py-1 text-slate-500">
-                    <Eye size={13} className="shrink-0" />
+                  <span className="inline-flex items-center gap-1">
+                    <Eye size={13} className="text-[#86868B] shrink-0" />
                     <span>{ad.views_count || 1} بازدید</span>
-                  </div>
+                  </span>
 
-                  <div className="inline-flex items-center gap-1 text-[11px] text-slate-400">
-                    <span>کد مرجع:</span>
-                    <bdi className="font-mono font-bold text-slate-600">{ad.reference_number}</bdi>
-                  </div>
+                  {ad.reference_number && (
+                    <span className="inline-flex items-center gap-1 text-[#86868B]">
+                      <span>کد:</span>
+                      <bdi className="font-mono font-semibold text-[#6E6E73]">{ad.reference_number}</bdi>
+                    </span>
+                  )}
                 </div>
               </div>
 
               {/* Description Section */}
-              <div className="space-y-2.5 pt-1">
-                <h3 className="text-sm font-bold text-[#1D1D1F] flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[#0066CC]" />
-                  <span>توضیحات و مشخصات کامل</span>
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-bold text-[#86868B]">
+                  توضیحات و مشخصات
                 </h3>
-                <div className="text-sm sm:text-base text-[#1D1D1F]/85 leading-relaxed sm:leading-loose whitespace-pre-wrap">
+                <div className="text-sm sm:text-[15px] text-[#1D1D1F] leading-relaxed sm:leading-loose whitespace-pre-wrap">
                   {ad.description}
                 </div>
               </div>
 
-              {/* Contact Seller Action Buttons (Hidden & Protected with Cloudflare Turnstile) */}
-              <div className="pt-5 border-t border-[#E5E5EA] space-y-3">
-                <h3 className="text-sm font-bold text-[#1D1D1F]">راه‌های ارتباط با آگهی‌دهنده:</h3>
+              {/* Contact Seller Section — Centered UX */}
+              <div className="pt-6 border-t border-[#E5E5EA] flex flex-col items-center text-center space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F]">اطلاعات تماس با آگهی‌دهنده</h3>
+                  {ad.contact_name && (
+                    <p className="text-xs text-[#6E6E73]">
+                      ثبت‌شده توسط <span className="font-bold text-[#1D1D1F]">{ad.contact_name}</span>
+                    </p>
+                  )}
+                </div>
 
                 {!contactRevealed ? (
-                  <div className="pt-1 space-y-3.5">
+                  <div className="w-full max-w-md flex flex-col items-center text-center space-y-3.5 pt-1">
                     {!showTurnstileGate ? (
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5F5F7] text-[#6E6E73]">
-                            <Lock size={17} />
-                          </div>
-                          <div>
-                            <p className="text-xs sm:text-[13px] font-bold text-[#1D1D1F]">
-                              اطلاعات تماس برای جلوگیری از ربات‌ها محافظت شده است
-                            </p>
-                            <p className="text-[11px] text-[#86868B]">
-                              برای مشاهده دکمه‌های ارتباطی کلیک کنید
-                            </p>
-                          </div>
-                        </div>
+                      <>
+                        <p className="text-xs text-[#6E6E73]">
+                          برای جلوگیری از ربات‌ها، راه‌های ارتباطی پس از کلیک نمایش داده می‌شود
+                        </p>
 
                         <button
                           type="button"
@@ -422,16 +420,16 @@ export default function AdDetailPage({
                               setShowTurnstileGate(true);
                             }
                           }}
-                          className="h-11 px-5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-[13px] font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer shrink-0"
+                          className="h-11 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-[13px] font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
                         >
-                          <ShieldCheck size={16} />
-                          <span>مشاهده اطلاعات تماس</span>
+                          <Lock size={15} />
+                          <span>نمایش اطلاعات تماس</span>
                         </button>
-                      </div>
+                      </>
                     ) : (
-                      <div className="flex flex-col items-center justify-center space-y-2.5 py-2 animate-in fade-in duration-200">
+                      <div className="flex flex-col items-center justify-center space-y-2.5 py-1 animate-in fade-in duration-200">
                         <p className="text-xs font-bold text-[#1D1D1F]">
-                          تایید امنیتی جهت نمایش اطلاعات تماس آگهی‌دهنده
+                          تایید امنیتی جهت نمایش اطلاعات تماس
                         </p>
                         <CloudflareTurnstile
                           theme="light"
@@ -442,61 +440,61 @@ export default function AdDetailPage({
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="flex flex-wrap items-center gap-3">
-                      {/* Phone (Circle Icon Only) */}
+                  <div className="w-full flex flex-col items-center justify-center space-y-3.5 animate-in fade-in duration-200">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      {/* Phone */}
                       {ad.contact_phone && (
                         <a
                           href={`tel:${ad.contact_phone.replace(/[^0-9+]/g, '')}`}
-                          title="تماس مستقیم"
-                          aria-label="تماس مستقیم"
-                          className="h-12 w-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
+                          title="تماس تلفنی"
+                          className="h-11 px-4 rounded-full bg-[#1D1D1F] hover:bg-[#3A3A3C] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
                         >
-                          <Phone size={19} />
+                          <Phone size={15} />
+                          <bdi className="font-mono tracking-wide">{ad.contact_phone}</bdi>
                         </a>
                       )}
 
-                      {/* WhatsApp (Circle Icon Only) */}
+                      {/* WhatsApp */}
                       {ad.contact_whatsapp && (
                         <a
                           href={`https://wa.me/${ad.contact_whatsapp.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="پیام در واتساپ"
-                          aria-label="پیام در واتساپ"
-                          className="h-12 w-12 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
+                          className="h-11 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
                         >
-                          <MessageSquare size={19} />
+                          <MessageSquare size={15} className="text-[#6E6E73]" />
+                          <span>واتساپ</span>
                         </a>
                       )}
 
-                      {/* Telegram (Circle Icon Only) */}
+                      {/* Telegram */}
                       {ad.contact_telegram && (
                         <a
                           href={/^https?:\/\//i.test(ad.contact_telegram.trim()) ? ad.contact_telegram.trim() : `https://t.me/${ad.contact_telegram.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="گفتگو در تلگرام"
-                          aria-label="گفتگو در تلگرام"
-                          className="h-12 w-12 rounded-full bg-[#229ED9] hover:bg-[#1e8ec3] text-white flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
+                          className="h-11 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
                         >
-                          <Send size={19} />
+                          <Send size={15} className="text-[#6E6E73]" />
+                          <span>تلگرام</span>
                         </a>
                       )}
 
-                      {/* Email (Circle Icon Only) */}
+                      {/* Email */}
                       {ad.contact_email && (
                         <a
                           href={`mailto:${ad.contact_email}?subject=پرسش درباره آگهی ${ad.reference_number}`}
                           title="ارسال ایمیل"
-                          aria-label="ارسال ایمیل"
-                          className="h-12 w-12 rounded-full bg-[#1D1D1F] hover:bg-[#3A3A3C] text-white flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
+                          className="h-11 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
                         >
-                          <Mail size={19} />
+                          <Mail size={15} className="text-[#6E6E73]" />
+                          <span>ایمیل</span>
                         </a>
                       )}
 
-                      {/* Website URL (Circle Icon Only) */}
+                      {/* Website URL */}
                       {ad.contact_website && (() => {
                         const raw = ad.contact_website.trim();
                         if (/^(javascript|data|vbscript):/i.test(raw)) return null;
@@ -507,44 +505,33 @@ export default function AdDetailPage({
                             target="_blank"
                             rel="noopener noreferrer"
                             title="مشاهده وب‌سایت"
-                            aria-label="مشاهده وب‌سایت"
-                            className="h-12 w-12 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#D2D2D7] flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
+                            className="h-11 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
                           >
-                            <Globe size={19} />
+                            <Globe size={15} className="text-[#6E6E73]" />
+                            <span>وب‌سایت</span>
                           </a>
                         );
                       })()}
                     </div>
-
-                    {ad.contact_name && (
-                      <p className="text-xs text-slate-500 pt-1 text-center sm:text-right">
-                        نام آگهی‌دهنده: <span className="font-semibold text-slate-800">{ad.contact_name}</span>
-                      </p>
-                    )}
                   </div>
                 )}
               </div>
 
               {/* Safety Notice & Report Abuse Section */}
               <div className="pt-5 border-t border-[#E5E5EA] space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5">
-                    <ShieldCheck size={18} className="text-[#86868B] shrink-0 mt-0.5" />
-                    <div className="space-y-0.5 text-xs">
-                      <h4 className="font-bold text-[#1D1D1F]">راهنمای معامله امن</h4>
-                      <p className="leading-relaxed text-[#6E6E73]">
-                        همیشه قبل از واریز هرگونه بیعانه یا وجه، کالا یا مسکن را شخصاً بررسی فرمایید و از قراردادهای رسمی استفاده کنید.
-                      </p>
-                    </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs text-[#6E6E73]">
+                    <ShieldCheck size={16} className="text-[#86868B] shrink-0" />
+                    <span>قبل از هرگونه پرداخت، کالا یا مسکن را حضوری بررسی کنید.</span>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setReportOpen((v) => !v)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F5F7] hover:bg-rose-50 text-rose-700 text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#6E6E73] hover:text-[#1D1D1F] text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
                   >
-                    <Flag size={12} />
-                    <span>گزارش تخلف</span>
+                    <Flag size={12} className="text-[#86868B]" />
+                    <span>گزارش آگهی</span>
                   </button>
                 </div>
 
@@ -560,7 +547,7 @@ export default function AdDetailPage({
                           <select
                             value={reportReason}
                             onChange={(e) => setReportReason(e.target.value)}
-                            className="h-9 rounded-xl border border-amber-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none"
+                            className="h-9 rounded-xl border border-[#E5E5EA] bg-white px-3 text-xs font-semibold text-[#1D1D1F] focus:outline-none"
                           >
                             <option value="محتوای غیرمجاز یا نامناسب">محتوای غیرمجاز یا نامناسب</option>
                             <option value="کلاهبرداری یا آگهی جعلی">کلاهبرداری یا آگهی جعلی</option>
@@ -572,14 +559,14 @@ export default function AdDetailPage({
                             value={reportDetails}
                             onChange={(e) => setReportDetails(e.target.value)}
                             placeholder="توضیح کوتاه (اختیاری)..."
-                            className="h-9 rounded-xl border border-amber-200 bg-white px-3 text-xs text-slate-800 focus:outline-none"
+                            className="h-9 rounded-xl border border-[#E5E5EA] bg-white px-3 text-xs text-[#1D1D1F] focus:outline-none"
                           />
                         </div>
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => setReportOpen(false)}
-                            className="h-8 px-3 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
+                            className="h-8 px-3 rounded-full text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] cursor-pointer"
                           >
                             انصراف
                           </button>
@@ -600,7 +587,7 @@ export default function AdDetailPage({
                               } catch {}
                               setReportSending(false);
                             }}
-                            className="h-8 px-4 rounded-full bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+                            className="h-8 px-4 rounded-full bg-[#1D1D1F] hover:bg-[#3A3A3C] disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
                           >
                             {reportSending ? 'در حال ارسال...' : 'ارسال گزارش'}
                           </button>
@@ -692,30 +679,28 @@ export default function AdDetailPage({
             </div>
 
             {/* Monetization Promotion CTA Card */}
-            <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white rounded-2xl sm:rounded-3xl p-5 shadow-lg border border-slate-800 space-y-3.5 relative overflow-hidden">
-              <div className="absolute -end-8 -top-8 w-28 h-28 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
-              
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/70">
-                  <Sparkles size={18} />
+            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-5 space-y-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
+                  <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white">آگهی شما اینجا دیده شود!</h3>
-                  <p className="text-[10px] text-slate-300">جذب ۳ برابری مشتریان و بازدیدکنندگان</p>
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F]">آگهی شما اینجا دیده شود!</h3>
+                  <p className="text-[10px] text-[#86868B]">جذب ۳ برابری مشتریان و بازدیدکنندگان</p>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-200 leading-relaxed font-normal">
+              <p className="text-xs text-[#6E6E73] leading-relaxed">
                 با ارتقا به آگهی ویژه (VIP)، آگهی شما در بخش ویژه و بالای فهرست جستجوی تمام فارسی‌زبانان اسکاندیناوی نمایش داده می‌شود.
               </p>
 
               <button
                 type="button"
                 onClick={() => onOpenPromote?.(ad)}
-                className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold active:scale-[0.97] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Crown size={15} className="text-white/80" />
-                <span>ارتقا و ویژه کردن این آگهی (Stripe)</span>
+                <Crown size={15} className="text-white/90" />
+                <span>ارتقا و ویژه کردن این آگهی</span>
               </button>
             </div>
 
@@ -792,7 +777,7 @@ export default function AdDetailPage({
                   applyPhotoTransform(2.2, 0, 0, true);
                 }
               }}
-              className={`max-h-[76vh] max-w-[94vw] object-contain rounded-2xl bg-[#FBFBFC] shadow-[0_12px_40px_rgba(29,29,31,0.10)] border border-[#E5E5EA] will-change-transform ${
+              className={`max-h-[78vh] max-w-[94vw] object-contain rounded-2xl will-change-transform ${
                 zoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
               }`}
             />
