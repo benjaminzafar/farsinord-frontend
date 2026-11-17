@@ -66,7 +66,7 @@ export default function MobileBottomNav({
     <>
       {/* 1. Sleek Compact Mobile Bottom Navigation Bar (Apple Frosted Spring Feel) */}
       <nav 
-        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-[#FBFBFC]/88 backdrop-blur-xl border-t border-[#E5E5EA] shadow-[0_-4px_20px_rgba(29,29,31,0.04)] px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.25rem)] font-vazir select-none"
+        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-[#FBFBFC] border-t border-[#E5E5EA] shadow-[0_-4px_20px_rgba(29,29,31,0.05)] px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.25rem)] font-vazir select-none"
         dir="rtl"
         aria-label="منوی دسترسی موبایل"
       >
@@ -171,7 +171,7 @@ export default function MobileBottomNav({
 
         {/* Bottom Sheet Card */}
         <div
-          className={`relative w-full bg-white/95 backdrop-blur-xl rounded-t-[28px] border-t border-slate-200 p-5 pb-8 space-y-4 shadow-2xl z-10 max-h-[85vh] overflow-y-auto custom-scrollbar transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+          className={`relative w-full bg-[#FBFBFC] rounded-t-[28px] border-t border-[#E5E5EA] p-5 pb-8 space-y-4 shadow-2xl z-10 max-h-[85vh] overflow-y-auto custom-scrollbar transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
             collectionSheetOpen ? 'translate-y-0' : 'translate-y-full'
           }`}
         >

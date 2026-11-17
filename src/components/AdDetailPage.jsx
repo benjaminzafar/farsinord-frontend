@@ -80,7 +80,7 @@ export default function AdDetailPage({
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] pb-20 font-vazir" dir="rtl">
       
       {/* Top Bar / Breadcrumb Navigation */}
-      <div className="bg-[#FBFBFC]/88 backdrop-blur-xl border-b border-[#E5E5EA] sticky top-16 z-30 shadow-2xs">
+      <div className="bg-[#FBFBFC] border-b border-[#E5E5EA] sticky top-16 z-30 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
           
           {/* Back button & Breadcrumb */}
@@ -148,7 +148,7 @@ export default function AdDetailPage({
                 )}
 
                 {/* Category Badge */}
-                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-white/95 text-slate-800 text-xs font-bold shadow-md border border-slate-200 backdrop-blur-xs">
+                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC] text-[#1D1D1F] text-xs font-bold shadow-md border border-[#E5E5EA]">
                   {catName}
                 </div>
 

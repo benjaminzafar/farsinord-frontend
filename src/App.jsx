@@ -649,7 +649,7 @@ export default function App() {
 
             {/* Meta Floating Search Capsule (Desktop Only) */}
             <div className="pt-2 px-1 hidden md:block">
-              <div className="bg-white/95 backdrop-blur-md rounded-full p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] border border-white/20 max-w-3xl mx-auto flex flex-row gap-1.5 transition-all">
+              <div className="bg-[#FBFBFC] rounded-full p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.28)] border border-[#E5E5EA] max-w-3xl mx-auto flex flex-row gap-1.5 transition-all">
                 
                 {/* City Dropdown */}
                 <div className="relative w-48 shrink-0">
@@ -707,7 +707,7 @@ export default function App() {
       )}
 
       {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-[#FBFBFC]/88 backdrop-blur-xl border-b border-[#E5E5EA] py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
+      <div className="sticky top-16 z-30 bg-[#FBFBFC] border-b border-[#E5E5EA] py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
         <div
           ref={categoryStripRef}
           className="relative max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5"

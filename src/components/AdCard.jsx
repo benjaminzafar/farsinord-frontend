@@ -43,7 +43,7 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
         )}
 
         {/* Category Pill */}
-        <div className="absolute top-1.5 end-1.5 sm:top-2.5 sm:end-2.5 rounded-full bg-[#FBFBFC]/92 px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10.5px] font-semibold text-[#1D1D1F] shadow-2xs border border-[#E5E5EA] backdrop-blur-md max-w-[85px] sm:max-w-none truncate">
+        <div className="absolute top-1.5 end-1.5 sm:top-2.5 sm:end-2.5 rounded-full bg-[#FBFBFC] px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10.5px] font-semibold text-[#1D1D1F] shadow-xs border border-[#E5E5EA] max-w-[85px] sm:max-w-none truncate">
           {catName}
         </div>
 

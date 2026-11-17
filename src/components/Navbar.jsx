@@ -77,7 +77,7 @@ export default function Navbar({
     : 'همه شهرها';
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 w-full bg-[#FBFBFC]/88 backdrop-blur-xl border-b border-[#E5E5EA] select-none font-vazir shadow-none transition-colors" dir="rtl">
+    <header className="fixed top-0 inset-x-0 z-40 w-full bg-[#FBFBFC] border-b border-[#E5E5EA] select-none font-vazir shadow-[0_1px_2px_rgba(29,29,31,0.03)] transition-colors" dir="rtl">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         
         {/* MOBILE VIEW: Soft Nordic Clean Palette (Search Capsule Right + Logo Left) */}
