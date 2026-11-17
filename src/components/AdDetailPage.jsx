@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, 
   MapPin, 
@@ -36,11 +36,7 @@ export default function AdDetailPage({
   const [contactRevealed, setContactRevealed] = useState(false);
   const [showTurnstileGate, setShowTurnstileGate] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef({ active: false, moved: false, startX: 0, startY: 0, origX: 0, origY: 0 });
-  const touchRef = useRef({ mode: null, startDist: 0, startScale: 1, startX: 0, startY: 0, origX: 0, origY: 0, moved: false });
+  const [zoomed, setZoomed] = useState(false);
   const currentT = t[lang] || t.fa;
 
   // Scroll to top when ad changes (state resets via key={ad.id})
@@ -50,7 +46,7 @@ export default function AdDetailPage({
 
   const imagesCount = (ad?.images && ad.images.length > 0) ? ad.images.length : 1;
 
-  // Keyboard navigation & Escape in photo zoom lightbox
+  // Keyboard navigation & Escape in light photo modal
   useEffect(() => {
     if (!zoomOpen) return;
     const handleKey = (e) => {
@@ -58,20 +54,10 @@ export default function AdDetailPage({
         setZoomOpen(false);
       } else if (e.key === 'ArrowLeft' && imagesCount > 1) {
         setActiveImageIdx((prev) => (prev < imagesCount - 1 ? prev + 1 : 0));
-        setZoomScale(1);
-        setPan({ x: 0, y: 0 });
+        setZoomed(false);
       } else if (e.key === 'ArrowRight' && imagesCount > 1) {
         setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : imagesCount - 1));
-        setZoomScale(1);
-        setPan({ x: 0, y: 0 });
-      } else if (e.key === '+' || e.key === '=') {
-        setZoomScale((s) => Math.min(3, Number((s + 0.5).toFixed(2))));
-      } else if (e.key === '-') {
-        setZoomScale((s) => {
-          const next = Math.max(1, Number((s - 0.5).toFixed(2)));
-          if (next === 1) setPan({ x: 0, y: 0 });
-          return next;
-        });
+        setZoomed(false);
       }
     };
     window.addEventListener('keydown', handleKey);
@@ -173,8 +159,7 @@ export default function AdDetailPage({
                   src={images[activeImageIdx]}
                   alt={ad.title}
                   onClick={() => {
-                    setZoomScale(1);
-                    setPan({ x: 0, y: 0 });
+                    setZoomed(false);
                     setZoomOpen(true);
                   }}
                   className="w-full h-full object-contain sm:object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
@@ -184,8 +169,7 @@ export default function AdDetailPage({
                 <button
                   type="button"
                   onClick={() => {
-                    setZoomScale(1);
-                    setPan({ x: 0, y: 0 });
+                    setZoomed(false);
                     setZoomOpen(true);
                   }}
                   className="absolute bottom-3 end-3 h-9 w-9 rounded-full bg-[#1D1D1F]/70 hover:bg-[#1D1D1F] text-white flex items-center justify-center shadow-md transition-all cursor-pointer"
@@ -540,206 +524,95 @@ export default function AdDetailPage({
         </div>
       </div>
 
-      {/* Apple-Style Full-Screen Photo Gallery & Pinch-Zoom Lightbox */}
+      {/* Light Apple-Style Clean Photo Modal (Native Pinch-Zoom & Scroll) */}
       {zoomOpen && (
         <div
-          className="fixed inset-0 z-[70] bg-black/95 flex flex-col select-none font-vazir"
+          className="fixed inset-0 z-[70] bg-[#F5F5F7] flex flex-col select-none font-vazir"
           dir="rtl"
-          onWheel={(e) => {
-            e.preventDefault();
-            const delta = e.deltaY < 0 ? 0.25 : -0.25;
-            setZoomScale((s) => {
-              const next = Math.min(3.5, Math.max(1, Number((s + delta).toFixed(2))));
-              if (next === 1) setPan({ x: 0, y: 0 });
-              return next;
-            });
-          }}
         >
-          {/* Floating Minimal Top Bar */}
-          <div className="flex items-center justify-between px-4 sm:px-6 pt-4 pb-2 shrink-0 z-10">
+          {/* Clean Top Header */}
+          <div className="flex items-center justify-between px-4 sm:px-6 h-14 bg-[#FBFBFC] border-b border-[#E5E5EA] shrink-0">
             <button
               type="button"
               onClick={() => setZoomOpen(false)}
-              className="h-10 w-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
-              title="بستن"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F] text-xs font-bold transition-colors cursor-pointer"
             >
-              <X size={20} />
+              <X size={15} />
+              <span>بستن</span>
             </button>
 
-            {images.length > 1 && (
-              <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold font-mono">
+            {images.length > 1 ? (
+              <span className="px-3 py-1 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] text-[#515154] text-xs font-semibold font-mono">
                 {activeImageIdx + 1} / {images.length}
               </span>
+            ) : (
+              <span className="text-xs font-semibold text-[#6E6E73]">نمای کامل تصویر</span>
             )}
+
+            <button
+              type="button"
+              onClick={() => setZoomed((z) => !z)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F] text-xs font-bold transition-colors cursor-pointer"
+            >
+              <ZoomIn size={14} />
+              <span>{zoomed ? 'نمای عادی' : 'بزرگنمایی'}</span>
+            </button>
           </div>
 
-          {/* Interactive Stage: Pinch-to-Zoom + Swipe on Mobile, Click-Zoom + Drag on Desktop */}
-          <div
-            className="relative flex-1 flex items-center justify-center overflow-hidden px-2 sm:px-6 touch-none"
-            onClick={(e) => {
-              if (e.target === e.currentTarget && zoomScale === 1) setZoomOpen(false);
-            }}
-            onTouchStart={(e) => {
-              if (e.touches.length === 2) {
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                setIsDragging(true);
-                touchRef.current = {
-                  mode: 'pinch',
-                  startDist: Math.hypot(dx, dy),
-                  startScale: zoomScale,
-                  startX: 0,
-                  startY: 0,
-                  origX: pan.x,
-                  origY: pan.y,
-                  moved: true,
-                };
-              } else if (e.touches.length === 1) {
-                setIsDragging(true);
-                touchRef.current = {
-                  mode: zoomScale > 1 ? 'pan' : 'swipe',
-                  startDist: 0,
-                  startScale: zoomScale,
-                  startX: e.touches[0].clientX,
-                  startY: e.touches[0].clientY,
-                  origX: pan.x,
-                  origY: pan.y,
-                  moved: false,
-                };
-              }
-            }}
-            onTouchMove={(e) => {
-              const tState = touchRef.current;
-              if (tState.mode === 'pinch' && e.touches.length === 2) {
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const dist = Math.hypot(dx, dy);
-                if (tState.startDist > 0) {
-                  const next = Math.min(3.5, Math.max(1, Number((tState.startScale * (dist / tState.startDist)).toFixed(2))));
-                  setZoomScale(next);
-                  if (next === 1) setPan({ x: 0, y: 0 });
-                }
-              } else if (tState.mode === 'pan' && e.touches.length === 1) {
-                const dx = e.touches[0].clientX - tState.startX;
-                const dy = e.touches[0].clientY - tState.startY;
-                if (Math.abs(dx) > 4 || Math.abs(dy) > 4) tState.moved = true;
-                setPan({ x: tState.origX + dx, y: tState.origY + dy });
-              } else if (tState.mode === 'swipe' && e.touches.length === 1) {
-                const dx = e.touches[0].clientX - tState.startX;
-                if (Math.abs(dx) > 10) tState.moved = true;
-              }
-            }}
-            onTouchEnd={(e) => {
-              const tState = touchRef.current;
-              setIsDragging(false);
-              if (tState.mode === 'swipe' && images.length > 1 && e.changedTouches.length === 1) {
-                const dx = e.changedTouches[0].clientX - tState.startX;
-                if (dx > 45) {
-                  setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-                } else if (dx < -45) {
-                  setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-                }
-              }
-              touchRef.current.mode = null;
-            }}
-            onPointerDown={(e) => {
-              if (e.pointerType === 'touch' || zoomScale <= 1) return;
-              setIsDragging(true);
-              dragRef.current = {
-                active: true,
-                moved: false,
-                startX: e.clientX,
-                startY: e.clientY,
-                origX: pan.x,
-                origY: pan.y,
-              };
-            }}
-            onPointerMove={(e) => {
-              if (e.pointerType === 'touch' || !dragRef.current.active) return;
-              const dx = e.clientX - dragRef.current.startX;
-              const dy = e.clientY - dragRef.current.startY;
-              if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragRef.current.moved = true;
-              setPan({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
-            }}
-            onPointerUp={(e) => {
-              if (e.pointerType === 'touch') return;
-              dragRef.current.active = false;
-              setIsDragging(false);
-            }}
-          >
+          {/* Native Pinch-Zoom & Scrollable Stage */}
+          <div className="relative flex-1 overflow-auto flex items-center justify-center p-3 sm:p-6 [touch-action:pinch-zoom_pan-x_pan-y]">
             <img
               src={images[activeImageIdx]}
               alt={ad.title}
-              draggable={false}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (dragRef.current.moved || touchRef.current.moved) {
-                  dragRef.current.moved = false;
-                  touchRef.current.moved = false;
-                  return;
-                }
-                if (zoomScale > 1) {
-                  setZoomScale(1);
-                  setPan({ x: 0, y: 0 });
-                } else {
-                  setZoomScale(2.2);
-                }
-              }}
-              style={{
-                transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoomScale})`,
-                transition: isDragging ? 'none' : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-              }}
-              className={`max-h-[76vh] max-w-[94vw] object-contain rounded-lg ${
-                zoomScale > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-zoom-in'
+              onClick={() => setZoomed((z) => !z)}
+              className={`rounded-2xl bg-[#FBFBFC] shadow-[0_12px_40px_rgba(29,29,31,0.10)] border border-[#E5E5EA] transition-all duration-200 ${
+                zoomed
+                  ? 'w-[160vw] sm:w-[130vw] max-w-none h-auto cursor-zoom-out'
+                  : 'max-h-full max-w-full object-contain cursor-zoom-in'
               }`}
             />
 
-            {images.length > 1 && (
+            {images.length > 1 && !zoomed && (
               <>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => {
                     setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-                    setZoomScale(1);
-                    setPan({ x: 0, y: 0 });
+                    setZoomed(false);
                   }}
-                  className="hidden sm:flex absolute start-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/15 hover:bg-white/25 text-white items-center justify-center transition-colors cursor-pointer"
+                  className="flex fixed start-3 sm:start-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
-                  <ChevronRight size={22} />
+                  <ChevronRight size={20} />
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => {
                     setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-                    setZoomScale(1);
-                    setPan({ x: 0, y: 0 });
+                    setZoomed(false);
                   }}
-                  className="hidden sm:flex absolute end-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/15 hover:bg-white/25 text-white items-center justify-center transition-colors cursor-pointer"
+                  className="flex fixed end-3 sm:end-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
-                  <ChevronLeft size={22} />
+                  <ChevronLeft size={20} />
                 </button>
               </>
             )}
           </div>
 
-          {/* Bottom Thumbnail Strip */}
+          {/* Clean Bottom Thumbnail Strip */}
           {images.length > 1 && (
-            <div className="px-4 pb-5 pt-2 flex items-center justify-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+            <div className="px-4 py-3 bg-[#FBFBFC] border-t border-[#E5E5EA] flex items-center justify-center gap-2 overflow-x-auto no-scrollbar shrink-0">
               {images.map((img, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => {
                     setActiveImageIdx(idx);
-                    setZoomScale(1);
-                    setPan({ x: 0, y: 0 });
+                    setZoomed(false);
                   }}
-                  className={`h-12 w-16 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                  className={`h-12 w-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                     activeImageIdx === idx
-                      ? 'border-white scale-105 opacity-100'
-                      : 'border-transparent opacity-50 hover:opacity-80'
+                      ? 'border-[#0066CC] ring-2 ring-[#0066CC]/20 scale-105 opacity-100'
+                      : 'border-[#E5E5EA] opacity-60 hover:opacity-100'
                   }`}
                 >
                   <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" />
