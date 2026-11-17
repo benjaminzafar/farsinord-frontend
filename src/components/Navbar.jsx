@@ -15,7 +15,12 @@ import {
   Tag,
   MapPin,
   Search,
-  X
+  X,
+  MoreHorizontal,
+  MonitorSmartphone,
+  Newspaper,
+  ShieldCheck,
+  Globe
 } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
@@ -38,13 +43,18 @@ export default function Navbar({
   onOpenPostAd, 
   onOpenManageAd,
   onSelectCategory,
-  selectedCategory = 'all'
+  selectedCategory = 'all',
+  onOpenCountryModal,
+  onOpenLegal,
+  selectedCountryObj = null
 }) {
   const [adDropdownOpen, setAdDropdownOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
 
   const adMenuRef = useRef(null);
   const categoriesMenuRef = useRef(null);
+  const moreMenuRef = useRef(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -54,6 +64,9 @@ export default function Navbar({
       }
       if (categoriesMenuRef.current && !categoriesMenuRef.current.contains(event.target)) {
         setCategoriesDropdownOpen(false);
+      }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setMoreDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -255,8 +268,109 @@ export default function Navbar({
             </nav>
           </div>
 
-          {/* Desktop Right Action: "آگهی" */}
+          {/* Desktop Right Action: "بیشتر" + "آگهی" */}
           <div className="flex items-center gap-2.5">
+            {/* Desktop "بیشتر" (More) Dropdown */}
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                type="button"
+                onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
+                className={`flex items-center gap-1.5 h-10 px-3.5 rounded-full border text-[13px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer active:scale-[0.94] ${
+                  moreDropdownOpen
+                    ? 'bg-[#ECECEF] border-[#D2D2D7] text-[#1D1D1F]'
+                    : 'bg-[#F5F5F7] hover:bg-[#ECECEF] border-[#E5E5EA] text-[#1D1D1F]'
+                }`}
+                aria-expanded={moreDropdownOpen}
+                title="امکانات بیشتر"
+              >
+                <MoreHorizontal size={16} className="text-[#515154]" />
+                <span>بیشتر</span>
+                <ChevronDown size={13} className={`text-[#6E6E73] transition-transform duration-200 ${moreDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {moreDropdownOpen && (
+                <div className="absolute end-0 top-full mt-2 w-72 rounded-2xl bg-[#FBFBFC] border border-[#E5E5EA] shadow-[0_14px_40px_rgba(29,29,31,0.14)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMoreDropdownOpen(false);
+                        onOpenCountryModal?.();
+                      }}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-[#0066CC]/10 text-[#0066CC] flex items-center justify-center shrink-0">
+                          <Globe size={15} />
+                        </div>
+                        <div>
+                          <span className="block font-bold">تغییر کشور</span>
+                          <span className="text-[10.5px] text-[#6E6E73]">
+                            کشور فعلی: {selectedCountryObj?.nameFa || 'سوئد'}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronLeft size={14} className="text-[#6E6E73]" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMoreDropdownOpen(false);
+                        onOpenLegal?.('privacy');
+                      }}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0">
+                          <ShieldCheck size={15} />
+                        </div>
+                        <div>
+                          <span className="block font-bold">حریم خصوصی و کوکی‌ها</span>
+                          <span className="text-[10.5px] text-[#6E6E73]">تنظیمات GDPR و کوکی‌ها</span>
+                        </div>
+                      </div>
+                      <ChevronLeft size={14} className="text-[#6E6E73]" />
+                    </button>
+
+                    <div className="pt-1.5 mt-1 border-t border-[#E5E5EA] space-y-1">
+                      <span className="block px-2.5 pt-0.5 text-[10.5px] font-bold text-[#6E6E73]">سرویس‌های آینده</span>
+
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F5F7]/70">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-lg bg-[#ECECEF] text-[#515154] flex items-center justify-center shrink-0">
+                            <MonitorSmartphone size={15} />
+                          </div>
+                          <div>
+                            <span className="block text-xs font-bold text-[#1D1D1F]">ساخت وب‌سایت</span>
+                            <span className="block text-[10.5px] text-[#6E6E73]">ساخت صفحه و سایت شخصی</span>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
+                          به‌زودی
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F5F7]/70">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-lg bg-[#ECECEF] text-[#515154] flex items-center justify-center shrink-0">
+                            <Newspaper size={15} />
+                          </div>
+                          <div>
+                            <span className="block text-xs font-bold text-[#1D1D1F]">اخبار و رویدادها</span>
+                            <span className="block text-[10.5px] text-[#6E6E73]">اخبار فارسی‌زبانان اسکاندیناوی</span>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
+                          به‌زودی
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="relative" ref={adMenuRef}>
               <button
                 type="button"

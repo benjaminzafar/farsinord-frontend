@@ -603,6 +603,9 @@ export default function App() {
         onOpenManageAd={handleOpenManageAd}
         onSelectCategory={handleCategoryChange}
         selectedCategory={selectedCategory}
+        onOpenCountryModal={handleOpenCountryModal}
+        onOpenLegal={setLegalModalTab}
+        selectedCountryObj={currentCountryObj}
       />
 
       {/* Spacer for Fixed Top Navbar */}
