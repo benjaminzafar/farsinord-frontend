@@ -5,7 +5,7 @@ import { CATEGORIES } from '../lib/translations';
 const currentYear = new Date().getFullYear();
 
 export default function Footer({ 
-  siteName = 'Farsi Nord',
+  siteName = 'فارسی نورد',
   logoUrl = '',
   selectedCountryObj = null,
   onOpenCountryModal,

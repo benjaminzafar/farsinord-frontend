@@ -137,7 +137,7 @@ export default function App() {
       return false;
     }
   });
-  const [siteName, setSiteName] = useState('Farsi Nord');
+  const [siteName, setSiteName] = useState('فارسی نورد');
   const [logoUrl, setLogoUrl] = useState('');
   const [turnstileSettings, setTurnstileSettings] = useState({ enabled: true, mode: 'test', siteKey: '' });
   const [analyticsSettings, setAnalyticsSettings] = useState({ enabled: false, measurementId: '' });
@@ -218,10 +218,10 @@ export default function App() {
   // Dynamic Country SEO Document Title
   useEffect(() => {
     const titles = {
-      se: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در سوئد | Farsi Nord',
-      no: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در نروژ | Farsi Nord',
-      dk: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در دانمارک | Farsi Nord',
-      fi: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در فنلاند | Farsi Nord'
+      se: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در سوئد | فارسی نورد',
+      no: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در نروژ | فارسی نورد',
+      dk: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در دانمارک | فارسی نورد',
+      fi: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در فنلاند | فارسی نورد'
     };
     document.title = titles[selectedCountry] || titles.se;
   }, [selectedCountry]);

@@ -33,7 +33,7 @@ const DROPDOWN_ICON_MAP = {
 };
 
 export default function Navbar({ 
-  siteName = 'Farsi Nord',
+  siteName = 'فارسی نورد',
   logoUrl,
   selectedCity = 'all',
   onSelectCity,
@@ -192,16 +192,13 @@ export default function Navbar({
                 <img
                   src={logoUrl}
                   alt={siteName}
-                  className="h-10 w-auto max-w-[155px] object-contain shrink-0"
+                  className="h-10 w-auto max-w-[165px] object-contain shrink-0"
                 />
               ) : (
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0066CC] text-white font-extrabold text-xs shadow-xs transition-all duration-150 group-hover:scale-105 active:scale-95 shrink-0">
                   <span className="font-mono font-black">FN</span>
                 </div>
               )}
-              <span className="font-extrabold text-[17px] tracking-tight text-[#1D1D1F] group-hover:text-[#0066CC] transition-colors">
-                {siteName}
-              </span>
             </a>
 
             {/* Desktop Category Navigation */}
