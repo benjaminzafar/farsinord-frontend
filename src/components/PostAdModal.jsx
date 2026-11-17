@@ -106,6 +106,7 @@ export default function PostAdModal({
   const [contactWhatsapp, setContactWhatsapp] = useState('');
   const [contactTelegram, setContactTelegram] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactWebsite, setContactWebsite] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imagesList, setImagesList] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
@@ -275,6 +276,7 @@ export default function PostAdModal({
             contact_whatsapp: contactWhatsapp.trim() || null,
             contact_telegram: contactTelegram.trim() || null,
             contact_email: contactEmail.trim() || null,
+            contact_website: contactWebsite.trim() || null,
             images: allImages.length > 0 ? allImages : ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80'],
             is_featured: false,
             status: 'active',
@@ -834,18 +836,33 @@ export default function PostAdModal({
                   </div>
                 </div>
 
-                <div className="mt-3">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    ایمیل
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="email@example.com"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none text-left"
-                    dir="ltr"
-                  />
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ایمیل
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="email@example.com"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none text-left"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      وب‌سایت / لینک (اختیاری)
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com"
+                      value={contactWebsite}
+                      onChange={(e) => setContactWebsite(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none text-left font-mono"
+                      dir="ltr"
+                    />
+                  </div>
                 </div>
               </div>
 

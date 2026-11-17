@@ -17,6 +17,7 @@ import {
   Crown,
   Lock,
   ZoomIn,
+  Globe,
   X
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
@@ -445,54 +446,77 @@ export default function AdDetailPage({
                   </div>
                 ) : (
                   <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {/* Phone (No raw phone number displayed) */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Phone (Circle Icon Only) */}
                       {ad.contact_phone && (
                         <a
                           href={`tel:${ad.contact_phone.replace(/[^0-9+]/g, '')}`}
-                          className="flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94]"
+                          title="تماس مستقیم"
+                          aria-label="تماس مستقیم"
+                          className="h-12 w-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
                         >
-                          <Phone size={17} />
-                          <span>تماس مستقیم</span>
+                          <Phone size={19} />
                         </a>
                       )}
 
-                      {/* WhatsApp */}
+                      {/* WhatsApp (Circle Icon Only) */}
                       {ad.contact_whatsapp && (
                         <a
                           href={`https://wa.me/${ad.contact_whatsapp.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white text-sm font-bold shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94]"
+                          title="پیام در واتساپ"
+                          aria-label="پیام در واتساپ"
+                          className="h-12 w-12 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
                         >
-                          <MessageSquare size={17} />
-                          <span>پیام در واتساپ</span>
+                          <MessageSquare size={19} />
                         </a>
                       )}
 
-                      {/* Telegram */}
+                      {/* Telegram (Circle Icon Only) */}
                       {ad.contact_telegram && (
                         <a
                           href={/^https?:\/\//i.test(ad.contact_telegram.trim()) ? ad.contact_telegram.trim() : `https://t.me/${ad.contact_telegram.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-[#229ED9] hover:bg-[#1e8ec3] text-white text-sm font-bold shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94]"
+                          title="گفتگو در تلگرام"
+                          aria-label="گفتگو در تلگرام"
+                          className="h-12 w-12 rounded-full bg-[#229ED9] hover:bg-[#1e8ec3] text-white flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
                         >
-                          <Send size={17} />
-                          <span>گفتگو در تلگرام</span>
+                          <Send size={19} />
                         </a>
                       )}
 
-                      {/* Email */}
+                      {/* Email (Circle Icon Only) */}
                       {ad.contact_email && (
                         <a
                           href={`mailto:${ad.contact_email}?subject=پرسش درباره آگهی ${ad.reference_number}`}
-                          className="flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94]"
+                          title="ارسال ایمیل"
+                          aria-label="ارسال ایمیل"
+                          className="h-12 w-12 rounded-full bg-[#1D1D1F] hover:bg-[#3A3A3C] text-white flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
                         >
-                          <Mail size={17} />
-                          <span>ارسال ایمیل</span>
+                          <Mail size={19} />
                         </a>
                       )}
+
+                      {/* Website URL (Circle Icon Only) */}
+                      {ad.contact_website && (() => {
+                        const raw = ad.contact_website.trim();
+                        if (/^(javascript|data|vbscript):/i.test(raw)) return null;
+                        const safeHref = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+                        return (
+                          <a
+                            href={safeHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="مشاهده وب‌سایت"
+                            aria-label="مشاهده وب‌سایت"
+                            className="h-12 w-12 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#D2D2D7] flex items-center justify-center shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.90]"
+                          >
+                            <Globe size={19} />
+                          </a>
+                        );
+                      })()}
                     </div>
 
                     {ad.contact_name && (
