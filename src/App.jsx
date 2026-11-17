@@ -792,15 +792,16 @@ export default function App() {
       )}
 
       {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-[#FBFBFC] border-b border-[#E5E5EA] py-2 sm:py-2.5 shadow-2xs">
+      <div className="sticky top-16 z-30 bg-[#FBFBFC]/95 backdrop-blur-md border-b border-[#E5E5EA] py-2 sm:py-2.5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
         <div
           ref={categoryStripRef}
-          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5"
+          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA] shadow-2xs"
         >
           {pillStyle.ready && (
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-full bg-[#0066CC] shadow-[0_2px_10px_rgba(0,102,204,0.25)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#0066CC] shadow-[0_2px_10px_rgba(0,102,204,0.25)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
               style={{
                 width: `${pillStyle.width}px`,
                 transform: `translate3d(${pillStyle.left}px, 0, 0)`,
@@ -817,17 +818,18 @@ export default function App() {
                 ref={(el) => { if (el) categoryPillRefs.current[cat.id] = el; }}
                 type="button"
                 onClick={() => handleCategoryChange(cat.id)}
-                className={`relative z-10 inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
+                className={`relative z-10 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
                   isActive
-                    ? (pillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-xs')
-                    : 'bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F]'
+                    ? (pillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs')
+                    : 'text-[#515154] hover:text-[#1D1D1F]'
                 }`}
               >
-                <CatIcon size={13} className={`transition-transform duration-200 ${isActive ? 'text-[#FBFBFC] scale-105 shrink-0' : 'text-[#515154] shrink-0'}`} />
+                <CatIcon size={13} className={`shrink-0 transition-colors duration-200 ${isActive ? 'text-[#FBFBFC]' : 'text-[#86868B]'}`} />
                 <span>{cat.fa}</span>
               </button>
             );
           })}
+        </div>
         </div>
       </div>
 
