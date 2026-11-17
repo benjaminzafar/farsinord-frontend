@@ -77,7 +77,7 @@ export default function Navbar({
     : 'همه شهرها';
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 select-none font-vazir shadow-none transition-colors" dir="rtl">
+    <header className="fixed top-0 inset-x-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-[#E6E4DD] select-none font-vazir shadow-none transition-colors" dir="rtl">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         
         {/* MOBILE VIEW: Soft Nordic Clean Palette (Search Capsule Right + Logo Left) */}
@@ -186,11 +186,11 @@ export default function Navbar({
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <span className="font-extrabold text-[17px] tracking-tight text-slate-950 group-hover:text-blue-600 transition-colors">
+                <span className="font-extrabold text-[17px] tracking-tight text-slate-950 group-hover:text-[#0F4C81] transition-colors">
                   {siteName}
                 </span>
                 <span className="text-[11px] text-slate-500 font-medium">
-                  نیازمندی‌های فارسی‌زبانان اسکاندیناوی
+                  نیازمندی‌های فارسی اسکاندیناوی
                 </span>
               </div>
             </a>
@@ -278,8 +278,8 @@ export default function Navbar({
                 onClick={() => setAdDropdownOpen(!adDropdownOpen)}
                 className={`flex items-center gap-2 h-10 px-4 rounded-full text-[13px] font-bold text-white transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shadow-xs active:scale-[0.94] ${
                   adDropdownOpen 
-                    ? 'bg-[#166fe5] ring-2 ring-blue-300' 
-                    : 'bg-[#1877F2] hover:bg-[#166fe5]'
+                    ? 'bg-[#0B3A63] ring-2 ring-[#0F4C81]/30' 
+                    : 'bg-[#0F4C81] hover:bg-[#0B3A63]'
                 }`}
                 aria-expanded={adDropdownOpen}
               >
@@ -308,7 +308,7 @@ export default function Navbar({
                         </div>
                         <div>
                           <span className="block font-bold text-slate-900">ثبت آگهی</span>
-                          <span className="text-[10.5px] text-slate-500 font-normal">درج رایگان آگهی جدید</span>
+                          <span className="text-[10.5px] text-slate-500 font-normal">درج رایگان آگهی</span>
                         </div>
                       </div>
                       <ChevronLeft size={14} className="text-slate-400 group-hover:text-blue-600" />
@@ -329,7 +329,7 @@ export default function Navbar({
                         </div>
                         <div>
                           <span className="block font-bold text-slate-900">مدیریت آگهی</span>
-                          <span className="text-[10.5px] text-slate-500 font-normal">ویرایش یا حذف با پین کد</span>
+                          <span className="text-[10.5px] text-slate-500 font-normal">ویرایش یا حذف آگهی</span>
                         </div>
                       </div>
                       <ChevronLeft size={14} className="text-slate-400 group-hover:text-slate-600" />

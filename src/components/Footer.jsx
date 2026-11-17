@@ -16,14 +16,14 @@ export default function Footer({
   const scandiCities = [
     { name: 'استکهلم (سوئد)', id: 'Stockholm' },
     { name: 'اسلو (نروژ)', id: 'Oslo' },
-    { name: 'کپنهاگ (دانمارک)', id: 'Copenhagen' },
-    { name: 'یوتبوری (سوئد)', id: 'Göteborg' },
+    { name: 'کپنهاگ (دانمارک)', id: 'København' },
+    { name: 'گوتنبرگ (سوئد)', id: 'Göteborg' },
     { name: 'مالمو (سوئد)', id: 'Malmö' },
     { name: 'هلسینکی (فنلاند)', id: 'Helsinki' },
   ];
 
   return (
-    <footer className="border-t border-slate-200/80 bg-white pt-10 pb-8 text-slate-600 text-xs select-none font-vazir" dir="rtl">
+    <footer className="border-t border-[#E6E4DD] bg-white pt-10 pb-8 text-slate-600 text-xs select-none font-vazir" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
         {/* Brand Header */}

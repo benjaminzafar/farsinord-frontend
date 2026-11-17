@@ -496,20 +496,22 @@ export default function App() {
 
   const activeHero = HERO_BACKGROUNDS[selectedCountry] || HERO_BACKGROUNDS.se;
 
-  // Dynamic Hero Titles based on selected country
-  let heroHeading = 'مسکن، رستوران‌ها و خدمات فارسی‌زبانان در سوئد';
-  let heroSubheading = 'جامع‌ترین پرتال نیازمندی‌های فارسی‌زبانان در استکهلم، یوتبوری، مالمو و سراسر سوئد.';
+  // Dynamic Hero Titles based on selected country (natural, concise Persian)
+  let heroHeading = 'نیازمندی‌های فارسی‌زبانان سوئد';
+  let heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر سوئد';
 
   if (selectedCountry === 'no') {
-    heroHeading = 'مسکن، رستوران‌ها و مشاغل فارسی‌زبانان در نروژ';
-    heroSubheading = 'جامع‌ترین پرتال نیازمندی‌های فارسی‌زبانان در اسلو، برگن، تروندهایم و سراسر نروژ.';
+    heroHeading = 'نیازمندی‌های فارسی‌زبانان نروژ';
+    heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر نروژ';
   } else if (selectedCountry === 'dk') {
-    heroHeading = 'مسکن، رستوران‌ها و خدمات فارسی‌زبانان در دانمارک';
-    heroSubheading = 'جامع‌ترین پرتال نیازمندی‌های فارسی‌زبانان در کپنهاگ، آرهوس، اودنسه و سراسر دانمارک.';
+    heroHeading = 'نیازمندی‌های فارسی‌زبانان دانمارک';
+    heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر دانمارک';
   } else if (selectedCountry === 'fi') {
-    heroHeading = 'مسکن، رستوران‌ها و مشاغل فارسی‌زبانان در فنلاند';
-    heroSubheading = 'جامع‌ترین بازارچه و پرتال نیازمندی‌های فارسی‌زبانان در هلسینکی، اسپو، تامپره و سراسر فنلاند.';
+    heroHeading = 'نیازمندی‌های فارسی‌زبانان فنلاند';
+    heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر فنلاند';
   }
+
+  const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
 
   // Filter ads safely (handles nullable fields, memoized for performance)
   const filteredAds = useMemo(() => {
@@ -530,11 +532,34 @@ export default function App() {
     });
   }, [ads, selectedCountry, selectedCategory, selectedCity, searchQuery]);
 
+  // Sort ads according to selected sort option
+  const sortedAds = useMemo(() => {
+    const copy = [...filteredAds];
+    if (sortBy === 'most_viewed') {
+      return copy.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+    }
+    if (sortBy === 'price_asc') {
+      return copy.sort((a, b) => {
+        const pa = a.price ? Number(a.price) : Infinity;
+        const pb = b.price ? Number(b.price) : Infinity;
+        return pa - pb;
+      });
+    }
+    if (sortBy === 'price_desc') {
+      return copy.sort((a, b) => {
+        const pa = a.price ? Number(a.price) : -1;
+        const pb = b.price ? Number(b.price) : -1;
+        return pb - pa;
+      });
+    }
+    return copy;
+  }, [filteredAds, sortBy]);
+
   // Featured ads subset
   const featuredAds = useMemo(() => filteredAds.filter(a => a.is_featured), [filteredAds]);
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#f8fafc] text-stone-900 overflow-x-hidden w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#F7F6F2] text-stone-900 overflow-x-hidden w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
       {/* Geolocation Scandinavian Detection Pop-Up Modal */}
       <Suspense fallback={null}>
@@ -609,9 +634,9 @@ export default function App() {
           <div className="relative z-10 max-w-4xl mx-auto text-center space-y-2.5 sm:space-y-3.5">
             
             {/* Nordic Pill Tag */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/60 backdrop-blur-md text-blue-300 text-[10.5px] sm:text-[11px] font-bold border border-white/15 shadow-xs">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-              <span>پرتال نیازمندی‌های فارسی‌زبانان در سراسر اسکاندیناوی</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/60 backdrop-blur-md text-sky-200 text-[10.5px] sm:text-[11px] font-bold border border-white/15 shadow-xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
+              <span>بازارچه آنلاین فارسی‌زبانان اسکاندیناوی</span>
             </div>
 
             <h1 className="text-xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-snug sm:leading-tight px-1 break-words drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
@@ -665,10 +690,10 @@ export default function App() {
                   )}
                 </div>
 
-                {/* CTA Button (Meta Blue) */}
+                {/* CTA Button (Royal Nordic Sapphire) */}
                 <button
                   type="button"
-                  className="h-11 px-6 rounded-full bg-[#1877F2] hover:bg-[#166fe5] text-white text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
+                  className="h-11 px-6 rounded-full bg-[#0F4C81] hover:bg-[#0B3A63] text-white text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
                 >
                   <Search size={14} />
                   <span>{currentT.searchBtn}</span>
@@ -682,7 +707,7 @@ export default function App() {
       )}
 
       {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
+      <div className="sticky top-16 z-30 bg-white/85 backdrop-blur-xl border-b border-[#E6E4DD] py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
         <div
           ref={categoryStripRef}
           className="relative max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5"
@@ -690,7 +715,7 @@ export default function App() {
           {pillStyle.ready && (
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-full bg-[#1877F2] shadow-[0_2px_10px_rgba(24,119,242,0.28)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+              className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-full bg-[#0F4C81] shadow-[0_2px_10px_rgba(15,76,129,0.28)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
               style={{
                 width: `${pillStyle.width}px`,
                 transform: `translate3d(${pillStyle.left}px, 0, 0)`,
@@ -709,8 +734,8 @@ export default function App() {
                 onClick={() => handleCategoryChange(cat.id)}
                 className={`relative z-10 inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
                   isActive
-                    ? (pillStyle.ready ? 'text-white' : 'bg-[#1877F2] text-white shadow-xs')
-                    : 'bg-slate-100/85 hover:bg-slate-200/80 text-slate-700 hover:text-slate-950'
+                    ? (pillStyle.ready ? 'text-white' : 'bg-[#0F4C81] text-white shadow-xs')
+                    : 'bg-[#F0EFEA] hover:bg-[#E6E4DD] text-slate-700 hover:text-slate-950'
                 }`}
               >
                 <CatIcon size={13} className={`transition-transform duration-200 ${isActive ? 'text-white scale-105 shrink-0' : 'text-slate-500 shrink-0'}`} />
@@ -758,73 +783,92 @@ export default function App() {
 
         {/* Regular Stream / All Ads */}
         <section className="space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-1">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 {currentT.recentAds}
               </h2>
-              <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold tabular-nums">
-                {filteredAds.length} آگهی
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-white border border-[#E6E4DD] text-slate-600 text-[11px] font-bold tabular-nums">
+                {sortedAds.length} آگهی
               </span>
               {selectedCategory !== 'all' && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EFF5FB] text-[#0F4C81] text-xs font-semibold border border-[#D5E4F4]">
                   <span>{CATEGORIES.find(c => c.id === selectedCategory)?.fa}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedCategory('all')}
-                    className="hover:text-blue-900 p-0.5 cursor-pointer"
+                    className="hover:text-[#0B3A63] p-0.5 cursor-pointer"
                     title="حذف فیلتر دسته"
                   >
                     <X size={12} />
                   </button>
                 </div>
               )}
+              {(selectedCategory !== 'all' || selectedCity !== 'all' || searchQuery) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedCity('all');
+                    setSearchQuery('');
+                  }}
+                  className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                >
+                  <RefreshCw size={12} />
+                  <span>حذف فیلترها</span>
+                </button>
+              )}
             </div>
 
-            {/* Clear filters if active */}
-            {(selectedCategory !== 'all' || selectedCity !== 'all' || searchQuery) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCategory('all');
-                  setSelectedCity('all');
-                  setSearchQuery('');
-                }}
-                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
-              >
-                <RefreshCw size={12} />
-                <span>{lang === 'fa' ? 'پاک کردن فیلترها' : 'Rensa filter'}</span>
-              </button>
-            )}
+            {/* Apple-feel Sort Pill Bar */}
+            <div className="flex items-center gap-1 bg-white p-1 rounded-full border border-[#E6E4DD] shadow-2xs overflow-x-auto no-scrollbar self-start sm:self-auto">
+              {[
+                { id: 'newest', label: 'جدیدترین' },
+                { id: 'most_viewed', label: 'پربازدیدترین' },
+                { id: 'price_asc', label: 'ارزان‌ترین' },
+                { id: 'price_desc', label: 'گران‌ترین' },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSortBy(s.id)}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer ${
+                    sortBy === s.id
+                      ? 'bg-[#0F4C81] text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#F7F6F2]'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {loading ? (
             /* Loading skeletons */
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
               {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-stone-200/60 animate-pulse" />
+                <div key={i} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-[#EAE8E1]/70 animate-pulse" />
               ))}
             </div>
-          ) : filteredAds.length === 0 ? (
+          ) : sortedAds.length === 0 ? (
             /* Empty State */
-            <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center space-y-3">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-400">
+            <div className="rounded-2xl border border-dashed border-[#D8D5CC] bg-white p-10 text-center space-y-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F7F6F2] text-slate-400">
                 <Search size={20} />
               </div>
               <div className="space-y-0.5">
-                <h3 className="text-sm font-semibold text-stone-800">
+                <h3 className="text-sm font-semibold text-slate-800">
                   {currentT.noAdsFound}
                 </h3>
-                <p className="text-xs text-stone-400">
-                  {lang === 'fa' 
-                    ? 'اولین نفری باشید که در این دسته آگهی ثبت می‌کند.' 
-                    : 'Bli den första att lägga upp en annons i denna kategori.'}
+                <p className="text-xs text-slate-400">
+                  فیلترها را تغییر دهید یا اولین آگهی را ثبت کنید.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setPostAdOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs shadow-xs active:scale-95 transition-all"
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#0F4C81] hover:bg-[#0B3A63] text-white font-bold text-xs shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
               >
                 <PlusCircle size={14} />
                 <span>{currentT.postAdBtn}</span>
@@ -833,7 +877,7 @@ export default function App() {
           ) : (
             /* Ads Grid */
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
-              {filteredAds.map(ad => (
+              {sortedAds.map(ad => (
                 <AdCard
                   key={ad.id}
                   ad={ad}
