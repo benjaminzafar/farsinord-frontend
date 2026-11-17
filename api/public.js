@@ -42,14 +42,20 @@ function generatePinCode() {
   return code;
 }
 
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://swedpersiska.vercel.app,https://farsinord.vercel.app,https://farsinord-admin.vercel.app')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && (ALLOWED_ORIGINS.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
 }
 
 export default async function handler(req, res) {
@@ -143,8 +149,7 @@ export default async function handler(req, res) {
           contact_whatsapp,
           contact_telegram,
           contact_email,
-          images,
-          pin_code
+          images
         } = body;
 
         if (!title || !description || !contact_name) {
@@ -157,9 +162,7 @@ export default async function handler(req, res) {
           : ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80'];
 
         const refNum = generateReferenceNumber();
-        const finalPin = pin_code && /^\d{4,8}$/.test(String(pin_code).trim())
-          ? String(pin_code).trim()
-          : generatePinCode();
+        const finalPin = generatePinCode();
 
         const { data, error } = await supabase
           .from('swedpersiska_ads')
@@ -167,23 +170,24 @@ export default async function handler(req, res) {
             {
               reference_number: refNum,
               pin_code: finalPin,
-              title: String(title).trim(),
-              title_fa: String(title).trim(),
+              title: String(title).trim().slice(0, 160),
+              title_fa: String(title).trim().slice(0, 160),
               category: category || 'bostad',
               country: ['se', 'no', 'dk', 'fi'].includes(country) ? country : 'se',
-              city: String(city || 'Stockholm').trim(),
-              area: area ? String(area).trim() : null,
+              city: String(city || 'Stockholm').trim().slice(0, 80),
+              area: area ? String(area).trim().slice(0, 80) : null,
               price: price ? parseFloat(price) : null,
               price_type: price_type || 'kr',
-              description: String(description).trim(),
-              contact_name: String(contact_name).trim(),
-              contact_phone: contact_phone ? String(contact_phone).trim() : null,
-              contact_whatsapp: contact_whatsapp ? String(contact_whatsapp).trim() : null,
-              contact_telegram: contact_telegram ? String(contact_telegram).trim() : null,
-              contact_email: contact_email ? String(contact_email).trim() : null,
+              description: String(description).trim().slice(0, 4000),
+              contact_name: String(contact_name).trim().slice(0, 100),
+              contact_phone: contact_phone ? String(contact_phone).trim().slice(0, 40) : null,
+              contact_whatsapp: contact_whatsapp ? String(contact_whatsapp).trim().slice(0, 40) : null,
+              contact_telegram: contact_telegram ? String(contact_telegram).trim().slice(0, 80) : null,
+              contact_email: contact_email ? String(contact_email).trim().slice(0, 120) : null,
+              contact_website: body.contact_website && isSafeHttpUrl(body.contact_website) ? String(body.contact_website).trim().slice(0, 300) : null,
               images: finalImages,
               is_featured: false,
-              status: 'active',
+              status: 'pending',
               views_count: 1
             }
           ])
@@ -220,14 +224,30 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین الزامی است.' });
         }
 
+        const { data: existingAd } = await supabase
+          .from('swedpersiska_ads')
+          .select('status')
+          .eq('id', id)
+          .eq('pin_code', String(pin_code).trim())
+          .maybeSingle();
+
+        if (!existingAd) {
+          return res.status(401).json({ ok: false, error: 'عدم دسترسی یا پین نامعتبر.' });
+        }
+
+        // Prevent pending ads from self-promoting to active via update_ad
+        const nextStatus = existingAd.status === 'pending'
+          ? 'pending'
+          : (status === 'hidden' ? 'hidden' : 'active');
+
         const { data, error } = await supabase
           .from('swedpersiska_ads')
           .update({
-            title: String(title || '').trim(),
+            title: String(title || '').trim().slice(0, 160),
             price: price ? parseFloat(price) : null,
-            description: String(description || '').trim(),
-            status: status === 'hidden' ? 'hidden' : 'active',
-            contact_phone: contact_phone ? String(contact_phone).trim() : null,
+            description: String(description || '').trim().slice(0, 4000),
+            status: nextStatus,
+            contact_phone: contact_phone ? String(contact_phone).trim().slice(0, 40) : null,
             updated_at: new Date().toISOString()
           })
           .eq('id', id)
@@ -271,6 +291,16 @@ export default async function handler(req, res) {
       if (action === 'promote_ad') {
         const { id } = body;
         if (!id) return res.status(400).json({ ok: false, error: 'Missing ad ID' });
+
+        const { data: stripeRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'stripe_settings')
+          .maybeSingle();
+
+        if (stripeRow?.value?.mode === 'live') {
+          return res.status(403).json({ ok: false, error: 'ارتقای ویژه در حالت واقعی نیازمند تایید پرداخت است.' });
+        }
 
         const { data, error } = await supabase
           .from('swedpersiska_ads')
