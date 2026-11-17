@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, X, Check, Globe, ArrowLeft, ShieldCheck, Cookie, SlidersHorizontal } from 'lucide-react';
+import { MapPin, X, Check, Globe, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { COUNTRIES } from '../lib/translations';
 import { getGdprConsent, saveGdprConsent } from '../lib/gdpr';
 
@@ -38,7 +38,6 @@ export default function CountryBanner({
   const [analyticsChecked, setAnalyticsChecked] = useState(() => Boolean(existingConsent?.analytics));
   const [gdprError, setGdprError] = useState(false);
 
-  // Sync consent state whenever modal opens
   useEffect(() => {
     if (isOpen) {
       const latest = getGdprConsent();
@@ -93,7 +92,6 @@ export default function CountryBanner({
     if (onClose) onClose();
   };
 
-  // Close on Escape key only if GDPR consent was already granted
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && isOpen && hasConsented) {
@@ -113,55 +111,51 @@ export default function CountryBanner({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-vazir select-none" dir="rtl">
 
-      {/* Backdrop */}
+      {/* Calm Dimmed Backdrop */}
       <div
-        className="fixed inset-0 bg-[#1D1D1F]/60 transition-opacity duration-200"
+        className="fixed inset-0 bg-[#1D1D1F]/55 transition-opacity duration-200"
         onClick={handleDismiss}
       />
 
-      {/* Pop-Up Modal Card */}
-      <div className="relative w-full max-w-md bg-[#FBFBFC] rounded-3xl shadow-[0_20px_60px_rgba(29,29,31,0.22)] border border-[#E5E5EA] overflow-hidden z-10 p-5 sm:p-7 space-y-4">
+      {/* Modal Surface */}
+      <div className="relative w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-[#FBFBFC] rounded-[28px] shadow-[0_24px_70px_rgba(29,29,31,0.22)] border border-[#E5E5EA] z-10 p-6 sm:p-7 space-y-5">
 
         {/* Close Button (shown after initial GDPR consent) */}
         {hasConsented && (
           <button
             type="button"
             onClick={handleDismiss}
-            className="absolute top-5 start-5 p-2 rounded-full text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] active:scale-95 transition-all cursor-pointer"
+            className="absolute top-5 start-5 h-8 w-8 rounded-full flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] active:scale-95 transition-all cursor-pointer"
             title="بستن پنجره"
           >
-            <X size={18} />
+            <X size={17} />
           </button>
         )}
 
         {/* Header */}
-        <div className="text-center space-y-2 pt-1">
-          <div className="inline-flex items-center justify-center h-11 w-11 rounded-2xl bg-[#0066CC]/10 text-[#0066CC] border border-[#0066CC]/15">
-            <Globe size={22} />
+        <div className="text-center space-y-2.5">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-[#0066CC]/10 text-[#0066CC]">
+            <Globe size={22} strokeWidth={1.9} />
           </div>
 
           <div className="space-y-1">
-            <span className="text-[10.5px] font-bold text-[#0066CC] bg-[#0066CC]/10 px-2.5 py-0.5 rounded-full">
-              پرتال جامع نیازمندی‌های فارسی‌زبانان اسکاندیناوی
-            </span>
-            <h2 className="text-lg sm:text-xl font-black text-[#1D1D1F] tracking-tight pt-1">
-              انتخاب کشور و تایید قوانین (GDPR)
+            <h2 className="text-[20px] sm:text-[22px] font-black text-[#1D1D1F] tracking-tight">
+              کشور خود را انتخاب کنید
             </h2>
+            <p className="text-xs text-[#6E6E73]">
+              نیازمندی‌های فارسی‌زبانان اسکاندیناوی
+            </p>
           </div>
 
-          <div className="p-2 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] text-xs text-[#515154] flex items-center justify-center gap-2">
-            <MapPin size={14} className="text-[#0066CC] shrink-0" />
-            <span>
-              موقعیت شناسایی‌شده شما:{' '}
-              <strong className="font-extrabold text-[#1D1D1F] mx-0.5 px-2 py-0.5 rounded-lg bg-[#FBFBFC] border border-[#E5E5EA]">
-                {detectedObj.nameFa}
-              </strong>
-            </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] text-[11.5px] text-[#515154]">
+            <MapPin size={13} className="text-[#0066CC] shrink-0" />
+            <span>موقعیت شما:</span>
+            <strong className="font-bold text-[#1D1D1F]">{detectedObj.nameFa}</strong>
           </div>
         </div>
 
-        {/* 4 Scandinavian Countries Selection Grid */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* 2x2 Country Grid */}
+        <div className="grid grid-cols-2 gap-2.5">
           {COUNTRIES.map(country => {
             const isSelected = activeChoice === country.id;
             const isDetected = detectedCountryId === country.id;
@@ -171,24 +165,25 @@ export default function CountryBanner({
                 key={country.id}
                 type="button"
                 onClick={() => setActiveChoice(country.id)}
-                className={`relative flex items-center justify-between p-3 rounded-2xl border text-right transition-all cursor-pointer active:scale-[0.98] ${
+                className={`group relative flex items-center justify-between px-3.5 py-3 rounded-2xl border text-right transition-all cursor-pointer active:scale-[0.98] ${
                   isSelected
-                    ? 'border-[#0066CC] bg-[#0066CC]/6 ring-1 ring-[#0066CC]'
+                    ? 'border-[#0066CC] bg-[#0066CC]/[0.05] shadow-[0_0_0_1px_#0066CC]'
                     : 'border-[#E5E5EA] bg-[#FBFBFC] hover:bg-[#F5F5F7] hover:border-[#D2D2D7]'
                 }`}
               >
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className={`text-[13.5px] font-bold ${isSelected ? 'text-[#0066CC]' : 'text-[#1D1D1F]'}`}>
+                    <span className={`text-[14px] font-bold truncate ${isSelected ? 'text-[#0066CC]' : 'text-[#1D1D1F]'}`}>
                       {country.nameFa}
                     </span>
                     {isDetected && (
-                      <span className="text-[9.5px] font-semibold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800">
-                        شما
-                      </span>
+                      <span
+                        className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0"
+                        title="موقعیت فعلی شما"
+                      />
                     )}
                   </div>
-                  <span className="text-[11px] text-[#6E6E73] font-medium block pt-0.5">
+                  <span className="text-[11px] text-[#6E6E73] font-medium block mt-0.5">
                     {country.nameNative}
                   </span>
                 </div>
@@ -196,22 +191,23 @@ export default function CountryBanner({
                 <div className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all shrink-0 ${
                   isSelected
                     ? 'border-[#0066CC] bg-[#0066CC] text-white'
-                    : 'border-[#D2D2D7] bg-[#FBFBFC]'
+                    : 'border-[#D2D2D7] bg-[#FBFBFC] group-hover:border-[#AEAEB2]'
                 }`}>
-                  {isSelected && <Check size={12} strokeWidth={3} />}
+                  {isSelected && <Check size={11.5} strokeWidth={3} />}
                 </div>
               </button>
             );
           })}
         </div>
 
-        {/* EU GDPR & Cookies Acceptance Box */}
-        <div className={`p-3.5 rounded-2xl border space-y-2.5 transition-colors ${
+        {/* EU GDPR & Cookies Card */}
+        <div className={`rounded-2xl border p-4 space-y-3 transition-colors ${
           gdprError && !gdprChecked
             ? 'border-red-400 bg-red-50/70'
             : 'border-[#E5E5EA] bg-[#F5F5F7]'
         }`}>
-          <label className="flex items-start gap-2.5 cursor-pointer text-xs leading-relaxed">
+          {/* Required GDPR Checkbox Row */}
+          <label className="flex items-start gap-3 cursor-pointer group">
             <input
               type="checkbox"
               checked={gdprChecked}
@@ -219,75 +215,98 @@ export default function CountryBanner({
                 setGdprChecked(e.target.checked);
                 if (e.target.checked) setGdprError(false);
               }}
-              className="mt-0.5 h-4 w-4 rounded border-[#D2D2D7] text-[#0066CC] focus:ring-[#0066CC] cursor-pointer shrink-0 accent-[#0066CC]"
+              className="sr-only"
             />
-            <span className="text-[#1D1D1F] font-semibold">
-              قوانین حفاظت از داده‌های اتحادیه اروپا (<span className="text-[#0066CC]">EU GDPR</span>) و کوکی‌های ضروری سایت را مطالعه کرده و می‌پذیرم.
+            <span
+              aria-hidden="true"
+              className={`mt-0.5 h-5 w-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                gdprChecked
+                  ? 'bg-[#0066CC] border-[#0066CC] text-white shadow-2xs'
+                  : gdprError
+                    ? 'bg-[#FBFBFC] border-red-400'
+                    : 'bg-[#FBFBFC] border-[#C7C7CC] group-hover:border-[#0066CC]'
+              }`}
+            >
+              {gdprChecked && <Check size={13} strokeWidth={3} />}
+            </span>
+            <span className="text-[12px] leading-relaxed text-[#1D1D1F] font-semibold">
+              قوانین حریم خصوصی (<span className="text-[#0066CC] font-bold">EU GDPR</span>) و کوکی‌های ضروری سایت را می‌پذیرم.
               <span className="text-red-500 ms-1">*</span>
             </span>
           </label>
 
-          <label className="flex items-start gap-2.5 cursor-pointer text-[11.5px] leading-relaxed">
+          {/* Optional Analytics Toggle Row */}
+          <label className="flex items-center justify-between gap-3 pt-2.5 border-t border-[#E5E5EA] cursor-pointer">
+            <span className="text-[11.5px] text-[#515154] leading-snug">
+              کوکی‌های آمار و بهبود سایت (اختیاری)
+            </span>
             <input
               type="checkbox"
               checked={analyticsChecked}
               onChange={(e) => setAnalyticsChecked(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-[#D2D2D7] text-[#0066CC] focus:ring-[#0066CC] cursor-pointer shrink-0 accent-[#0066CC]"
+              className="sr-only"
             />
-            <span className="text-[#515154]">
-              اجازه استفاده از کوکی‌های آمار و تحلیل (Google Analytics) برای بهبود تجربه کاربری (اختیاری)
+            <span
+              aria-hidden="true"
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                analyticsChecked ? 'bg-[#0066CC]' : 'bg-[#D2D2D7]'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white shadow-xs transform transition-transform duration-200 ${
+                  analyticsChecked ? '-translate-x-4.5' : '-translate-x-0.5'
+                }`}
+              />
             </span>
           </label>
 
           {gdprError && !gdprChecked && (
-            <p className="text-[11px] font-bold text-red-600">
-              برای ورود به سایت، لطفاً ابتدا کادر تایید قوانین EU GDPR را تیک بزنید.
+            <p className="text-[11px] font-bold text-red-600 flex items-center gap-1.5 pt-0.5">
+              <ShieldCheck size={13} className="shrink-0" />
+              <span>برای ورود به سایت، ابتدا تایید قوانین EU GDPR را انتخاب کنید.</span>
             </p>
           )}
 
-          {/* Quick links to Privacy Policy, Cookie Policy & Cookie Settings */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1.5 border-t border-[#E5E5EA] text-[11px] font-bold text-[#0066CC]">
+          {/* Clean Inline Legal Links */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 border-t border-[#E5E5EA] text-[11px] font-semibold text-[#0066CC]">
             <button
               type="button"
               onClick={() => onOpenLegal?.('privacy')}
-              className="inline-flex items-center gap-1 hover:underline cursor-pointer"
+              className="hover:underline cursor-pointer"
             >
-              <ShieldCheck size={12} />
-              <span>حریم خصوصی (GDPR)</span>
+              حریم خصوصی (GDPR)
             </button>
+            <span className="text-[#C7C7CC]">•</span>
             <button
               type="button"
               onClick={() => onOpenLegal?.('cookies')}
-              className="inline-flex items-center gap-1 hover:underline cursor-pointer"
+              className="hover:underline cursor-pointer"
             >
-              <Cookie size={12} />
-              <span>سیاست کوکی‌ها</span>
+              سیاست کوکی‌ها
             </button>
+            <span className="text-[#C7C7CC]">•</span>
             <button
               type="button"
               onClick={() => onOpenLegal?.('settings')}
-              className="inline-flex items-center gap-1 hover:underline cursor-pointer"
+              className="hover:underline cursor-pointer"
             >
-              <SlidersHorizontal size={12} />
-              <span>تنظیمات کوکی‌ها</span>
+              تنظیمات کوکی‌ها
             </button>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-1.5 pt-0.5">
+        {/* Primary CTA */}
+        <div className="space-y-1.5">
           <button
             type="button"
             onClick={() => handleConfirm(activeChoice)}
-            className={`w-full h-11 rounded-full text-white text-xs sm:text-sm font-bold active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`w-full h-12 rounded-full text-white text-[13.5px] font-bold active:scale-[0.985] transition-all flex items-center justify-center gap-2 cursor-pointer ${
               gdprChecked
-                ? 'bg-[#0066CC] hover:bg-[#0055AA] shadow-sm'
-                : 'bg-[#0066CC]/60 hover:bg-[#0066CC]/75'
+                ? 'bg-[#0066CC] hover:bg-[#0055AA] shadow-[0_6px_18px_rgba(0,102,204,0.26)]'
+                : 'bg-[#0066CC]/55 hover:bg-[#0066CC]/70'
             }`}
           >
-            <span>
-              تایید و ورود به بخش {chosenObj.nameFa}
-            </span>
+            <span>تایید و ورود به {chosenObj.nameFa}</span>
             <ArrowLeft size={16} />
           </button>
 
