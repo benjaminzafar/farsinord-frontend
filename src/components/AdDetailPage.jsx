@@ -17,8 +17,6 @@ import {
   Crown,
   Lock,
   ZoomIn,
-  ZoomOut,
-  RotateCcw,
   X
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
@@ -42,6 +40,7 @@ export default function AdDetailPage({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({ active: false, moved: false, startX: 0, startY: 0, origX: 0, origY: 0 });
+  const touchRef = useRef({ mode: null, startDist: 0, startScale: 1, startX: 0, startY: 0, origX: 0, origY: 0, moved: false });
   const currentT = t[lang] || t.fa;
 
   // Scroll to top when ad changes (state resets via key={ad.id})
@@ -181,7 +180,7 @@ export default function AdDetailPage({
                   className="w-full h-full object-contain sm:object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
                 />
 
-                {/* Zoom Hint Button */}
+                {/* Subtle Circular Zoom Button */}
                 <button
                   type="button"
                   onClick={() => {
@@ -189,11 +188,10 @@ export default function AdDetailPage({
                     setPan({ x: 0, y: 0 });
                     setZoomOpen(true);
                   }}
-                  className="absolute bottom-3 end-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1D1D1F]/75 hover:bg-[#1D1D1F] text-white text-[11px] font-bold shadow-md transition-all cursor-pointer"
-                  title="بزرگنمایی تصویر"
+                  className="absolute bottom-3 end-3 h-9 w-9 rounded-full bg-[#1D1D1F]/70 hover:bg-[#1D1D1F] text-white flex items-center justify-center shadow-md transition-all cursor-pointer"
+                  title="مشاهده تمام‌صفحه"
                 >
-                  <ZoomIn size={14} />
-                  <span>بزرگنمایی</span>
+                  <ZoomIn size={16} />
                 </button>
 
                 {/* VIP / Featured Badge */}
@@ -542,88 +540,110 @@ export default function AdDetailPage({
         </div>
       </div>
 
-      {/* Full-Screen Photo Zoom Lightbox */}
+      {/* Apple-Style Full-Screen Photo Gallery & Pinch-Zoom Lightbox */}
       {zoomOpen && (
         <div
-          className="fixed inset-0 z-[70] bg-[#1D1D1F]/95 flex flex-col select-none font-vazir"
+          className="fixed inset-0 z-[70] bg-black/95 flex flex-col select-none font-vazir"
           dir="rtl"
           onWheel={(e) => {
             e.preventDefault();
             const delta = e.deltaY < 0 ? 0.25 : -0.25;
             setZoomScale((s) => {
-              const next = Math.min(3, Math.max(1, Number((s + delta).toFixed(2))));
+              const next = Math.min(3.5, Math.max(1, Number((s + delta).toFixed(2))));
               if (next === 1) setPan({ x: 0, y: 0 });
               return next;
             });
           }}
         >
-          {/* Top Controls Bar */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/10 text-white shrink-0">
+          {/* Floating Minimal Top Bar */}
+          <div className="flex items-center justify-between px-4 sm:px-6 pt-4 pb-2 shrink-0 z-10">
             <button
               type="button"
               onClick={() => setZoomOpen(false)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+              className="h-10 w-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+              title="بستن"
             >
-              <X size={16} />
-              <span>بستن</span>
+              <X size={20} />
             </button>
 
-            <span className="text-xs font-semibold text-white/80 font-mono">
-              {activeImageIdx + 1} / {images.length}
-            </span>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() =>
-                  setZoomScale((s) => {
-                    const next = Math.max(1, Number((s - 0.5).toFixed(2)));
-                    if (next === 1) setPan({ x: 0, y: 0 });
-                    return next;
-                  })
-                }
-                disabled={zoomScale <= 1}
-                className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 flex items-center justify-center transition-colors cursor-pointer"
-                title="کوچک‌نمایی"
-              >
-                <ZoomOut size={15} />
-              </button>
-              <span className="text-[11px] font-mono w-11 text-center text-white/90">
-                {Math.round(zoomScale * 100)}%
+            {images.length > 1 && (
+              <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold font-mono">
+                {activeImageIdx + 1} / {images.length}
               </span>
-              <button
-                type="button"
-                onClick={() => setZoomScale((s) => Math.min(3, Number((s + 0.5).toFixed(2))))}
-                disabled={zoomScale >= 3}
-                className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 flex items-center justify-center transition-colors cursor-pointer"
-                title="بزرگنمایی"
-              >
-                <ZoomIn size={15} />
-              </button>
-              {zoomScale > 1 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setZoomScale(1);
-                    setPan({ x: 0, y: 0 });
-                  }}
-                  className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
-                  title="بازنشانی"
-                >
-                  <RotateCcw size={14} />
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
-          {/* Zoomable Stage */}
+          {/* Interactive Stage: Pinch-to-Zoom + Swipe on Mobile, Click-Zoom + Drag on Desktop */}
           <div
-            className="relative flex-1 flex items-center justify-center overflow-hidden p-4 touch-none"
+            className="relative flex-1 flex items-center justify-center overflow-hidden px-2 sm:px-6 touch-none"
             onClick={(e) => {
-              if (e.target === e.currentTarget) setZoomOpen(false);
+              if (e.target === e.currentTarget && zoomScale === 1) setZoomOpen(false);
+            }}
+            onTouchStart={(e) => {
+              if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                setIsDragging(true);
+                touchRef.current = {
+                  mode: 'pinch',
+                  startDist: Math.hypot(dx, dy),
+                  startScale: zoomScale,
+                  startX: 0,
+                  startY: 0,
+                  origX: pan.x,
+                  origY: pan.y,
+                  moved: true,
+                };
+              } else if (e.touches.length === 1) {
+                setIsDragging(true);
+                touchRef.current = {
+                  mode: zoomScale > 1 ? 'pan' : 'swipe',
+                  startDist: 0,
+                  startScale: zoomScale,
+                  startX: e.touches[0].clientX,
+                  startY: e.touches[0].clientY,
+                  origX: pan.x,
+                  origY: pan.y,
+                  moved: false,
+                };
+              }
+            }}
+            onTouchMove={(e) => {
+              const tState = touchRef.current;
+              if (tState.mode === 'pinch' && e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.hypot(dx, dy);
+                if (tState.startDist > 0) {
+                  const next = Math.min(3.5, Math.max(1, Number((tState.startScale * (dist / tState.startDist)).toFixed(2))));
+                  setZoomScale(next);
+                  if (next === 1) setPan({ x: 0, y: 0 });
+                }
+              } else if (tState.mode === 'pan' && e.touches.length === 1) {
+                const dx = e.touches[0].clientX - tState.startX;
+                const dy = e.touches[0].clientY - tState.startY;
+                if (Math.abs(dx) > 4 || Math.abs(dy) > 4) tState.moved = true;
+                setPan({ x: tState.origX + dx, y: tState.origY + dy });
+              } else if (tState.mode === 'swipe' && e.touches.length === 1) {
+                const dx = e.touches[0].clientX - tState.startX;
+                if (Math.abs(dx) > 10) tState.moved = true;
+              }
+            }}
+            onTouchEnd={(e) => {
+              const tState = touchRef.current;
+              setIsDragging(false);
+              if (tState.mode === 'swipe' && images.length > 1 && e.changedTouches.length === 1) {
+                const dx = e.changedTouches[0].clientX - tState.startX;
+                if (dx > 45) {
+                  setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                } else if (dx < -45) {
+                  setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                }
+              }
+              touchRef.current.mode = null;
             }}
             onPointerDown={(e) => {
-              if (zoomScale <= 1) return;
+              if (e.pointerType === 'touch' || zoomScale <= 1) return;
               setIsDragging(true);
               dragRef.current = {
                 active: true,
@@ -635,13 +655,14 @@ export default function AdDetailPage({
               };
             }}
             onPointerMove={(e) => {
-              if (!dragRef.current.active) return;
+              if (e.pointerType === 'touch' || !dragRef.current.active) return;
               const dx = e.clientX - dragRef.current.startX;
               const dy = e.clientY - dragRef.current.startY;
               if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragRef.current.moved = true;
               setPan({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
             }}
-            onPointerUp={() => {
+            onPointerUp={(e) => {
+              if (e.pointerType === 'touch') return;
               dragRef.current.active = false;
               setIsDragging(false);
             }}
@@ -652,22 +673,23 @@ export default function AdDetailPage({
               draggable={false}
               onClick={(e) => {
                 e.stopPropagation();
-                if (dragRef.current.moved) {
+                if (dragRef.current.moved || touchRef.current.moved) {
                   dragRef.current.moved = false;
+                  touchRef.current.moved = false;
                   return;
                 }
                 if (zoomScale > 1) {
                   setZoomScale(1);
                   setPan({ x: 0, y: 0 });
                 } else {
-                  setZoomScale(2);
+                  setZoomScale(2.2);
                 }
               }}
               style={{
                 transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoomScale})`,
-                transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+                transition: isDragging ? 'none' : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
               }}
-              className={`max-h-[82vh] max-w-[92vw] object-contain rounded-xl shadow-2xl ${
+              className={`max-h-[76vh] max-w-[94vw] object-contain rounded-lg ${
                 zoomScale > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-zoom-in'
               }`}
             />
@@ -682,7 +704,7 @@ export default function AdDetailPage({
                     setZoomScale(1);
                     setPan({ x: 0, y: 0 });
                   }}
-                  className="absolute start-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="hidden sm:flex absolute start-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/15 hover:bg-white/25 text-white items-center justify-center transition-colors cursor-pointer"
                 >
                   <ChevronRight size={22} />
                 </button>
@@ -694,13 +716,37 @@ export default function AdDetailPage({
                     setZoomScale(1);
                     setPan({ x: 0, y: 0 });
                   }}
-                  className="absolute end-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="hidden sm:flex absolute end-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/15 hover:bg-white/25 text-white items-center justify-center transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={22} />
                 </button>
               </>
             )}
           </div>
+
+          {/* Bottom Thumbnail Strip */}
+          {images.length > 1 && (
+            <div className="px-4 pb-5 pt-2 flex items-center justify-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setActiveImageIdx(idx);
+                    setZoomScale(1);
+                    setPan({ x: 0, y: 0 });
+                  }}
+                  className={`h-12 w-16 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                    activeImageIdx === idx
+                      ? 'border-white scale-105 opacity-100'
+                      : 'border-transparent opacity-50 hover:opacity-80'
+                  }`}
+                >
+                  <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
