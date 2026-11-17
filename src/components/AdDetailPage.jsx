@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
   MapPin, 
@@ -15,7 +15,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown,
-  Lock
+  Lock,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  X
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
 import { CATEGORIES, t } from '../lib/translations';
@@ -33,12 +37,47 @@ export default function AdDetailPage({
   const [copiedLink, setCopiedLink] = useState(false);
   const [contactRevealed, setContactRevealed] = useState(false);
   const [showTurnstileGate, setShowTurnstileGate] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ active: false, moved: false, startX: 0, startY: 0, origX: 0, origY: 0 });
   const currentT = t[lang] || t.fa;
 
   // Scroll to top when ad changes (state resets via key={ad.id})
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [ad?.id]);
+
+  const imagesCount = (ad?.images && ad.images.length > 0) ? ad.images.length : 1;
+
+  // Keyboard navigation & Escape in photo zoom lightbox
+  useEffect(() => {
+    if (!zoomOpen) return;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        setZoomOpen(false);
+      } else if (e.key === 'ArrowLeft' && imagesCount > 1) {
+        setActiveImageIdx((prev) => (prev < imagesCount - 1 ? prev + 1 : 0));
+        setZoomScale(1);
+        setPan({ x: 0, y: 0 });
+      } else if (e.key === 'ArrowRight' && imagesCount > 1) {
+        setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : imagesCount - 1));
+        setZoomScale(1);
+        setPan({ x: 0, y: 0 });
+      } else if (e.key === '+' || e.key === '=') {
+        setZoomScale((s) => Math.min(3, Number((s + 0.5).toFixed(2))));
+      } else if (e.key === '-') {
+        setZoomScale((s) => {
+          const next = Math.max(1, Number((s - 0.5).toFixed(2)));
+          if (next === 1) setPan({ x: 0, y: 0 });
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [zoomOpen, imagesCount]);
 
   if (!ad) return null;
 
@@ -94,12 +133,10 @@ export default function AdDetailPage({
               <span>بازگشت به آگهی‌ها</span>
             </button>
 
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 truncate">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#6E6E73] truncate">
               <span>خانه</span>
               <span>/</span>
-              <span className="text-slate-600 font-semibold">{catName}</span>
-              <span>/</span>
-              <span className="text-slate-900 font-bold truncate max-w-xs">{ad.title}</span>
+              <span className="text-[#1D1D1F] font-semibold">{catName}</span>
             </div>
           </div>
 
@@ -131,13 +168,33 @@ export default function AdDetailPage({
             
             {/* Gallery Card */}
             <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-3 sm:p-5 shadow-xs overflow-hidden space-y-3">
-              {/* Big Stage Image */}
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950">
+              {/* Big Stage Image (click to zoom) */}
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 group">
                 <img
                   src={images[activeImageIdx]}
                   alt={ad.title}
-                  className="w-full h-full object-contain sm:object-cover"
+                  onClick={() => {
+                    setZoomScale(1);
+                    setPan({ x: 0, y: 0 });
+                    setZoomOpen(true);
+                  }}
+                  className="w-full h-full object-contain sm:object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
                 />
+
+                {/* Zoom Hint Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoomScale(1);
+                    setPan({ x: 0, y: 0 });
+                    setZoomOpen(true);
+                  }}
+                  className="absolute bottom-3 end-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1D1D1F]/75 hover:bg-[#1D1D1F] text-white text-[11px] font-bold shadow-md transition-all cursor-pointer"
+                  title="بزرگنمایی تصویر"
+                >
+                  <ZoomIn size={14} />
+                  <span>بزرگنمایی</span>
+                </button>
 
                 {/* VIP / Featured Badge */}
                 {ad.is_featured && (
@@ -484,6 +541,168 @@ export default function AdDetailPage({
 
         </div>
       </div>
+
+      {/* Full-Screen Photo Zoom Lightbox */}
+      {zoomOpen && (
+        <div
+          className="fixed inset-0 z-[70] bg-[#1D1D1F]/95 flex flex-col select-none font-vazir"
+          dir="rtl"
+          onWheel={(e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.25 : -0.25;
+            setZoomScale((s) => {
+              const next = Math.min(3, Math.max(1, Number((s + delta).toFixed(2))));
+              if (next === 1) setPan({ x: 0, y: 0 });
+              return next;
+            });
+          }}
+        >
+          {/* Top Controls Bar */}
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/10 text-white shrink-0">
+            <button
+              type="button"
+              onClick={() => setZoomOpen(false)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+            >
+              <X size={16} />
+              <span>بستن</span>
+            </button>
+
+            <span className="text-xs font-semibold text-white/80 font-mono">
+              {activeImageIdx + 1} / {images.length}
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  setZoomScale((s) => {
+                    const next = Math.max(1, Number((s - 0.5).toFixed(2)));
+                    if (next === 1) setPan({ x: 0, y: 0 });
+                    return next;
+                  })
+                }
+                disabled={zoomScale <= 1}
+                className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 flex items-center justify-center transition-colors cursor-pointer"
+                title="کوچک‌نمایی"
+              >
+                <ZoomOut size={15} />
+              </button>
+              <span className="text-[11px] font-mono w-11 text-center text-white/90">
+                {Math.round(zoomScale * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setZoomScale((s) => Math.min(3, Number((s + 0.5).toFixed(2))))}
+                disabled={zoomScale >= 3}
+                className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 flex items-center justify-center transition-colors cursor-pointer"
+                title="بزرگنمایی"
+              >
+                <ZoomIn size={15} />
+              </button>
+              {zoomScale > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoomScale(1);
+                    setPan({ x: 0, y: 0 });
+                  }}
+                  className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
+                  title="بازنشانی"
+                >
+                  <RotateCcw size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Zoomable Stage */}
+          <div
+            className="relative flex-1 flex items-center justify-center overflow-hidden p-4 touch-none"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setZoomOpen(false);
+            }}
+            onPointerDown={(e) => {
+              if (zoomScale <= 1) return;
+              setIsDragging(true);
+              dragRef.current = {
+                active: true,
+                moved: false,
+                startX: e.clientX,
+                startY: e.clientY,
+                origX: pan.x,
+                origY: pan.y,
+              };
+            }}
+            onPointerMove={(e) => {
+              if (!dragRef.current.active) return;
+              const dx = e.clientX - dragRef.current.startX;
+              const dy = e.clientY - dragRef.current.startY;
+              if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragRef.current.moved = true;
+              setPan({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
+            }}
+            onPointerUp={() => {
+              dragRef.current.active = false;
+              setIsDragging(false);
+            }}
+          >
+            <img
+              src={images[activeImageIdx]}
+              alt={ad.title}
+              draggable={false}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (dragRef.current.moved) {
+                  dragRef.current.moved = false;
+                  return;
+                }
+                if (zoomScale > 1) {
+                  setZoomScale(1);
+                  setPan({ x: 0, y: 0 });
+                } else {
+                  setZoomScale(2);
+                }
+              }}
+              style={{
+                transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoomScale})`,
+                transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+              className={`max-h-[82vh] max-w-[92vw] object-contain rounded-xl shadow-2xl ${
+                zoomScale > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-zoom-in'
+              }`}
+            />
+
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                    setZoomScale(1);
+                    setPan({ x: 0, y: 0 });
+                  }}
+                  className="absolute start-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <ChevronRight size={22} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                    setZoomScale(1);
+                    setPan({ x: 0, y: 0 });
+                  }}
+                  className="absolute end-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
