@@ -985,7 +985,7 @@ export default function App() {
                 handleClosePostAd();
                 handleOpenPayment(newAd);
               } else {
-                showToast(`آگهی با کد مرجع ${newAd.reference_number} با موفقیت ثبت شد.`);
+                showToast(`آگهی با کد مرجع ${newAd.reference_number} ثبت شد و پس از تایید مدیر منتشر می‌شود.`);
               }
             }}
           />

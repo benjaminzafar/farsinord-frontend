@@ -18,6 +18,7 @@ import {
 import CloudflareTurnstile from './CloudflareTurnstile';
 import { supabase, generateReferenceNumber, generatePinCode, isSafeHttpUrl } from '../lib/supabase';
 import { publicApi } from '../lib/apiClient';
+import { checkProhibitedContent } from '../lib/moderation';
 import { COUNTRIES, CATEGORIES, t } from '../lib/translations';
 
 const MAX_PHOTOS = 4;
@@ -234,8 +235,14 @@ export default function PostAdModal({
       return;
     }
 
-    if (!contactPhone.trim() && !contactWhatsapp.trim() && !contactEmail.trim() && !contactTelegram.trim()) {
-      setErrorMsg('حداقل یک راه تماس (شماره تلفن، واتساپ، تلگرام یا ایمیل) الزامی است.');
+    if (!contactPhone.trim() && !contactWhatsapp.trim() && !contactEmail.trim() && !contactTelegram.trim() && !contactWebsite.trim()) {
+      setErrorMsg('حداقل یک راه تماس (شماره تلفن، واتساپ، تلگرام، ایمیل یا وب‌سایت) الزامی است.');
+      return;
+    }
+
+    const modCheck = checkProhibitedContent({ title, description, area, contactName });
+    if (modCheck.blocked) {
+      setErrorMsg(modCheck.reason);
       return;
     }
 
@@ -279,7 +286,7 @@ export default function PostAdModal({
             contact_website: contactWebsite.trim() || null,
             images: allImages.length > 0 ? allImages : ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80'],
             is_featured: false,
-            status: 'active',
+            status: 'pending',
             views_count: 1
           }
         ])
@@ -415,10 +422,13 @@ export default function PostAdModal({
                 <Check size={28} strokeWidth={2.5} />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <h3 className="text-lg font-bold text-slate-900">
-                  {currentT.adCreatedSuccess}
+                  آگهی شما ثبت شد و در انتظار تایید مدیر است
                 </h3>
+                <p className="text-xs text-slate-600 max-w-md mx-auto">
+                  پس از بررسی و تایید توسط مدیریت، آگهی شما در سایت منتشر خواهد شد.
+                </p>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
                   {currentT.saveYourCredentials}
                 </p>
