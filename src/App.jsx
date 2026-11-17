@@ -415,10 +415,10 @@ export default function App() {
   // Apple-like sliding active category pill & touch-swipe navigation refs
   const categoryStripRef = useRef(null);
   const categoryPillRefs = useRef({});
-  const sortPillRefs = useRef({});
+  const sortMenuRef = useRef(null);
   const touchSwipeRef = useRef({ x: 0, y: 0 });
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, ready: false });
-  const [sortPillStyle, setSortPillStyle] = useState({ left: 0, width: 0, ready: false });
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   useEffect(() => {
     const el = categoryPillRefs.current[selectedCategory];
@@ -550,18 +550,18 @@ export default function App() {
     heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر فنلاند';
   }
 
-  const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
+  const [sortBy, setSortBy] = useState(null); // null | 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
 
   useEffect(() => {
-    const el = sortPillRefs.current[sortBy];
-    if (!el) return;
-    const updateSortPill = () => {
-      setSortPillStyle({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
+    if (!sortMenuOpen) return;
+    const handleOutside = (e) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target)) {
+        setSortMenuOpen(false);
+      }
     };
-    updateSortPill();
-    window.addEventListener('resize', updateSortPill);
-    return () => window.removeEventListener('resize', updateSortPill);
-  }, [sortBy, selectedCategory, activeAdDetail]);
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [sortMenuOpen]);
 
   // Filter ads safely with zero-lag deferred smart search (typo-tolerant + Persian/Arabic normalization)
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -870,8 +870,8 @@ export default function App() {
 
         {/* Regular Stream / All Ads */}
         <section className="space-y-3 sm:space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-1">
-            <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
               <h2 className="text-base sm:text-lg font-bold text-[#1D1D1F] tracking-tight">
                 {currentT.recentAds}
               </h2>
@@ -907,39 +907,50 @@ export default function App() {
               )}
             </div>
 
-            {/* Apple-feel Sliding Sort Pill Bar */}
-            <div className="relative flex items-center gap-1 bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA] shadow-2xs overflow-x-auto no-scrollbar self-start sm:self-auto">
-              {sortPillStyle.ready && (
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#0066CC] shadow-[0_2px_10px_rgba(0,102,204,0.25)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
-                  style={{
-                    width: `${sortPillStyle.width}px`,
-                    transform: `translate3d(${sortPillStyle.left}px, 0, 0)`,
-                    left: 0,
-                  }}
+            {/* Compact Filter Trigger — Only opens when clicked */}
+            <div ref={sortMenuRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setSortMenuOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold transition-colors active:scale-95 cursor-pointer select-none"
+              >
+                <span>فیلتر آگهی</span>
+                <ChevronDown
+                  size={14}
+                  className={`text-[#86868B] transition-transform duration-200 ${sortMenuOpen ? 'rotate-180' : ''}`}
                 />
+              </button>
+
+              {sortMenuOpen && (
+                <div className="absolute end-0 top-full mt-1.5 w-40 rounded-2xl bg-[#FBFBFC] border border-[#E5E5EA] shadow-[0_12px_32px_rgba(29,29,31,0.12)] divide-y divide-[#E5E5EA] overflow-hidden z-30 animate-in fade-in zoom-in-95 duration-150">
+                  {[
+                    { id: 'newest', label: 'جدیدترین' },
+                    { id: 'most_viewed', label: 'پربازدیدترین' },
+                    { id: 'price_asc', label: 'ارزان‌ترین' },
+                    { id: 'price_desc', label: 'گران‌ترین' },
+                  ].map((s) => {
+                    const isSelected = sortBy === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          setSortBy(isSelected ? null : s.id);
+                          setSortMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 text-right text-xs font-bold transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#F5F5F7] text-[#1D1D1F]'
+                            : 'text-[#515154] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]'
+                        }`}
+                      >
+                        <span>{s.label}</span>
+                        {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#1D1D1F]" />}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-              {[
-                { id: 'newest', label: 'جدیدترین' },
-                { id: 'most_viewed', label: 'پربازدیدترین' },
-                { id: 'price_asc', label: 'ارزان‌ترین' },
-                { id: 'price_desc', label: 'گران‌ترین' },
-              ].map((s) => (
-                <button
-                  key={s.id}
-                  ref={(el) => { if (el) sortPillRefs.current[s.id] = el; }}
-                  type="button"
-                  onClick={() => setSortBy(s.id)}
-                  className={`relative z-10 px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer select-none ${
-                    sortBy === s.id
-                      ? (sortPillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs')
-                      : 'text-[#515154] hover:text-[#1D1D1F]'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
             </div>
           </div>
 
