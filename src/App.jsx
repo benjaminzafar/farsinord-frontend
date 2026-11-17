@@ -480,6 +480,29 @@ export default function App() {
     }
   };
 
+  // Auto-return to feed when user searches or changes city while viewing an ad detail page
+  const clearAdDetailForFilter = () => {
+    if (!activeAdDetail) return;
+    setActiveAdDetail(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('ad');
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+  };
+
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    if (val && activeAdDetail) {
+      clearAdDetailForFilter();
+    }
+  };
+
+  const handleCityChange = (cityVal) => {
+    setSelectedCity(cityVal);
+    clearAdDetailForFilter();
+  };
+
   // Active country details
   const currentCountryObj = COUNTRIES.find(c => c.id === selectedCountry) || COUNTRIES[0];
 
@@ -609,10 +632,10 @@ export default function App() {
         siteName={siteName}
         logoUrl={logoUrl}
         selectedCity={selectedCity}
-        onSelectCity={setSelectedCity}
+        onSelectCity={handleCityChange}
         availableCities={availableCities}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         searchSuggestions={searchSuggestions}
         onOpenPostAd={handleOpenPostAd}
         onOpenManageAd={handleOpenManageAd}
