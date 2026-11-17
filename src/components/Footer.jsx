@@ -36,15 +36,17 @@ export default function Footer({
               <img 
                 src={logoUrl} 
                 alt={siteName} 
-                className="h-9 w-auto max-w-[145px] object-contain"
+                className="h-9 w-auto max-w-[155px] object-contain"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0066CC] text-white font-extrabold text-xs">
-                <span className="font-mono">FN</span>
-              </div>
+              <>
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0066CC] text-white font-extrabold text-xs">
+                  <span className="font-mono">FN</span>
+                </div>
+                <span className="font-extrabold text-base text-[#1D1D1F] tracking-tight">{siteName}</span>
+              </>
             )}
-            <span className="font-extrabold text-base text-[#1D1D1F] tracking-tight">{siteName}</span>
           </div>
           
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#515154]">
