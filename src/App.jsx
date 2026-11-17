@@ -1002,7 +1002,7 @@ export default function App() {
             }}
             onUpdated={(updatedAd) => {
               setAds(ads.map(a => a.id === updatedAd.id ? updatedAd : a));
-              showToast(lang === 'fa' ? 'آگهی بروزرسانی شد.' : 'Annonsen har uppdaterats.');
+              showToast(lang === 'fa' ? 'آگهی به‌روزرسانی شد.' : 'Annonsen har uppdaterats.');
             }}
           />
         )}

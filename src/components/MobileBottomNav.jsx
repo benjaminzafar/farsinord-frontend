@@ -96,7 +96,7 @@ export default function MobileBottomNav({
             <span className="text-[9.5px]">خانه</span>
           </button>
 
-          {/* Tab 2: کالکشن‌ها (Collections / Categories) */}
+          {/* Tab 2: دسته‌بندی‌ها (Categories) */}
           <button
             type="button"
             onClick={() => setCollectionSheetOpen(true)}
@@ -109,7 +109,7 @@ export default function MobileBottomNav({
             <div className={`p-0.5 rounded-lg transition-transform duration-200 ${isCollectionActive ? 'text-[#0066CC] scale-105' : ''}`}>
               <LayoutGrid size={18} strokeWidth={isCollectionActive ? 2.5 : 2} />
             </div>
-            <span className="text-[9.5px]">کالکشن‌ها</span>
+            <span className="text-[9.5px]">دسته‌بندی‌ها</span>
 
             {/* Active Category Indicator Dot */}
             {selectedCategory !== 'all' && (
@@ -200,7 +200,7 @@ export default function MobileBottomNav({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-950">
-                    کالکشن‌های نیازمندی‌ها
+                    دسته‌بندی‌های نیازمندی‌ها
                   </h3>
                   <span className="text-[11px] text-slate-500 font-medium">
                     دسته‌بندی موضوعی آگهی‌های جامعه فارسی‌زبانان اسکاندیناوی

@@ -248,7 +248,7 @@ export default function PostAdModal({
 
     const turnstileRequired = turnstileSettings.enabled !== false && turnstileSettings.protectPostAd !== false;
     if (turnstileRequired && !turnstileToken) {
-      setErrorMsg('لطفاً تایید امنیتی کلودفلر (من ربات نیستم) را کامل فرمایید.');
+      setErrorMsg('لطفاً تایید امنیتی (من ربات نیستم) را کامل کنید.');
       return;
     }
 

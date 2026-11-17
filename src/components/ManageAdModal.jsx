@@ -189,7 +189,7 @@ export default function ManageAdModal({ lang = 'fa', onClose, onDeleted, onUpdat
               </h3>
               <p className="text-xs text-stone-500 max-w-sm mx-auto">
                 {lang === 'fa' 
-                  ? 'آگهی و کلیه اطلاعات مربوط به آن به صورت دائمی از پایگاه داده حذف گردید.'
+                  ? 'آگهی و تمام اطلاعات مربوط به آن به‌صورت دائمی حذف شد.'
                   : 'Annonsen och dess uppgifter har raderats permanent från databasen.'}
               </p>
               <div className="pt-2">
