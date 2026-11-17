@@ -572,8 +572,8 @@ export default function App() {
           onClose={handleCloseCountryModal}
           selectedCountry={selectedCountry}
           onSelectCountry={handleCountryChange}
-          onOpenLegal={setLegalModalTab}
           onConsentSaved={setGdprConsent}
+          siteName={siteName}
         />
       </Suspense>
 
