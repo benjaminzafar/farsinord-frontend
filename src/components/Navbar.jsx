@@ -13,7 +13,6 @@ import {
   Laptop,
   Calendar,
   Tag,
-  Globe2,
   MapPin,
   Search,
   X
@@ -36,12 +35,10 @@ export default function Navbar({
   availableCities = [],
   searchQuery = '',
   onSearchChange,
-  onOpenCountryModal,
   onOpenPostAd, 
   onOpenManageAd,
   onSelectCategory,
-  selectedCategory = 'all',
-  selectedCountryObj = null
+  selectedCategory = 'all'
 }) {
   const [adDropdownOpen, setAdDropdownOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
@@ -258,20 +255,8 @@ export default function Navbar({
             </nav>
           </div>
 
-          {/* Desktop Right Action: "انتخاب کشور" + "آگهی" */}
+          {/* Desktop Right Action: "آگهی" */}
           <div className="flex items-center gap-2.5">
-            {/* Country Selector Button with Globe icon */}
-            <button
-              type="button"
-              onClick={onOpenCountryModal}
-              className="flex items-center gap-1.5 h-10 px-3.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 text-slate-700 hover:text-slate-950 text-[13px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer shadow-2xs group"
-              title="انتخاب کشور در اسکاندیناوی"
-            >
-              <Globe2 size={15} className="text-slate-500 group-hover:text-[#1877F2] transition-colors" />
-              <span>{selectedCountryObj?.nameFa || 'انتخاب کشور'}</span>
-              <ChevronDown size={13} className="text-slate-400" />
-            </button>
-
             <div className="relative" ref={adMenuRef}>
               <button
                 type="button"

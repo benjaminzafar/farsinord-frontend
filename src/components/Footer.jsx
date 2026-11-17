@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, PlusCircle, KeyRound } from 'lucide-react';
+import { ShieldCheck, PlusCircle, KeyRound, Globe, ChevronDown } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
 const currentYear = new Date().getFullYear();
@@ -7,6 +7,8 @@ const currentYear = new Date().getFullYear();
 export default function Footer({ 
   siteName = 'سوئد پرشیا',
   logoUrl = '',
+  selectedCountryObj = null,
+  onOpenCountryModal,
   onSelectCategory, 
   onSelectCity, 
   onOpenPostAd,
@@ -48,9 +50,23 @@ export default function Footer({
             </div>
           </div>
           
-          <div className="flex items-center gap-2 text-[11px] text-slate-500">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-            <span>پوشش ۴ کشور: سوئد • نروژ • دانمارک • فنلاند</span>
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#515154]">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+              <span>پوشش ۴ کشور: سوئد • نروژ • دانمارک • فنلاند</span>
+            </div>
+            {onOpenCountryModal && (
+              <button
+                type="button"
+                onClick={onOpenCountryModal}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
+                title="تغییر کشور"
+              >
+                <Globe size={13.5} className="text-[#0066CC]" />
+                <span>{selectedCountryObj?.nameFa || 'انتخاب کشور'}</span>
+                <ChevronDown size={12} className="text-[#6E6E73]" />
+              </button>
+            )}
           </div>
         </div>
 

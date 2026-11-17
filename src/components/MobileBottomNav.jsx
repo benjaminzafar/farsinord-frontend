@@ -16,7 +16,11 @@ import {
   Calendar,
   Tag,
   Layers,
-  Check
+  Check,
+  MoreHorizontal,
+  Newspaper,
+  MonitorSmartphone,
+  ShieldCheck
 } from 'lucide-react';
 import { CATEGORIES, COUNTRIES } from '../lib/translations';
 
@@ -41,8 +45,10 @@ export default function MobileBottomNav({
   onOpenCountryModal,
   onOpenPostAd,
   onOpenManageAd,
+  onOpenLegal,
 }) {
   const [collectionSheetOpen, setCollectionSheetOpen] = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
 
   // Find country name
   const currentCountryObj = COUNTRIES.find(c => c.id === selectedCountry) || COUNTRIES[0];
@@ -50,16 +56,18 @@ export default function MobileBottomNav({
   const handleCategoryClick = (catId) => {
     onSelectCategory?.(catId);
     setCollectionSheetOpen(false);
+    setMoreSheetOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleGoHome = () => {
     onSelectCategory?.('all');
     setCollectionSheetOpen(false);
+    setMoreSheetOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const isHomeActive = selectedCategory === 'all' && !collectionSheetOpen;
+  const isHomeActive = selectedCategory === 'all' && !collectionSheetOpen && !moreSheetOpen;
   const isCollectionActive = collectionSheetOpen || selectedCategory !== 'all';
 
   return (
@@ -122,32 +130,37 @@ export default function MobileBottomNav({
             <span className="text-[9.5px] font-bold text-[#1D1D1F]">ثبت آگهی</span>
           </button>
 
-          {/* Tab 4: انتخاب کشور (Country Selector) */}
-          <button
-            type="button"
-            onClick={onOpenCountryModal}
-            className="flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl text-slate-500 hover:text-slate-900 font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
-            title="تغییر کشور"
-          >
-            <div className="p-0.5 rounded-lg">
-              <Globe size={18} className="text-slate-600" />
-            </div>
-            <span className="text-[9.5px] font-semibold text-slate-700">
-              {currentCountryObj.nameFa}
-            </span>
-          </button>
-
-          {/* Tab 5: مدیریت آگهی (Manage Ad) */}
+          {/* Tab 4: مدیریت آگهی (Manage Ad) */}
           <button
             type="button"
             onClick={onOpenManageAd}
-            className="flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl text-slate-500 hover:text-slate-900 font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
+            className="flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl text-[#6E6E73] hover:text-[#1D1D1F] font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
             title="مدیریت یا حذف آگهی با پین کد"
           >
             <div className="p-0.5 rounded-lg">
               <KeyRound size={17} className="text-amber-600" />
             </div>
             <span className="text-[9.5px]">مدیریت</span>
+          </button>
+
+          {/* Tab 5: بیشتر (More — Future Hub: Website Builder, News, Country & Settings) */}
+          <button
+            type="button"
+            onClick={() => {
+              setCollectionSheetOpen(false);
+              setMoreSheetOpen(true);
+            }}
+            className={`flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
+              moreSheetOpen
+                ? 'text-[#0066CC] font-black'
+                : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
+            }`}
+            title="امکانات بیشتر"
+          >
+            <div className={`p-0.5 rounded-lg transition-transform duration-200 ${moreSheetOpen ? 'text-[#0066CC] scale-105' : ''}`}>
+              <MoreHorizontal size={18} />
+            </div>
+            <span className="text-[9.5px]">بیشتر</span>
           </button>
 
         </div>
@@ -270,6 +283,123 @@ export default function MobileBottomNav({
 
           </div>
         </div>
+
+      {/* 3. More ("بیشتر") Bottom Sheet Drawer for Future Features & Settings */}
+      <div
+        className={`fixed inset-0 z-50 flex flex-col justify-end md:hidden font-vazir transition-[visibility] duration-300 ${
+          moreSheetOpen ? 'pointer-events-auto visible' : 'pointer-events-none invisible'
+        }`}
+        dir="rtl"
+        aria-hidden={!moreSheetOpen}
+      >
+        <div
+          className={`fixed inset-0 bg-[#1D1D1F]/55 transition-opacity duration-300 ease-out ${
+            moreSheetOpen ? 'opacity-100' : 'opacity-0'
+          }`}
+          onClick={() => setMoreSheetOpen(false)}
+        />
+
+        <div
+          className={`relative w-full bg-[#FBFBFC] rounded-t-[28px] border-t border-[#E5E5EA] p-5 pb-8 space-y-4 shadow-2xl z-10 max-h-[85vh] overflow-y-auto custom-scrollbar transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+            moreSheetOpen ? 'translate-y-0' : 'translate-y-full'
+          }`}
+        >
+          <div className="w-12 h-1.5 bg-[#D2D2D7] rounded-full mx-auto mb-2 shrink-0" />
+
+          <div className="flex items-center justify-between pb-2 border-b border-[#E5E5EA]">
+            <div>
+              <h3 className="text-base font-black text-[#1D1D1F]">امکانات بیشتر</h3>
+              <p className="text-[11px] text-[#6E6E73]">بخش‌های کاربردی و سرویس‌های آینده</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMoreSheetOpen(false)}
+              className="p-2 rounded-full bg-[#F5F5F7] text-[#515154] hover:text-[#1D1D1F] transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {/* Country Switcher */}
+            <button
+              type="button"
+              onClick={() => {
+                setMoreSheetOpen(false);
+                onOpenCountryModal?.();
+              }}
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-[#0066CC]/10 text-[#0066CC] flex items-center justify-center">
+                  <Globe size={18} />
+                </div>
+                <div className="text-right">
+                  <span className="block text-[13px] font-bold text-[#1D1D1F]">تغییر کشور</span>
+                  <span className="block text-[11px] text-[#6E6E73]">کشور فعلی: {currentCountryObj.nameFa}</span>
+                </div>
+              </div>
+              <ChevronLeft size={16} className="text-[#6E6E73]" />
+            </button>
+
+            {/* GDPR & Cookies */}
+            <button
+              type="button"
+              onClick={() => {
+                setMoreSheetOpen(false);
+                onOpenLegal?.('privacy');
+              }}
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center">
+                  <ShieldCheck size={18} />
+                </div>
+                <div className="text-right">
+                  <span className="block text-[13px] font-bold text-[#1D1D1F]">حریم خصوصی و کوکی‌ها</span>
+                  <span className="block text-[11px] text-[#6E6E73]">تنظیمات GDPR و سیاست کوکی‌ها</span>
+                </div>
+              </div>
+              <ChevronLeft size={16} className="text-[#6E6E73]" />
+            </button>
+
+            {/* Upcoming Future Services */}
+            <div className="pt-2 space-y-2">
+              <span className="block text-[11px] font-bold text-[#6E6E73] px-1">سرویس‌های آینده</span>
+
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7]/70 border border-[#E5E5EA]">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-[#ECECEF] text-[#515154] flex items-center justify-center">
+                    <MonitorSmartphone size={18} />
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-[13px] font-bold text-[#1D1D1F]">ساخت وب‌سایت</span>
+                    <span className="block text-[11px] text-[#6E6E73]">ساخت صفحه و سایت شخصی کسب‌وکار</span>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
+                  به‌زودی
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7]/70 border border-[#E5E5EA]">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-[#ECECEF] text-[#515154] flex items-center justify-center">
+                    <Newspaper size={18} />
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-[13px] font-bold text-[#1D1D1F]">اخبار و رویدادها</span>
+                    <span className="block text-[11px] text-[#6E6E73]">تازه‌ترین خبرهای فارسی‌زبانان اسکاندیناوی</span>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
+                  به‌زودی
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

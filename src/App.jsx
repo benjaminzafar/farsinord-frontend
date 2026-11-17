@@ -599,12 +599,10 @@ export default function App() {
         availableCities={availableCities}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onOpenCountryModal={handleOpenCountryModal}
         onOpenPostAd={handleOpenPostAd}
         onOpenManageAd={handleOpenManageAd}
         onSelectCategory={handleCategoryChange}
         selectedCategory={selectedCategory}
-        selectedCountryObj={currentCountryObj}
       />
 
       {/* Spacer for Fixed Top Navbar */}
@@ -929,6 +927,8 @@ export default function App() {
       <Footer
         siteName={siteName}
         logoUrl={logoUrl}
+        selectedCountryObj={currentCountryObj}
+        onOpenCountryModal={handleOpenCountryModal}
         onSelectCategory={handleCategoryChange}
         onSelectCity={(cityId) => {
           setSelectedCity(cityId);
@@ -947,6 +947,7 @@ export default function App() {
         onOpenCountryModal={handleOpenCountryModal}
         onOpenPostAd={() => handleOpenPostAd('bostad')}
         onOpenManageAd={handleOpenManageAd}
+        onOpenLegal={setLegalModalTab}
       />
 
       <Suspense fallback={null}>
