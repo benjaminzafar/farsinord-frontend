@@ -146,7 +146,7 @@ export default function CountryBanner({
 
             {/* Header */}
             <div className="text-center space-y-2.5">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-[#0066CC]/10 text-[#0066CC]">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-[#F5F5F7] text-[#6E6E73]">
                 <Globe size={22} strokeWidth={1.9} />
               </div>
 
@@ -160,7 +160,7 @@ export default function CountryBanner({
               </div>
 
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] text-[11.5px] text-[#515154]">
-                <MapPin size={13} className="text-[#0066CC] shrink-0" />
+                <MapPin size={13} className="text-[#86868B] shrink-0" />
                 <span>موقعیت شما:</span>
                 <strong className="font-bold text-[#1D1D1F]">{detectedObj.nameFa}</strong>
               </div>

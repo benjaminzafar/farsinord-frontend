@@ -117,7 +117,7 @@ export default function PaymentModal({
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center">
               <Crown size={20} />
             </div>
             <div>
@@ -141,7 +141,7 @@ export default function PaymentModal({
           {/* Success Screen */}
           {isPaid ? (
             <div className="text-center py-6 space-y-4 animate-in zoom-in-95">
-              <div className="h-16 w-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-md">
+              <div className="h-16 w-16 rounded-full bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center mx-auto">
                 <CheckCircle2 size={36} />
               </div>
 
@@ -201,7 +201,7 @@ export default function PaymentModal({
               {isTestMode && (
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <AlertCircle size={14} className="text-amber-600 shrink-0" />
+                    <AlertCircle size={14} className="text-[#86868B] shrink-0" />
                     <span>حالت آزمایشی Stripe فعال است.</span>
                   </div>
                   <button
@@ -310,7 +310,7 @@ export default function PaymentModal({
               {/* Trust Badges */}
               <div className="pt-2 flex items-center justify-center gap-4 text-[11px] text-slate-400">
                 <div className="flex items-center gap-1">
-                  <ShieldCheck size={14} className="text-emerald-500" />
+                  <ShieldCheck size={14} className="text-[#86868B]" />
                   <span>رمزنگاری ۲۵۶ بیتی SSL</span>
                 </div>
                 <span>•</span>

@@ -249,7 +249,7 @@ export default function AdDetailPage({
               onClick={shareAd}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
             >
-              {copiedLink ? <Check size={14} className="text-emerald-600" /> : <Share2 size={14} />}
+              {copiedLink ? <Check size={14} className="text-[#86868B]" /> : <Share2 size={14} />}
               <span>{copiedLink ? currentT.copied : 'اشتراک‌گذاری'}</span>
             </button>
           </div>
@@ -296,7 +296,7 @@ export default function AdDetailPage({
                 {/* VIP / Featured Badge */}
                 {ad.is_featured && (
                   <div className="absolute top-3 start-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1877F2] text-white text-xs font-black shadow-md backdrop-blur-xs">
-                    <Crown size={13} className="text-amber-300" />
+                    <Crown size={13} className="text-white/80" />
                     <span>آگهی ویژه (VIP)</span>
                   </div>
                 )}
@@ -369,7 +369,7 @@ export default function AdDetailPage({
                 {/* Meta info tags */}
                 <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-1">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
-                    <MapPin size={13} className="text-blue-600 shrink-0" />
+                    <MapPin size={13} className="text-[#86868B] shrink-0" />
                     <span>{ad.city}{ad.area ? ` • ${ad.area}` : ''}</span>
                   </div>
 
@@ -410,7 +410,7 @@ export default function AdDetailPage({
                     {!showTurnstileGate ? (
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5F5F7] text-[#0066CC]">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5F5F7] text-[#6E6E73]">
                             <Lock size={17} />
                           </div>
                           <div>
@@ -539,7 +539,7 @@ export default function AdDetailPage({
               <div className="pt-5 border-t border-[#E5E5EA] space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5">
-                    <ShieldCheck size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                    <ShieldCheck size={18} className="text-[#86868B] shrink-0 mt-0.5" />
                     <div className="space-y-0.5 text-xs">
                       <h4 className="font-bold text-[#1D1D1F]">راهنمای معامله امن</h4>
                       <p className="leading-relaxed text-[#6E6E73]">
@@ -633,7 +633,7 @@ export default function AdDetailPage({
               
               <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#E5E5EA]">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F5F5F7] text-[#6E6E73]">
                     <Crown size={15} />
                   </div>
                   <div>
@@ -706,7 +706,7 @@ export default function AdDetailPage({
               <div className="absolute -end-8 -top-8 w-28 h-28 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
               
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/70">
                   <Sparkles size={18} />
                 </div>
                 <div>
@@ -724,7 +724,7 @@ export default function AdDetailPage({
                 onClick={() => onOpenPromote?.(ad)}
                 className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Crown size={15} className="text-amber-300" />
+                <Crown size={15} className="text-white/80" />
                 <span>ارتقا و ویژه کردن این آگهی (Stripe)</span>
               </button>
             </div>

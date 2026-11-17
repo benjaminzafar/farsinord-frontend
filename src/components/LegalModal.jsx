@@ -57,7 +57,7 @@ export default function LegalModal({
         <div className="px-6 pt-6 pb-4 space-y-4 border-b border-[#E5E5EA] shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-[#0066CC]/10 text-[#0066CC] flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-2xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center shrink-0">
                 <ShieldCheck size={20} strokeWidth={1.9} />
               </div>
               <div>

@@ -153,7 +153,7 @@ export default function ManageAdModal({ lang = 'fa', onClose, onDeleted, onUpdat
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-stone-100 bg-stone-50/80 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
               <KeyRound size={18} />
             </div>
             <div>
@@ -181,7 +181,7 @@ export default function ManageAdModal({ lang = 'fa', onClose, onDeleted, onUpdat
           {deleteSuccess ? (
             /* Delete Completed Screen */
             <div className="py-8 text-center space-y-4">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F5F5F7] text-[#6E6E73]">
                 <Trash2 size={28} />
               </div>
               <h3 className="text-xl font-black text-stone-900">
@@ -389,7 +389,7 @@ export default function ManageAdModal({ lang = 'fa', onClose, onDeleted, onUpdat
                   ) : (
                     <div className="rounded-2xl border border-rose-300 bg-rose-50 p-4 space-y-3 animate-in fade-in duration-150">
                       <div className="flex items-center gap-2 text-rose-900 text-xs font-bold">
-                        <ShieldAlert size={16} className="text-rose-600 shrink-0" />
+                        <ShieldAlert size={16} className="text-[#86868B] shrink-0" />
                         <span>{currentT.confirmDelete}</span>
                       </div>
 

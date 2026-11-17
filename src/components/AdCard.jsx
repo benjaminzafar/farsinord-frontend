@@ -49,7 +49,7 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
 
         {/* City Pill */}
         <div className="absolute bottom-1.5 start-1.5 sm:bottom-2.5 sm:start-2.5 flex items-center gap-0.5 sm:gap-1 rounded-full bg-slate-950/80 px-2 sm:px-2.5 py-0.5 text-[9.5px] sm:text-[11px] font-medium text-slate-200 backdrop-blur-xs max-w-[90%] truncate">
-          <MapPin size={10} className="text-blue-400 shrink-0" />
+          <MapPin size={10} className="text-[#86868B] shrink-0" />
           <span className="truncate">{ad.city}{ad.area ? ` • ${ad.area}` : ''}</span>
         </div>
       </div>

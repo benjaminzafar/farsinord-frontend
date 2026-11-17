@@ -32,7 +32,7 @@ export default class ErrorBoundary extends React.Component {
       return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#090d16] text-white font-vazir" dir="rtl">
           <div className="max-w-md w-full bg-[#0f1626] border border-slate-800 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-2xl">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-slate-400">
               <AlertTriangle size={28} />
             </div>
             

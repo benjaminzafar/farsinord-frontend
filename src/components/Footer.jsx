@@ -61,7 +61,7 @@ export default function Footer({
                 className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
                 title="تغییر کشور"
               >
-                <Globe size={13.5} className="text-[#0066CC]" />
+                <Globe size={13.5} className="text-[#86868B]" />
                 <span>{selectedCountryObj?.nameFa || 'انتخاب کشور'}</span>
                 <ChevronDown size={12} className="text-[#6E6E73]" />
               </button>
@@ -128,7 +128,7 @@ export default function Footer({
                     onClick={onOpenPostAd}
                     className="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors cursor-pointer"
                   >
-                    <PlusCircle size={13} className="text-blue-500 shrink-0" />
+                    <PlusCircle size={13} className="text-[#86868B] shrink-0" />
                     <span>ثبت رایگان آگهی</span>
                   </button>
                 </li>
@@ -140,7 +140,7 @@ export default function Footer({
                     onClick={onOpenManageAd}
                     className="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors cursor-pointer"
                   >
-                    <KeyRound size={13} className="text-amber-500 shrink-0" />
+                    <KeyRound size={13} className="text-[#86868B] shrink-0" />
                     <span>مدیریت با پین کد</span>
                   </button>
                 </li>
@@ -156,7 +156,7 @@ export default function Footer({
             </h4>
             <div className="space-y-1.5 text-xs leading-relaxed">
               <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                <ShieldCheck size={14} className="text-[#86868B] shrink-0" />
                 <span>ارتباط مستقیم و بی‌واسطه</span>
               </div>
               <p className="text-slate-500 text-[11px]">

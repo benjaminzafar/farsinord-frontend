@@ -26,16 +26,16 @@ import { CATEGORIES, COUNTRIES } from '../lib/translations';
 
 // Map icon strings to Lucide components with semantic colors
 const CATEGORY_META = {
-  all: { Icon: Layers, bg: 'bg-slate-100 text-slate-800 border-slate-200' },
-  bostad: { Icon: Home, bg: 'bg-blue-50 text-blue-600 border-blue-200/80' },
-  restaurang: { Icon: Utensils, bg: 'bg-amber-50 text-amber-600 border-amber-200/80' },
-  tjanster: { Icon: Briefcase, bg: 'bg-purple-50 text-purple-600 border-purple-200/80' },
-  jobb: { Icon: GraduationCap, bg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80' },
-  'kop-salj': { Icon: ShoppingBag, bg: 'bg-rose-50 text-rose-600 border-rose-200/80' },
-  fordon: { Icon: Car, bg: 'bg-cyan-50 text-cyan-600 border-cyan-200/80' },
-  elektronik: { Icon: Laptop, bg: 'bg-sky-50 text-sky-600 border-sky-200/80' },
-  evenemang: { Icon: Calendar, bg: 'bg-indigo-50 text-indigo-600 border-indigo-200/80' },
-  ovrigt: { Icon: Tag, bg: 'bg-stone-100 text-stone-700 border-stone-200' },
+  all: { Icon: Layers, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  bostad: { Icon: Home, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  restaurang: { Icon: Utensils, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  tjanster: { Icon: Briefcase, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  jobb: { Icon: GraduationCap, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  'kop-salj': { Icon: ShoppingBag, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  fordon: { Icon: Car, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  elektronik: { Icon: Laptop, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  evenemang: { Icon: Calendar, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
+  ovrigt: { Icon: Tag, bg: 'bg-[#F5F5F7] text-[#6E6E73] border-[#E5E5EA]' },
 };
 
 export default function MobileBottomNav({
@@ -138,7 +138,7 @@ export default function MobileBottomNav({
             title="مدیریت یا حذف آگهی با کد امنیتی"
           >
             <div className="flex h-6 w-6 items-center justify-center">
-              <KeyRound size={18} strokeWidth={1.9} className="text-amber-600" />
+              <KeyRound size={18} strokeWidth={1.9} className="text-[#86868B]" />
             </div>
             <span className="text-[10px] leading-none mt-1 whitespace-nowrap">مدیریت</span>
           </button>
@@ -195,7 +195,7 @@ export default function MobileBottomNav({
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
                   <LayoutGrid size={18} />
                 </div>
                 <div>
@@ -319,7 +319,7 @@ export default function MobileBottomNav({
               className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-[#0066CC]/10 text-[#0066CC] flex items-center justify-center">
+                <div className="h-9 w-9 rounded-xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center">
                   <Globe size={18} />
                 </div>
                 <div className="text-right">
@@ -340,7 +340,7 @@ export default function MobileBottomNav({
               className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center">
                   <ShieldCheck size={18} />
                 </div>
                 <div className="text-right">

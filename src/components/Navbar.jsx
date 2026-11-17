@@ -127,7 +127,7 @@ export default function Navbar({
             {/* City Selector Pill on Left */}
             <div className="relative shrink-0 flex items-center">
               <div className="flex items-center gap-1.5 ps-2.5 pe-2 py-1.5 rounded-xl bg-white text-slate-800 text-[11.5px] font-bold border border-slate-200 shadow-2xs">
-                <MapPin size={12} className="text-[#0066CC] shrink-0" />
+                <MapPin size={12} className="text-[#86868B] shrink-0" />
                 <span className="truncate max-w-[68px]">
                   {cityLabel}
                 </span>
@@ -258,7 +258,7 @@ export default function Navbar({
                               : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
                           }`}
                         >
-                          <CatIcon size={14} className={isCurr ? 'text-blue-600 shrink-0' : 'text-slate-400 shrink-0'} />
+                          <CatIcon size={14} className={isCurr ? 'text-[#1D1D1F] shrink-0' : 'text-slate-400 shrink-0'} />
                           <span>{cat.fa}</span>
                         </button>
                       );
@@ -301,7 +301,7 @@ export default function Navbar({
                       className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-[#0066CC]/10 text-[#0066CC] flex items-center justify-center shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center shrink-0">
                           <Globe size={15} />
                         </div>
                         <div>
@@ -323,7 +323,7 @@ export default function Navbar({
                       className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center shrink-0">
                           <ShieldCheck size={15} />
                         </div>
                         <div>
@@ -403,7 +403,7 @@ export default function Navbar({
                       className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-slate-800 hover:bg-blue-50 hover:text-blue-900 transition-colors cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-[#1877F2] group-hover:bg-[#1877F2] group-hover:text-white transition-colors">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5F5F7] text-[#6E6E73] group-hover:bg-[#EBEBF0] group-hover:text-[#1D1D1F] transition-colors">
                           <Plus size={16} strokeWidth={2.5} />
                         </div>
                         <div>
@@ -411,7 +411,7 @@ export default function Navbar({
                           <span className="text-[10.5px] text-slate-500 font-normal">درج رایگان آگهی</span>
                         </div>
                       </div>
-                      <ChevronLeft size={14} className="text-slate-400 group-hover:text-blue-600" />
+                      <ChevronLeft size={14} className="text-slate-400 group-hover:text-[#1D1D1F]" />
                     </button>
 
                     {/* Option 2: مدیریت آگهی */}
@@ -424,7 +424,7 @@ export default function Navbar({
                       className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-slate-800 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-700 group-hover:bg-amber-100 transition-colors">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5F5F7] text-[#6E6E73] group-hover:bg-[#EBEBF0] transition-colors">
                           <KeyRound size={15} />
                         </div>
                         <div>

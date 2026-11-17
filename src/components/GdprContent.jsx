@@ -50,7 +50,7 @@ export function GdprTabs({ activeTab, onChangeTab }) {
                 : 'text-[#6E6E73] hover:text-[#1D1D1F]'
             }`}
           >
-            <Icon size={13.5} className={`transition-colors duration-200 ${active ? 'text-[#0066CC]' : ''}`} />
+            <Icon size={13.5} className={`transition-colors duration-200 ${active ? 'text-[#1D1D1F]' : 'text-[#86868B]'}`} />
             <span className="truncate">{tab.label}</span>
           </button>
         );
@@ -144,7 +144,7 @@ export function GdprTabBody({
             <div className="p-4 bg-[#F5F5F7]/60 flex items-center justify-between gap-4">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5 font-bold text-[#1D1D1F] text-[13px]">
-                  <Lock size={13.5} className="text-emerald-600 shrink-0" />
+                  <Lock size={13.5} className="text-[#86868B] shrink-0" />
                   <span>کوکی‌های ضروری سایت</span>
                 </div>
                 <p className="text-[11.5px] text-[#6E6E73]">

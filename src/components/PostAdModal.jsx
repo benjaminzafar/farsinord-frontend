@@ -339,7 +339,7 @@ export default function PostAdModal({
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/80 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
               <PlusCircle size={20} />
             </div>
             <div>
@@ -418,7 +418,7 @@ export default function PostAdModal({
           {successData ? (
             /* Success Screen */
             <div className="py-6 text-center space-y-5">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F5F5F7] text-[#6E6E73]">
                 <Check size={28} strokeWidth={2.5} />
               </div>
 
@@ -452,7 +452,7 @@ export default function PostAdModal({
                     onClick={() => copyToClipboard(successData.referenceNumber, 'ref')}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#FBFBFC] hover:bg-white text-[#1D1D1F] text-xs font-semibold active:scale-95 transition-all cursor-pointer"
                   >
-                    {copiedRef ? <Check size={13} className="text-emerald-700" /> : <Copy size={13} />}
+                    {copiedRef ? <Check size={13} className="text-[#86868B]" /> : <Copy size={13} />}
                     <span>{copiedRef ? currentT.copied : currentT.copyRef}</span>
                   </button>
                 </div>
@@ -472,13 +472,13 @@ export default function PostAdModal({
                     onClick={() => copyToClipboard(successData.pinCode, 'pin')}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#FBFBFC] hover:bg-white text-[#1D1D1F] text-xs font-semibold active:scale-95 transition-all cursor-pointer"
                   >
-                    {copiedPin ? <Check size={13} className="text-emerald-700" /> : <Copy size={13} />}
+                    {copiedPin ? <Check size={13} className="text-[#86868B]" /> : <Copy size={13} />}
                     <span>{copiedPin ? currentT.copied : currentT.copyPin}</span>
                   </button>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs text-[#6E6E73] px-4 py-3">
-                  <KeyRound size={14} className="shrink-0 text-amber-600" />
+                  <KeyRound size={14} className="shrink-0 text-[#86868B]" />
                   <span>
                     با این دو مشخصه می‌توانید در هر زمان آگهی خود را ویرایش یا حذف نمایید.
                   </span>
@@ -687,12 +687,12 @@ export default function PostAdModal({
                     />
                     {uploadingPhotos ? (
                       <>
-                        <Loader2 size={22} className="text-blue-600 animate-spin" />
+                        <Loader2 size={22} className="text-[#86868B] animate-spin" />
                         <span className="text-xs font-bold text-blue-700">در حال فشرده‌سازی و آپلود تصویر...</span>
                       </>
                     ) : (
                       <>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-blue-600 border border-slate-200 shadow-2xs">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F5F5F7] text-[#6E6E73]">
                           <Upload size={18} />
                         </div>
                         <div className="space-y-0.5">
@@ -878,7 +878,7 @@ export default function PostAdModal({
 
               {/* Auto-generated 6-character security PIN notice (not user-editable) */}
               <div className="rounded-2xl bg-amber-50/70 p-3.5 flex items-start gap-3">
-                <KeyRound size={17} className="text-amber-700 shrink-0 mt-0.5" />
+                <KeyRound size={17} className="text-[#86868B] shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <span className="block text-xs font-bold text-amber-950">
                     کد امنیتی ۶ کاراکتری مدیریت آگهی (خودکار)
