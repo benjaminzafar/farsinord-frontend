@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ArrowRight, 
   MapPin, 
@@ -37,7 +37,29 @@ export default function AdDetailPage({
   const [showTurnstileGate, setShowTurnstileGate] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
+  const stageRef = useRef(null);
+  const zoomImgRef = useRef(null);
+  const zoomStateRef = useRef({ scale: 1, x: 0, y: 0 });
   const currentT = t[lang] || t.fa;
+
+  const applyPhotoTransform = useCallback((scale, x, y, animate = false) => {
+    const clampedScale = Math.min(4, Math.max(1, scale));
+    const maxPan = (clampedScale - 1) * 260;
+    const cx = clampedScale <= 1 ? 0 : Math.min(maxPan, Math.max(-maxPan, x));
+    const cy = clampedScale <= 1 ? 0 : Math.min(maxPan, Math.max(-maxPan, y));
+    zoomStateRef.current = { scale: clampedScale, x: cx, y: cy };
+    if (zoomImgRef.current) {
+      zoomImgRef.current.style.transition = animate
+        ? 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)'
+        : 'none';
+      zoomImgRef.current.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(${clampedScale})`;
+    }
+    setZoomed(clampedScale > 1.05);
+  }, []);
+
+  const resetPhotoZoom = useCallback(() => {
+    applyPhotoTransform(1, 0, 0, true);
+  }, [applyPhotoTransform]);
 
   // Scroll to top when ad changes (state resets via key={ad.id})
   useEffect(() => {
@@ -54,15 +76,98 @@ export default function AdDetailPage({
         setZoomOpen(false);
       } else if (e.key === 'ArrowLeft' && imagesCount > 1) {
         setActiveImageIdx((prev) => (prev < imagesCount - 1 ? prev + 1 : 0));
-        setZoomed(false);
+        resetPhotoZoom();
       } else if (e.key === 'ArrowRight' && imagesCount > 1) {
         setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : imagesCount - 1));
-        setZoomed(false);
+        resetPhotoZoom();
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [zoomOpen, imagesCount]);
+  }, [zoomOpen, imagesCount, resetPhotoZoom]);
+
+  // Non-passive 60fps two-finger pinch-to-zoom & pan ONLY on the photo
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!zoomOpen || !stage) return;
+
+    let mode = null; // 'pinch' | 'pan' | 'swipe'
+    let startDist = 0;
+    let startScale = 1;
+    let startX = 0;
+    let startY = 0;
+    let origX = 0;
+    let origY = 0;
+    let moved = false;
+
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        mode = 'pinch';
+        moved = true;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        startDist = Math.hypot(dx, dy);
+        startScale = zoomStateRef.current.scale;
+        origX = zoomStateRef.current.x;
+        origY = zoomStateRef.current.y;
+      } else if (e.touches.length === 1) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        origX = zoomStateRef.current.x;
+        origY = zoomStateRef.current.y;
+        moved = false;
+        mode = zoomStateRef.current.scale > 1.05 ? 'pan' : 'swipe';
+      }
+    };
+
+    const onTouchMove = (e) => {
+      if (mode === 'pinch' && e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        if (startDist > 0) {
+          const nextScale = startScale * (dist / startDist);
+          applyPhotoTransform(nextScale, origX, origY, false);
+        }
+      } else if (mode === 'pan' && e.touches.length === 1) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+        applyPhotoTransform(zoomStateRef.current.scale, origX + dx, origY + dy, false);
+      } else if (mode === 'swipe' && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - startX;
+        if (Math.abs(dx) > 10) moved = true;
+      }
+    };
+
+    const onTouchEnd = (e) => {
+      if (mode === 'pinch' && zoomStateRef.current.scale < 1.08) {
+        resetPhotoZoom();
+      } else if (mode === 'swipe' && imagesCount > 1 && e.changedTouches.length === 1 && moved) {
+        const dx = e.changedTouches[0].clientX - startX;
+        if (dx > 45) {
+          setActiveImageIdx((prev) => (prev < imagesCount - 1 ? prev + 1 : 0));
+          resetPhotoZoom();
+        } else if (dx < -45) {
+          setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : imagesCount - 1));
+          resetPhotoZoom();
+        }
+      }
+      if (e.touches.length === 0) mode = null;
+    };
+
+    stage.addEventListener('touchstart', onTouchStart, { passive: false });
+    stage.addEventListener('touchmove', onTouchMove, { passive: false });
+    stage.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      stage.removeEventListener('touchstart', onTouchStart);
+      stage.removeEventListener('touchmove', onTouchMove);
+      stage.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [zoomOpen, imagesCount, applyPhotoTransform, resetPhotoZoom]);
 
   if (!ad) return null;
 
@@ -159,6 +264,7 @@ export default function AdDetailPage({
                   src={images[activeImageIdx]}
                   alt={ad.title}
                   onClick={() => {
+                    zoomStateRef.current = { scale: 1, x: 0, y: 0 };
                     setZoomed(false);
                     setZoomOpen(true);
                   }}
@@ -169,6 +275,7 @@ export default function AdDetailPage({
                 <button
                   type="button"
                   onClick={() => {
+                    zoomStateRef.current = { scale: 1, x: 0, y: 0 };
                     setZoomed(false);
                     setZoomOpen(true);
                   }}
@@ -551,7 +658,13 @@ export default function AdDetailPage({
 
             <button
               type="button"
-              onClick={() => setZoomed((z) => !z)}
+              onClick={() => {
+                if (zoomed) {
+                  resetPhotoZoom();
+                } else {
+                  applyPhotoTransform(2.2, 0, 0, true);
+                }
+              }}
               className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F] text-xs font-bold transition-colors cursor-pointer"
             >
               <ZoomIn size={14} />
@@ -559,16 +672,35 @@ export default function AdDetailPage({
             </button>
           </div>
 
-          {/* Native Pinch-Zoom & Scrollable Stage */}
-          <div className="relative flex-1 overflow-auto flex items-center justify-center p-3 sm:p-6 [touch-action:pinch-zoom_pan-x_pan-y]">
+          {/* Photo-Only Pinch-Zoom & Pan Stage (Site UI never zooms) */}
+          <div
+            ref={stageRef}
+            onWheel={(e) => {
+              e.preventDefault();
+              const delta = e.deltaY < 0 ? 0.3 : -0.3;
+              applyPhotoTransform(
+                zoomStateRef.current.scale + delta,
+                zoomStateRef.current.x,
+                zoomStateRef.current.y,
+                false
+              );
+            }}
+            className="relative flex-1 overflow-hidden flex items-center justify-center p-3 sm:p-6 touch-none"
+          >
             <img
+              ref={zoomImgRef}
               src={images[activeImageIdx]}
               alt={ad.title}
-              onClick={() => setZoomed((z) => !z)}
-              className={`rounded-2xl bg-[#FBFBFC] shadow-[0_12px_40px_rgba(29,29,31,0.10)] border border-[#E5E5EA] transition-all duration-200 [touch-action:pinch-zoom_pan-x_pan-y] ${
-                zoomed
-                  ? 'w-[160vw] sm:w-[130vw] max-w-none h-auto cursor-zoom-out'
-                  : 'max-h-full max-w-full object-contain cursor-zoom-in'
+              draggable={false}
+              onClick={() => {
+                if (zoomStateRef.current.scale > 1.05) {
+                  resetPhotoZoom();
+                } else {
+                  applyPhotoTransform(2.2, 0, 0, true);
+                }
+              }}
+              className={`max-h-[76vh] max-w-[94vw] object-contain rounded-2xl bg-[#FBFBFC] shadow-[0_12px_40px_rgba(29,29,31,0.10)] border border-[#E5E5EA] will-change-transform ${
+                zoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
               }`}
             />
 
@@ -578,7 +710,7 @@ export default function AdDetailPage({
                   type="button"
                   onClick={() => {
                     setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-                    setZoomed(false);
+                    resetPhotoZoom();
                   }}
                   className="flex fixed start-3 sm:start-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
@@ -588,7 +720,7 @@ export default function AdDetailPage({
                   type="button"
                   onClick={() => {
                     setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-                    setZoomed(false);
+                    resetPhotoZoom();
                   }}
                   className="flex fixed end-3 sm:end-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
@@ -607,7 +739,7 @@ export default function AdDetailPage({
                   type="button"
                   onClick={() => {
                     setActiveImageIdx(idx);
-                    setZoomed(false);
+                    resetPhotoZoom();
                   }}
                   className={`h-12 w-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                     activeImageIdx === idx
