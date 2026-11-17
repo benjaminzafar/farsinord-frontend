@@ -6,7 +6,7 @@ import { GdprTabs, GdprTabBody } from './GdprContent';
 export default function LegalModal({
   isOpen,
   initialTab = 'privacy',
-  siteName = 'سوئد پرشیا',
+  siteName = 'Farsi Nord',
   onClose,
   onConsentSaved,
 }) {

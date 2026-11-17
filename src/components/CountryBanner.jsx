@@ -25,7 +25,7 @@ export default function CountryBanner({
   selectedCountry,
   onSelectCountry,
   onConsentSaved,
-  siteName = 'سوئد پرشیا',
+  siteName = 'Farsi Nord',
 }) {
   const [detectedCountryId, setDetectedCountryId] = useState(detectBrowserCountry);
   const [activeChoice, setActiveChoice] = useState(() => {

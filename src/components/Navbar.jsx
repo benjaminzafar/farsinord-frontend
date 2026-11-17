@@ -33,7 +33,7 @@ const DROPDOWN_ICON_MAP = {
 };
 
 export default function Navbar({ 
-  siteName = 'سوئد پرشیا',
+  siteName = 'Farsi Nord',
   logoUrl,
   selectedCity = 'all',
   onSelectCity,
@@ -160,12 +160,14 @@ export default function Navbar({
             title={siteName}
           >
             {logoUrl ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-2xs">
-                <img src={logoUrl} alt={siteName} className="h-full w-full object-contain" />
-              </div>
+              <img
+                src={logoUrl}
+                alt={siteName}
+                className="h-9 w-auto max-w-[120px] object-contain"
+              />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-white font-extrabold text-xs shadow-2xs border border-slate-800 transition-transform active:scale-95">
-                <span className="font-mono text-emerald-400 font-black">SP</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#0066CC] text-white font-extrabold text-xs shadow-2xs transition-transform active:scale-95">
+                <span className="font-mono font-black">FN</span>
               </div>
             )}
           </a>
@@ -187,22 +189,19 @@ export default function Navbar({
               className="flex items-center gap-2.5 group shrink-0 cursor-pointer"
             >
               {logoUrl ? (
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden bg-white shadow-xs border border-slate-200 shrink-0">
-                  <img src={logoUrl} alt={siteName} className="h-full w-full object-contain" />
-                </div>
+                <img
+                  src={logoUrl}
+                  alt={siteName}
+                  className="h-10 w-auto max-w-[155px] object-contain shrink-0"
+                />
               ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white font-extrabold text-xs shadow-xs border border-slate-800 transition-all duration-150 group-hover:scale-105 active:scale-95 shrink-0">
-                  <span className="font-mono text-emerald-400 font-black">SP</span>
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0066CC] text-white font-extrabold text-xs shadow-xs transition-all duration-150 group-hover:scale-105 active:scale-95 shrink-0">
+                  <span className="font-mono font-black">FN</span>
                 </div>
               )}
-              <div className="flex flex-col min-w-0">
-                <span className="font-extrabold text-[17px] tracking-tight text-[#1D1D1F] group-hover:text-[#0066CC] transition-colors">
-                  {siteName}
-                </span>
-                <span className="text-[11px] text-[#6E6E73] font-medium">
-                  نیازمندی‌های فارسی اسکاندیناوی
-                </span>
-              </div>
+              <span className="font-extrabold text-[17px] tracking-tight text-[#1D1D1F] group-hover:text-[#0066CC] transition-colors">
+                {siteName}
+              </span>
             </a>
 
             {/* Desktop Category Navigation */}

@@ -5,7 +5,7 @@ import { CATEGORIES } from '../lib/translations';
 const currentYear = new Date().getFullYear();
 
 export default function Footer({ 
-  siteName = 'سوئد پرشیا',
+  siteName = 'Farsi Nord',
   logoUrl = '',
   selectedCountryObj = null,
   onOpenCountryModal,
@@ -36,18 +36,15 @@ export default function Footer({
               <img 
                 src={logoUrl} 
                 alt={siteName} 
-                className="h-8 max-w-[120px] object-contain rounded-lg"
+                className="h-9 w-auto max-w-[145px] object-contain"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-950 text-white font-extrabold text-xs">
-                <span className="font-mono text-emerald-400">SP</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0066CC] text-white font-extrabold text-xs">
+                <span className="font-mono">FN</span>
               </div>
             )}
-            <div>
-              <span className="font-extrabold text-base text-slate-900 tracking-tight block">{siteName}</span>
-              <span className="text-[11px] text-slate-500 font-medium">پلتفرم جامع نیازمندی‌های جامعه فارسی‌زبانان اسکاندیناوی</span>
-            </div>
+            <span className="font-extrabold text-base text-[#1D1D1F] tracking-tight">{siteName}</span>
           </div>
           
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#515154]">

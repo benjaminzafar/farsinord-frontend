@@ -137,7 +137,7 @@ export default function App() {
       return false;
     }
   });
-  const [siteName, setSiteName] = useState('سوئد پرشیا');
+  const [siteName, setSiteName] = useState('Farsi Nord');
   const [logoUrl, setLogoUrl] = useState('');
   const [turnstileSettings, setTurnstileSettings] = useState({ enabled: true, mode: 'test', siteKey: '' });
   const [analyticsSettings, setAnalyticsSettings] = useState({ enabled: false, measurementId: '' });
@@ -218,10 +218,10 @@ export default function App() {
   // Dynamic Country SEO Document Title
   useEffect(() => {
     const titles = {
-      se: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در سوئد | سوئد پرشیا',
-      no: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در نروژ | سوئد پرشیا',
-      dk: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در دانمارک | سوئد پرشیا',
-      fi: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در فنلاند | سوئد پرشیا'
+      se: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در سوئد | Farsi Nord',
+      no: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در نروژ | Farsi Nord',
+      dk: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در دانمارک | Farsi Nord',
+      fi: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در فنلاند | Farsi Nord'
     };
     document.title = titles[selectedCountry] || titles.se;
   }, [selectedCountry]);

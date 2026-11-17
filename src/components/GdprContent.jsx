@@ -61,7 +61,7 @@ export function GdprTabs({ activeTab, onChangeTab }) {
 
 export function GdprTabBody({
   activeTab,
-  siteName = 'سوئد پرشیا',
+  siteName = 'Farsi Nord',
   analyticsEnabled,
   onToggleAnalytics,
 }) {
