@@ -563,7 +563,7 @@ export default function App() {
   const featuredAds = useMemo(() => filteredAds.filter(a => a.is_featured), [filteredAds]);
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-hidden w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-clip w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
       {/* Geolocation Scandinavian Detection Pop-Up Modal */}
       <Suspense fallback={null}>
@@ -713,10 +713,10 @@ export default function App() {
       )}
 
       {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-[#FBFBFC] border-b border-[#E5E5EA] py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
+      <div className="sticky top-16 z-30 bg-[#FBFBFC] border-b border-[#E5E5EA] py-2 sm:py-2.5 shadow-2xs">
         <div
           ref={categoryStripRef}
-          className="relative max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5"
+          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5"
         >
           {pillStyle.ready && (
             <div
@@ -758,7 +758,7 @@ export default function App() {
       <main
         onTouchStart={handleFeedTouchStart}
         onTouchEnd={handleFeedTouchEnd}
-        className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-visible"
+        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-visible"
       >
         <div key={selectedCategory} className="space-y-6 sm:space-y-8 animate-in fade-in duration-200 ease-out">
         
