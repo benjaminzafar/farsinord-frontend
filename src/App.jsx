@@ -138,7 +138,7 @@ export default function App() {
       return false;
     }
   });
-  const [siteName, setSiteName] = useState('فارسی نورد');
+  const [siteName, setSiteName] = useState('لینک شو');
   const [logoUrl, setLogoUrl] = useState('');
   const [turnstileSettings, setTurnstileSettings] = useState({ enabled: true, mode: 'test', siteKey: '' });
   const [analyticsSettings, setAnalyticsSettings] = useState({ enabled: false, measurementId: '' });
@@ -150,7 +150,9 @@ export default function App() {
       if (settings) {
         const branding = settings.site_branding;
         if (branding) {
-          if (branding.siteName) setSiteName(branding.siteName);
+          const rawName = (branding.siteName || '').trim();
+          const isLegacyName = !rawName || /سوئد\s*پرشیا|سوید\s*پرشیا|پرشیا\s*سو|فارسی\s*نور|swedpersiska|farsi\s*nord|faris\s*nord/i.test(rawName);
+          setSiteName(isLegacyName ? 'لینک شو' : rawName);
           if (branding.logoUrl && isSafeHttpUrl(branding.logoUrl)) setLogoUrl(branding.logoUrl);
           if (branding.faviconUrl && isSafeHttpUrl(branding.faviconUrl)) {
             let link = document.querySelector("link[rel~='icon']");
@@ -219,10 +221,10 @@ export default function App() {
   // Dynamic Country SEO Document Title
   useEffect(() => {
     const titles = {
-      se: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در سوئد | فارسی نورد',
-      no: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در نروژ | فارسی نورد',
-      dk: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در دانمارک | فارسی نورد',
-      fi: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در فنلاند | فارسی نورد'
+      se: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در سوئد | لینک شو',
+      no: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در نروژ | لینک شو',
+      dk: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در دانمارک | لینک شو',
+      fi: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در فنلاند | لینک شو'
     };
     document.title = titles[selectedCountry] || titles.se;
   }, [selectedCountry]);

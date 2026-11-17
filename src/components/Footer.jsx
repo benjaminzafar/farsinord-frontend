@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ShieldCheck, PlusCircle, KeyRound, Globe, ChevronDown } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
 const currentYear = new Date().getFullYear();
 
 export default function Footer({ 
-  siteName = 'فارسی نورد',
+  siteName = 'لینک شو',
   logoUrl = '',
   selectedCountryObj = null,
   onOpenCountryModal,
@@ -15,6 +15,7 @@ export default function Footer({
   onOpenManageAd,
   onOpenLegal
 }) {
+  const [failedLogoUrl, setFailedLogoUrl] = useState('');
   // Scandinavian cities without emoji flags to prevent Windows raw ISO code rendering
   const scandiCities = [
     { name: 'استکهلم (سوئد)', id: 'Stockholm' },
@@ -32,20 +33,15 @@ export default function Footer({
         {/* Brand Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            {logoUrl ? (
+            {logoUrl && failedLogoUrl !== logoUrl ? (
               <img 
                 src={logoUrl} 
                 alt={siteName} 
                 className="h-9 w-auto max-w-[155px] object-contain"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                onError={() => setFailedLogoUrl(logoUrl)}
               />
             ) : (
-              <>
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0066CC] text-white font-extrabold text-xs">
-                  <span className="font-mono">FN</span>
-                </div>
-                <span className="font-extrabold text-base text-[#1D1D1F] tracking-tight">{siteName}</span>
-              </>
+              <span className="font-extrabold text-base text-[#1D1D1F] tracking-tight">{siteName}</span>
             )}
           </div>
           

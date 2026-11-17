@@ -33,7 +33,7 @@ const DROPDOWN_ICON_MAP = {
 };
 
 export default function Navbar({ 
-  siteName = 'فارسی نورد',
+  siteName = 'لینک شو',
   logoUrl,
   selectedCity = 'all',
   onSelectCity,
@@ -53,6 +53,7 @@ export default function Navbar({
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [mobileSearchFocused, setMobileSearchFocused] = useState(false);
+  const [failedLogoUrl, setFailedLogoUrl] = useState('');
 
   const adMenuRef = useRef(null);
   const categoriesMenuRef = useRef(null);
@@ -193,16 +194,15 @@ export default function Navbar({
               }}
               className="flex items-center gap-2.5 group shrink-0 cursor-pointer"
             >
-              {logoUrl ? (
+              {logoUrl && failedLogoUrl !== logoUrl ? (
                 <img
                   src={logoUrl}
                   alt={siteName}
+                  onError={() => setFailedLogoUrl(logoUrl)}
                   className="h-10 w-auto max-w-[165px] object-contain shrink-0"
                 />
               ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0066CC] text-white font-extrabold text-xs shadow-xs transition-all duration-150 group-hover:scale-105 active:scale-95 shrink-0">
-                  <span className="font-mono font-black">FN</span>
-                </div>
+                <span className="font-black text-lg text-[#1D1D1F] tracking-tight">{siteName}</span>
               )}
             </a>
 

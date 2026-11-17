@@ -94,6 +94,13 @@ export default async function handler(req, res) {
               siteKey: item.value.siteKey,
               protectPostAd: item.value.protectPostAd
             };
+          } else if (item.key === 'site_branding' && item.value) {
+            const rawName = (item.value.siteName || '').trim();
+            const isLegacy = !rawName || /سوئد\s*پرشیا|سوید\s*پرشیا|پرشیا\s*سو|فارسی\s*نور|swedpersiska|farsi\s*nord|faris\s*nord/i.test(rawName);
+            settings.site_branding = {
+              ...item.value,
+              siteName: isLegacy ? 'لینک شو' : rawName
+            };
           } else {
             settings[item.key] = item.value;
           }
