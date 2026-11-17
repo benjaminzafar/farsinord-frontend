@@ -90,13 +90,62 @@ export default function Navbar({
     <header className="fixed top-0 inset-x-0 z-40 w-full bg-[#FBFBFC] border-b border-[#E5E5EA] select-none font-vazir shadow-[0_1px_2px_rgba(29,29,31,0.03)] transition-colors" dir="rtl">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         
-        {/* MOBILE VIEW: Soft Nordic Clean Palette (Search Capsule Right + Logo Left) */}
+        {/* MOBILE VIEW: Logo Right + Search & City Capsule Left */}
         <div className="flex md:hidden h-16 items-center gap-2.5">
-          
-          {/* Integrated City Selector & Search Capsule (Soft Pearl Gray Card) */}
+
+          {/* Logo on Right */}
+          <a
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onSelectCategory) onSelectCategory('all');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="flex items-center shrink-0 cursor-pointer"
+            title={siteName}
+          >
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={siteName}
+                className="h-9 w-auto max-w-[110px] object-contain"
+              />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#0066CC] text-white font-extrabold text-xs shadow-2xs transition-transform active:scale-95">
+                <span className="font-mono font-black">FN</span>
+              </div>
+            )}
+          </a>
+
+          {/* Integrated Search (Right) & City Selector (Left) Capsule */}
           <div className="flex-1 flex items-center h-11 sm:h-12 rounded-2xl bg-slate-100/90 border border-slate-200/90 px-2.5 gap-2 transition-all min-w-0 focus-within:bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-            
-            {/* City Selector Pill with native select overlay */}
+
+            {/* Search Input (Icon on Right) */}
+            <div className="relative flex-1 flex items-center min-w-0">
+              <Search size={15} className="text-slate-400 shrink-0 pointer-events-none me-1.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                placeholder="جستجو در نیازمندی‌ها..."
+                className="w-full h-9 bg-transparent text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none min-w-0"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange?.('')}
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 active:scale-95 shrink-0"
+                  aria-label="پاک کردن متن جستجو"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            {/* Vertical separator */}
+            <div className="h-4.5 w-px bg-slate-300/80 shrink-0" />
+
+            {/* City Selector Pill on Left */}
             <div className="relative shrink-0 flex items-center">
               <div className="flex items-center gap-1.5 ps-2.5 pe-2 py-1.5 rounded-xl bg-white text-slate-800 text-[11.5px] font-bold border border-slate-200 shadow-2xs">
                 <MapPin size={12} className="text-blue-600 shrink-0" />
@@ -121,56 +170,7 @@ export default function Navbar({
               </select>
             </div>
 
-            {/* Vertical separator */}
-            <div className="h-4.5 w-px bg-slate-300/80 shrink-0" />
-
-            {/* Search Input */}
-            <div className="relative flex-1 flex items-center min-w-0">
-              <Search size={15} className="text-slate-400 shrink-0 pointer-events-none me-1" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => onSearchChange?.(e.target.value)}
-                placeholder="جستجو در نیازمندی‌ها..."
-                className="w-full h-9 bg-transparent text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none min-w-0"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => onSearchChange?.('')}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 active:scale-95 shrink-0"
-                  aria-label="پاک کردن متن جستجو"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-
           </div>
-
-          {/* Logo on Left (Clean Nordic Badge) */}
-          <a
-            href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              if (onSelectCategory) onSelectCategory('all');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="flex items-center shrink-0 cursor-pointer"
-            title={siteName}
-          >
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={siteName}
-                className="h-9 w-auto max-w-[120px] object-contain"
-              />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#0066CC] text-white font-extrabold text-xs shadow-2xs transition-transform active:scale-95">
-                <span className="font-mono font-black">FN</span>
-              </div>
-            )}
-          </a>
 
         </div>
 
