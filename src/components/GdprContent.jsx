@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { ShieldCheck, Cookie, SlidersHorizontal, Lock } from 'lucide-react';
 
 export const GDPR_TABS = [
@@ -8,23 +8,49 @@ export const GDPR_TABS = [
 ];
 
 export function GdprTabs({ activeTab, onChangeTab }) {
+  const tabRefs = useRef({});
+  const [pill, setPill] = useState({ left: 0, width: 0, ready: false });
+
+  useEffect(() => {
+    const el = tabRefs.current[activeTab];
+    if (!el) return;
+    const update = () => {
+      setPill({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [activeTab]);
+
   return (
-    <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA]">
+    <div className="relative grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA]">
+      {pill.ready && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1 bottom-1 rounded-xl bg-[#FBFBFC] border border-[#E5E5EA] shadow-xs transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+          style={{
+            width: `${pill.width}px`,
+            transform: `translate3d(${pill.left}px, 0, 0)`,
+            left: 0,
+          }}
+        />
+      )}
       {GDPR_TABS.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
         return (
           <button
             key={tab.id}
+            ref={(el) => { if (el) tabRefs.current[tab.id] = el; }}
             type="button"
             onClick={() => onChangeTab(tab.id)}
-            className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
+            className={`relative z-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer ${
               active
-                ? 'bg-[#FBFBFC] text-[#1D1D1F] shadow-xs border border-[#E5E5EA]'
+                ? (pill.ready ? 'text-[#1D1D1F]' : 'bg-[#FBFBFC] text-[#1D1D1F] shadow-xs border border-[#E5E5EA]')
                 : 'text-[#6E6E73] hover:text-[#1D1D1F]'
             }`}
           >
-            <Icon size={13.5} className={active ? 'text-[#0066CC]' : ''} />
+            <Icon size={13.5} className={`transition-colors duration-200 ${active ? 'text-[#0066CC]' : ''}`} />
             <span className="truncate">{tab.label}</span>
           </button>
         );

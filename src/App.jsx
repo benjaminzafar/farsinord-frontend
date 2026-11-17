@@ -405,8 +405,10 @@ export default function App() {
   // Apple-like sliding active category pill & touch-swipe navigation refs
   const categoryStripRef = useRef(null);
   const categoryPillRefs = useRef({});
+  const sortPillRefs = useRef({});
   const touchSwipeRef = useRef({ x: 0, y: 0 });
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, ready: false });
+  const [sortPillStyle, setSortPillStyle] = useState({ left: 0, width: 0, ready: false });
 
   useEffect(() => {
     const el = categoryPillRefs.current[selectedCategory];
@@ -516,6 +518,17 @@ export default function App() {
   }
 
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
+
+  useEffect(() => {
+    const el = sortPillRefs.current[sortBy];
+    if (!el) return;
+    const updateSortPill = () => {
+      setSortPillStyle({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
+    };
+    updateSortPill();
+    window.addEventListener('resize', updateSortPill);
+    return () => window.removeEventListener('resize', updateSortPill);
+  }, [sortBy, selectedCategory, activeAdDetail]);
 
   // Filter ads safely (handles nullable fields, memoized for performance)
   const filteredAds = useMemo(() => {
@@ -826,8 +839,19 @@ export default function App() {
               )}
             </div>
 
-            {/* Apple-feel Sort Pill Bar */}
-            <div className="flex items-center gap-1 bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA] shadow-2xs overflow-x-auto no-scrollbar self-start sm:self-auto">
+            {/* Apple-feel Sliding Sort Pill Bar */}
+            <div className="relative flex items-center gap-1 bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA] shadow-2xs overflow-x-auto no-scrollbar self-start sm:self-auto">
+              {sortPillStyle.ready && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#0066CC] shadow-[0_2px_10px_rgba(0,102,204,0.25)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+                  style={{
+                    width: `${sortPillStyle.width}px`,
+                    transform: `translate3d(${sortPillStyle.left}px, 0, 0)`,
+                    left: 0,
+                  }}
+                />
+              )}
               {[
                 { id: 'newest', label: 'جدیدترین' },
                 { id: 'most_viewed', label: 'پربازدیدترین' },
@@ -836,12 +860,13 @@ export default function App() {
               ].map((s) => (
                 <button
                   key={s.id}
+                  ref={(el) => { if (el) sortPillRefs.current[s.id] = el; }}
                   type="button"
                   onClick={() => setSortBy(s.id)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer ${
+                  className={`relative z-10 px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer select-none ${
                     sortBy === s.id
-                      ? 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs'
-                      : 'text-[#515154] hover:text-[#1D1D1F] hover:bg-[#ECECEF]'
+                      ? (sortPillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs')
+                      : 'text-[#515154] hover:text-[#1D1D1F]'
                   }`}
                 >
                   {s.label}

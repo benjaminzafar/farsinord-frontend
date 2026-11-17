@@ -177,9 +177,9 @@ export default function CountryBanner({
                     key={country.id}
                     type="button"
                     onClick={() => setActiveChoice(country.id)}
-                    className={`group relative flex items-center justify-between px-3.5 py-3 rounded-2xl border text-right transition-all cursor-pointer active:scale-[0.98] ${
+                    className={`group relative flex items-center justify-between px-3.5 py-3 rounded-2xl border text-right transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer active:scale-[0.95] ${
                       isSelected
-                        ? 'border-[#0066CC] bg-[#0066CC]/[0.05] shadow-[0_0_0_1px_#0066CC]'
+                        ? 'border-[#0066CC] bg-[#0066CC]/[0.06] shadow-[0_0_0_1px_#0066CC,0_4px_14px_rgba(0,102,204,0.12)]'
                         : 'border-[#E5E5EA] bg-[#FBFBFC] hover:bg-[#F5F5F7] hover:border-[#D2D2D7]'
                     }`}
                   >
@@ -200,10 +200,10 @@ export default function CountryBanner({
                       </span>
                     </div>
 
-                    <div className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all shrink-0 ${
+                    <div className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] shrink-0 ${
                       isSelected
-                        ? 'border-[#0066CC] bg-[#0066CC] text-white'
-                        : 'border-[#D2D2D7] bg-[#FBFBFC] group-hover:border-[#AEAEB2]'
+                        ? 'border-[#0066CC] bg-[#0066CC] text-white scale-105 shadow-[0_2px_6px_rgba(0,102,204,0.3)]'
+                        : 'border-[#D2D2D7] bg-[#FBFBFC] scale-95 group-hover:border-[#AEAEB2]'
                     }`}>
                       {isSelected && <Check size={11.5} strokeWidth={3} />}
                     </div>
@@ -312,9 +312,9 @@ export default function CountryBanner({
               <button
                 type="button"
                 onClick={() => handleConfirm(activeChoice)}
-                className={`w-full h-12 rounded-full text-white text-[13.5px] font-bold active:scale-[0.985] transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`w-full h-12 rounded-full text-white text-[13.5px] font-bold active:scale-[0.96] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center justify-center gap-2 cursor-pointer ${
                   gdprChecked
-                    ? 'bg-[#0066CC] hover:bg-[#0055AA] shadow-[0_6px_18px_rgba(0,102,204,0.26)]'
+                    ? 'bg-[#0066CC] hover:bg-[#0055AA] shadow-[0_6px_18px_rgba(0,102,204,0.28)]'
                     : 'bg-[#0066CC]/55 hover:bg-[#0066CC]/70'
                 }`}
               >
