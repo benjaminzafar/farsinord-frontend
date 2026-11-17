@@ -40,6 +40,7 @@ export default function Navbar({
   availableCities = [],
   searchQuery = '',
   onSearchChange,
+  searchSuggestions = [],
   onOpenPostAd, 
   onOpenManageAd,
   onSelectCategory,
@@ -51,6 +52,7 @@ export default function Navbar({
   const [adDropdownOpen, setAdDropdownOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const [mobileSearchFocused, setMobileSearchFocused] = useState(false);
 
   const adMenuRef = useRef(null);
   const categoriesMenuRef = useRef(null);
@@ -90,35 +92,10 @@ export default function Navbar({
     <header className="fixed top-0 inset-x-0 z-40 w-full bg-[#FBFBFC] border-b border-[#E5E5EA] select-none font-vazir shadow-[0_1px_2px_rgba(29,29,31,0.03)] transition-colors" dir="rtl">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         
-        {/* MOBILE VIEW: Logo Right + Search & City Capsule Left */}
-        <div className="flex md:hidden h-16 items-center gap-2.5">
+        {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
+        <div className="relative flex md:hidden h-16 items-center">
 
-          {/* Logo on Right */}
-          <a
-            href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              if (onSelectCategory) onSelectCategory('all');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="flex items-center shrink-0 cursor-pointer"
-            title={siteName}
-          >
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={siteName}
-                className="h-9 w-auto max-w-[110px] object-contain"
-              />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#0066CC] text-white font-extrabold text-xs shadow-2xs transition-transform active:scale-95">
-                <span className="font-mono font-black">FN</span>
-              </div>
-            )}
-          </a>
-
-          {/* Integrated Search (Right) & City Selector (Left) Capsule */}
-          <div className="flex-1 flex items-center h-11 sm:h-12 rounded-2xl bg-slate-100/90 border border-slate-200/90 px-2.5 gap-2 transition-all min-w-0 focus-within:bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+          <div className="flex-1 flex items-center h-11 rounded-2xl bg-slate-100/90 border border-slate-200/90 px-2.5 gap-2 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15">
 
             {/* Search Input (Icon on Right) */}
             <div className="relative flex-1 flex items-center min-w-0">
@@ -126,6 +103,8 @@ export default function Navbar({
               <input
                 type="text"
                 value={searchQuery}
+                onFocus={() => setMobileSearchFocused(true)}
+                onBlur={() => setTimeout(() => setMobileSearchFocused(false), 150)}
                 onChange={(e) => onSearchChange?.(e.target.value)}
                 placeholder="جستجو در نیازمندی‌ها..."
                 className="w-full h-9 bg-transparent text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none min-w-0"
@@ -148,7 +127,7 @@ export default function Navbar({
             {/* City Selector Pill on Left */}
             <div className="relative shrink-0 flex items-center">
               <div className="flex items-center gap-1.5 ps-2.5 pe-2 py-1.5 rounded-xl bg-white text-slate-800 text-[11.5px] font-bold border border-slate-200 shadow-2xs">
-                <MapPin size={12} className="text-blue-600 shrink-0" />
+                <MapPin size={12} className="text-[#0066CC] shrink-0" />
                 <span className="truncate max-w-[68px]">
                   {cityLabel}
                 </span>
@@ -171,6 +150,32 @@ export default function Navbar({
             </div>
 
           </div>
+
+          {/* Google-style Smart Autocomplete Suggestions (Mobile) */}
+          {mobileSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
+            <div className="absolute inset-x-0 top-[60px] bg-[#FBFBFC] border border-[#E5E5EA] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5">
+              {searchSuggestions.map((item, idx) => (
+                <button
+                  key={`${item.label}-${idx}`}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onSearchChange?.(item.label);
+                    setMobileSearchFocused(false);
+                  }}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] text-right transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Search size={13} className="text-[#6E6E73] shrink-0" />
+                    <span className="text-xs font-semibold text-[#1D1D1F] truncate">{item.label}</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECECEF] text-[#515154] shrink-0">
+                    {item.badge}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
         </div>
 

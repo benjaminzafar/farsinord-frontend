@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense } from 'react';
 import { 
   Search, 
   MapPin, 
@@ -26,6 +26,7 @@ import { isSafeHttpUrl } from './lib/supabase';
 import { publicApi } from './lib/apiClient';
 import { COUNTRIES, CATEGORIES, t } from './lib/translations';
 import { getGdprConsent } from './lib/gdpr';
+import { matchesSmartSearch, getSearchSuggestions } from './lib/smartSearch';
 
 const CountryBanner = lazy(() => import('./components/CountryBanner'));
 const LegalModal = lazy(() => import('./components/LegalModal'));
@@ -539,24 +540,28 @@ export default function App() {
     return () => window.removeEventListener('resize', updateSortPill);
   }, [sortBy, selectedCategory, activeAdDetail]);
 
-  // Filter ads safely (handles nullable fields, memoized for performance)
+  // Filter ads safely with zero-lag deferred smart search (typo-tolerant + Persian/Arabic normalization)
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const [heroSearchFocused, setHeroSearchFocused] = useState(false);
+
+  const countryAds = useMemo(
+    () => ads.filter(ad => ad.country === selectedCountry || (!ad.country && selectedCountry === 'se')),
+    [ads, selectedCountry]
+  );
+
+  const searchSuggestions = useMemo(
+    () => getSearchSuggestions(deferredSearchQuery, { ads: countryAds, cities: availableCities, categories: CATEGORIES }),
+    [deferredSearchQuery, countryAds, availableCities]
+  );
+
   const filteredAds = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    return ads.filter(ad => {
-      const matchCountry = ad.country === selectedCountry || (!ad.country && selectedCountry === 'se');
+    return countryAds.filter(ad => {
       const matchCat = selectedCategory === 'all' || ad.category === selectedCategory;
       const matchCity = selectedCity === 'all' || ad.city === selectedCity;
-      const matchSearch = !q ||
-        (ad.title && ad.title.toLowerCase().includes(q)) ||
-        (ad.title_fa && ad.title_fa.toLowerCase().includes(q)) ||
-        (ad.description && ad.description.toLowerCase().includes(q)) ||
-        (ad.city && ad.city.toLowerCase().includes(q)) ||
-        (ad.area && ad.area.toLowerCase().includes(q)) ||
-        (ad.reference_number && ad.reference_number.toLowerCase().includes(q));
-
-      return matchCountry && matchCat && matchCity && matchSearch;
+      const matchSearch = matchesSmartSearch(ad, deferredSearchQuery);
+      return matchCat && matchCity && matchSearch;
     });
-  }, [ads, selectedCountry, selectedCategory, selectedCity, searchQuery]);
+  }, [countryAds, selectedCategory, selectedCity, deferredSearchQuery]);
 
   // Sort ads according to selected sort option
   const sortedAds = useMemo(() => {
@@ -608,6 +613,7 @@ export default function App() {
         availableCities={availableCities}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        searchSuggestions={searchSuggestions}
         onOpenPostAd={handleOpenPostAd}
         onOpenManageAd={handleOpenManageAd}
         onSelectCategory={handleCategoryChange}
@@ -697,13 +703,15 @@ export default function App() {
                   <ChevronDown size={14} className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 </div>
 
-                {/* Keyword Input */}
+                {/* Keyword Input with Google-style Smart Autocomplete */}
                 <div className="relative flex-1">
                   <Search size={15} className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
                     placeholder={currentT.searchPlaceholder}
                     value={searchQuery}
+                    onFocus={() => setHeroSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setHeroSearchFocused(false), 150)}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full h-11 rounded-full bg-transparent border-0 ps-9 pe-9 text-xs text-slate-900 placeholder-slate-400 focus:outline-none text-right"
                   />
@@ -716,6 +724,31 @@ export default function App() {
                     >
                       <X size={14} />
                     </button>
+                  )}
+
+                  {heroSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
+                    <div className="absolute inset-x-0 top-full mt-2 bg-[#FBFBFC] border border-[#E5E5EA] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5 text-right">
+                      {searchSuggestions.map((item, idx) => (
+                        <button
+                          key={`${item.label}-${idx}`}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setSearchQuery(item.label);
+                            setHeroSearchFocused(false);
+                          }}
+                          className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Search size={13} className="text-[#6E6E73] shrink-0" />
+                            <span className="text-xs font-semibold text-[#1D1D1F] truncate">{item.label}</span>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECECEF] text-[#515154] shrink-0">
+                            {item.badge}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
 
