@@ -434,23 +434,23 @@ export default function PostAdModal({
                 </p>
               </div>
 
-              {/* Secret Credentials Box */}
-              <div className="max-w-md mx-auto rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-right">
+              {/* Secret Credentials List */}
+              <div className="max-w-md mx-auto rounded-2xl bg-[#F5F5F7] divide-y divide-[#E5E5EA] overflow-hidden text-right">
                 
                 {/* Reference Number */}
-                <div className="flex items-center justify-between bg-white rounded-xl p-3 border border-slate-200">
+                <div className="flex items-center justify-between px-4 py-3.5">
                   <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-[#86868B]">
                       {currentT.referenceNo}
                     </span>
-                    <span className="font-mono text-base font-black text-slate-900 tracking-wider">
+                    <span className="font-mono text-base font-black text-[#1D1D1F] tracking-wider">
                       <bdi>{successData.referenceNumber}</bdi>
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(successData.referenceNumber, 'ref')}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold active:scale-95 transition-all border border-slate-200 cursor-pointer"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#FBFBFC] hover:bg-white text-[#1D1D1F] text-xs font-semibold active:scale-95 transition-all cursor-pointer"
                   >
                     {copiedRef ? <Check size={13} className="text-emerald-700" /> : <Copy size={13} />}
                     <span>{copiedRef ? currentT.copied : currentT.copyRef}</span>
@@ -458,9 +458,9 @@ export default function PostAdModal({
                 </div>
 
                 {/* Secret PIN */}
-                <div className="flex items-center justify-between bg-white rounded-xl p-3 border border-slate-200">
+                <div className="flex items-center justify-between px-4 py-3.5">
                   <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-[#86868B]">
                       {currentT.pinCode}
                     </span>
                     <span className="font-mono text-base font-black text-amber-600 tracking-widest">
@@ -470,14 +470,14 @@ export default function PostAdModal({
                   <button
                     type="button"
                     onClick={() => copyToClipboard(successData.pinCode, 'pin')}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold active:scale-95 transition-all border border-slate-200 cursor-pointer"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#FBFBFC] hover:bg-white text-[#1D1D1F] text-xs font-semibold active:scale-95 transition-all cursor-pointer"
                   >
                     {copiedPin ? <Check size={13} className="text-emerald-700" /> : <Copy size={13} />}
                     <span>{copiedPin ? currentT.copied : currentT.copyPin}</span>
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-500 pt-1">
+                <div className="flex items-center gap-2 text-xs text-[#6E6E73] px-4 py-3">
                   <KeyRound size={14} className="shrink-0 text-amber-600" />
                   <span>
                     با این دو مشخصه می‌توانید در هر زمان آگهی خود را ویرایش یا حذف نمایید.
@@ -877,7 +877,7 @@ export default function PostAdModal({
               </div>
 
               {/* Auto-generated 6-character security PIN notice (not user-editable) */}
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 flex items-start gap-3">
+              <div className="rounded-2xl bg-amber-50/70 p-3.5 flex items-start gap-3">
                 <KeyRound size={17} className="text-amber-700 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <span className="block text-xs font-bold text-amber-950">

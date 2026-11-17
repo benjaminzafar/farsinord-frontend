@@ -265,7 +265,7 @@ export default function AdDetailPage({
           <main className="lg:col-span-8 space-y-6">
             
             {/* Gallery Card */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-3 sm:p-5 shadow-xs overflow-hidden space-y-3">
+            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-3 sm:p-5 overflow-hidden space-y-3">
               {/* Big Stage Image (click to zoom) */}
               <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 group">
                 <img
@@ -352,15 +352,15 @@ export default function AdDetailPage({
             <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-5 sm:p-7 space-y-5">
               
               {/* Header: Title & Price */}
-              <div className="space-y-3 pb-5 border-b border-slate-100">
+              <div className="space-y-3 pb-5 border-b border-[#E5E5EA]">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-950 leading-snug">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#1D1D1F] leading-snug">
                     {lang === 'fa' && ad.title_fa ? ad.title_fa : ad.title}
                   </h1>
                   
-                  {/* Price Big Badge */}
-                  <div className="px-4 py-2 rounded-2xl bg-slate-50 border border-slate-200/90 text-right sm:text-left shrink-0">
-                    <span className="text-2xl sm:text-3xl font-black text-[#1877F2] tabular-nums tracking-tight">
+                  {/* Price Clean Display */}
+                  <div className="text-right sm:text-left shrink-0 pt-0.5">
+                    <span className="text-2xl sm:text-3xl font-black text-[#0066CC] tabular-nums tracking-tight">
                       <bdi>{displayPrice}</bdi>
                     </span>
                   </div>
@@ -402,22 +402,22 @@ export default function AdDetailPage({
               </div>
 
               {/* Contact Seller Action Buttons (Hidden & Protected with Cloudflare Turnstile) */}
-              <div className="pt-4 border-t border-slate-100 space-y-3">
-                <h3 className="text-sm font-bold text-slate-900">راه‌های ارتباط با آگهی‌دهنده:</h3>
+              <div className="pt-5 border-t border-[#E5E5EA] space-y-3">
+                <h3 className="text-sm font-bold text-[#1D1D1F]">راه‌های ارتباط با آگهی‌دهنده:</h3>
 
                 {!contactRevealed ? (
-                  <div className="rounded-2xl bg-slate-50/90 border border-slate-200/80 p-4 sm:p-5 space-y-3.5">
+                  <div className="pt-1 space-y-3.5">
                     {!showTurnstileGate ? (
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 border border-blue-200/70">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5F5F7] text-[#0066CC]">
                             <Lock size={17} />
                           </div>
                           <div>
-                            <p className="text-xs sm:text-[13px] font-bold text-slate-900">
+                            <p className="text-xs sm:text-[13px] font-bold text-[#1D1D1F]">
                               اطلاعات تماس برای جلوگیری از ربات‌ها محافظت شده است
                             </p>
-                            <p className="text-[11px] text-slate-500">
+                            <p className="text-[11px] text-[#86868B]">
                               برای مشاهده دکمه‌های ارتباطی کلیک کنید
                             </p>
                           </div>
@@ -432,15 +432,15 @@ export default function AdDetailPage({
                               setShowTurnstileGate(true);
                             }
                           }}
-                          className="h-11 px-5 rounded-full bg-[#1877F2] hover:bg-[#166fe5] text-white text-xs sm:text-[13px] font-bold inline-flex items-center justify-center gap-2 shadow-sm transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer shrink-0"
+                          className="h-11 px-5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-[13px] font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer shrink-0"
                         >
                           <ShieldCheck size={16} />
                           <span>مشاهده اطلاعات تماس</span>
                         </button>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center space-y-2.5 py-1 animate-in fade-in duration-200">
-                        <p className="text-xs font-bold text-slate-700">
+                      <div className="flex flex-col items-center justify-center space-y-2.5 py-2 animate-in fade-in duration-200">
+                        <p className="text-xs font-bold text-[#1D1D1F]">
                           تایید امنیتی جهت نمایش اطلاعات تماس آگهی‌دهنده
                         </p>
                         <CloudflareTurnstile
@@ -535,14 +535,14 @@ export default function AdDetailPage({
                 )}
               </div>
 
-              {/* Safety Notice & Report Abuse Card */}
-              <div className="rounded-2xl bg-amber-50/80 border border-amber-200/80 p-4 space-y-3">
+              {/* Safety Notice & Report Abuse Section */}
+              <div className="pt-5 border-t border-[#E5E5EA] space-y-3">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck size={20} className="text-amber-600 shrink-0 mt-0.5" />
-                    <div className="space-y-1 text-xs text-amber-900">
-                      <h4 className="font-bold">راهنمای معامله امن:</h4>
-                      <p className="leading-relaxed text-amber-800">
+                  <div className="flex items-start gap-2.5">
+                    <ShieldCheck size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5 text-xs">
+                      <h4 className="font-bold text-[#1D1D1F]">راهنمای معامله امن</h4>
+                      <p className="leading-relaxed text-[#6E6E73]">
                         همیشه قبل از واریز هرگونه بیعانه یا وجه، کالا یا مسکن را شخصاً بررسی فرمایید و از قراردادهای رسمی استفاده کنید.
                       </p>
                     </div>
@@ -551,7 +551,7 @@ export default function AdDetailPage({
                   <button
                     type="button"
                     onClick={() => setReportOpen((v) => !v)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-rose-50 text-rose-700 border border-amber-200 text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F5F7] hover:bg-rose-50 text-rose-700 text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
                   >
                     <Flag size={12} />
                     <span>گزارش تخلف</span>
@@ -559,7 +559,7 @@ export default function AdDetailPage({
                 </div>
 
                 {reportOpen && (
-                  <div className="pt-3 border-t border-amber-200/80 space-y-2.5">
+                  <div className="pt-3 border-t border-[#E5E5EA] space-y-2.5">
                     {reportSent ? (
                       <p className="text-xs font-bold text-emerald-700">
                         گزارش شما با موفقیت برای بررسی مدیر ارسال شد. با تشکر از همکاری شما.

@@ -154,12 +154,12 @@ export default function Footer({
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 shrink-0" />
               <span>معاملات امن</span>
             </h4>
-            <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 space-y-1.5 text-[11px] leading-relaxed">
-              <div className="flex items-center gap-1.5 font-bold text-slate-800">
+            <div className="space-y-1.5 text-xs leading-relaxed">
+              <div className="flex items-center gap-1.5 font-semibold text-slate-800">
                 <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
                 <span>ارتباط مستقیم و بی‌واسطه</span>
               </div>
-              <p className="text-slate-500 text-[10.5px]">
+              <p className="text-slate-500 text-[11px]">
                 هر آگهی دارای کد پیگیری اختصاصی و کد امنیتی ۶ کاراکتری برای ویرایش یا حذف در هر زمان است.
               </p>
             </div>

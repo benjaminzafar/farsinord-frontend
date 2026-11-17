@@ -152,19 +152,19 @@ export default function PaymentModal({
                 </p>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl max-w-xs mx-auto text-xs space-y-1.5 text-right font-medium">
-                <div className="flex justify-between text-slate-500">
+              <div className="bg-[#F5F5F7] rounded-2xl divide-y divide-[#E5E5EA] max-w-xs mx-auto text-xs text-right font-medium overflow-hidden">
+                <div className="flex justify-between px-4 py-2.5 text-[#6E6E73]">
                   <span>مبلغ پرداختی:</span>
-                  <span className="font-bold text-slate-900">{price} {currency}</span>
+                  <span className="font-bold text-[#1D1D1F]">{price} {currency}</span>
                 </div>
-                <div className="flex justify-between text-slate-500">
+                <div className="flex justify-between px-4 py-2.5 text-[#6E6E73]">
                   <span>وضعیت:</span>
                   <span className="font-bold text-emerald-600">فعال (VIP)</span>
                 </div>
                 {ad?.reference_number && (
-                  <div className="flex justify-between text-slate-500">
+                  <div className="flex justify-between px-4 py-2.5 text-[#6E6E73]">
                     <span>کد مرجع:</span>
-                    <span className="font-mono font-bold text-slate-900">{ad.reference_number}</span>
+                    <span className="font-mono font-bold text-[#1D1D1F]">{ad.reference_number}</span>
                   </div>
                 )}
               </div>
@@ -179,8 +179,8 @@ export default function PaymentModal({
             </div>
           ) : (
             <>
-              {/* Order Summary Box */}
-              <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4 flex items-center justify-between">
+              {/* Order Summary */}
+              <div className="bg-[#F5F5F7] rounded-2xl p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold text-blue-700 block">سفارش ارتقای آگهی:</span>
                   <h4 className="text-xs font-black text-slate-900 line-clamp-1 max-w-[220px]">

@@ -66,10 +66,10 @@ export function GdprTabBody({
   onToggleAnalytics,
 }) {
   return (
-    <div className="space-y-3 text-[12.5px] leading-relaxed text-[#515154]">
+    <div className="text-[12.5px] leading-relaxed text-[#515154]">
       {activeTab === 'privacy' && (
-        <>
-          <div className="p-3.5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-1">
+        <div className="rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] divide-y divide-[#E5E5EA] overflow-hidden">
+          <div className="p-4 bg-[#F5F5F7]/70 space-y-1">
             <h3 className="font-bold text-[#1D1D1F] text-[13px]">
               تعهد به حریم خصوصی کاربران
             </h3>
@@ -78,7 +78,7 @@ export function GdprTabBody({
             </p>
           </div>
 
-          <div className="p-3.5 rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] space-y-1.5">
+          <div className="p-4 space-y-1.5">
             <h4 className="font-bold text-[#1D1D1F] text-[13px]">اطلاعات جمع‌آوری‌شده</h4>
             <ul className="space-y-1 text-[#515154]">
               <li>• اطلاعاتی که خودتان در آگهی ثبت می‌کنید (عنوان، متن، شهر، تصاویر و راه ارتباطی).</li>
@@ -87,19 +87,19 @@ export function GdprTabBody({
             </ul>
           </div>
 
-          <div className="p-3.5 rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] space-y-1.5">
+          <div className="p-4 space-y-1.5">
             <h4 className="font-bold text-[#1D1D1F] text-[13px]">حقوق قانونی شما (GDPR)</h4>
             <ul className="space-y-1 text-[#515154]">
               <li>• حق مشاهده، ویرایش و حذف فوری آگهی و تصاویر در هر زمان.</li>
               <li>• حق تغییر یا لغو رضایت کوکی‌های تحلیلی از بخش «تنظیمات کوکی‌ها».</li>
             </ul>
           </div>
-        </>
+        </div>
       )}
 
       {activeTab === 'cookies' && (
-        <>
-          <div className="p-3.5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-1">
+        <div className="rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] divide-y divide-[#E5E5EA] overflow-hidden">
+          <div className="p-4 bg-[#F5F5F7]/70 space-y-1">
             <h3 className="font-bold text-[#1D1D1F] text-[13px]">
               نحوه استفاده از کوکی‌ها
             </h3>
@@ -108,7 +108,7 @@ export function GdprTabBody({
             </p>
           </div>
 
-          <div className="p-3.5 rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] space-y-1">
+          <div className="p-4 space-y-1">
             <div className="flex items-center justify-between gap-2">
               <span className="font-bold text-[#1D1D1F] text-[13px]">کوکی‌های ضروری</span>
               <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
@@ -120,7 +120,7 @@ export function GdprTabBody({
             </p>
           </div>
 
-          <div className="p-3.5 rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] space-y-1">
+          <div className="p-4 space-y-1">
             <div className="flex items-center justify-between gap-2">
               <span className="font-bold text-[#1D1D1F] text-[13px]">کوکی‌های آمار و بهبود تجربه</span>
               <span className="text-[11px] font-bold text-[#0066CC] bg-[#0066CC]/10 px-2.5 py-0.5 rounded-full">
@@ -131,7 +131,7 @@ export function GdprTabBody({
               به ما کمک می‌کند بخش‌های پرطرفدار را بشناسیم و سرعت و کیفیت سایت را بهتر کنیم. تنها با رضایت شما فعال می‌شوند.
             </p>
           </div>
-        </>
+        </div>
       )}
 
       {activeTab === 'settings' && (
@@ -140,22 +140,23 @@ export function GdprTabBody({
             تنظیمات دلخواه خود را انتخاب و ذخیره کنید:
           </p>
 
-          <div className="p-3.5 rounded-2xl border border-[#E5E5EA] bg-[#F5F5F7] flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-1.5 font-bold text-[#1D1D1F] text-[13px]">
-                <Lock size={13.5} className="text-emerald-600 shrink-0" />
-                <span>کوکی‌های ضروری سایت</span>
+          <div className="rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] divide-y divide-[#E5E5EA] overflow-hidden">
+            <div className="p-4 bg-[#F5F5F7]/60 flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 font-bold text-[#1D1D1F] text-[13px]">
+                  <Lock size={13.5} className="text-emerald-600 shrink-0" />
+                  <span>کوکی‌های ضروری سایت</span>
+                </div>
+                <p className="text-[11.5px] text-[#6E6E73]">
+                  لازم برای عملکرد اصلی، امنیت و ذخیره تنظیمات شما.
+                </p>
               </div>
-              <p className="text-[11.5px] text-[#6E6E73]">
-                لازم برای عملکرد اصلی، امنیت و ذخیره تنظیمات شما.
-              </p>
+              <span className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                همیشه فعال
+              </span>
             </div>
-            <span className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-              همیشه فعال
-            </span>
-          </div>
 
-          <label className="p-3.5 rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] hover:border-[#D2D2D7] flex items-center justify-between gap-4 cursor-pointer transition-colors">
+            <label className="p-4 hover:bg-[#F5F5F7]/70 flex items-center justify-between gap-4 cursor-pointer transition-colors">
             <div className="space-y-0.5">
               <div className="font-bold text-[#1D1D1F] text-[13px]">
                 کوکی‌های آمار و بهبود سایت
@@ -183,6 +184,7 @@ export function GdprTabBody({
               />
             </span>
           </label>
+          </div>
         </div>
       )}
     </div>

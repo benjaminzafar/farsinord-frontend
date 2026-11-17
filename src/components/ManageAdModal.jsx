@@ -206,7 +206,7 @@ export default function ManageAdModal({ lang = 'fa', onClose, onDeleted, onUpdat
             /* Step 1: Input Reference & PIN */
             <form onSubmit={handleVerify} className="space-y-4">
               
-              <div className="rounded-2xl bg-amber-50/70 border border-amber-200/80 p-4 text-xs text-amber-900 leading-relaxed">
+              <div className="rounded-2xl bg-amber-50/70 p-3.5 text-xs text-amber-900 leading-relaxed">
                 {currentT.enterRefPin}
               </div>
 
@@ -263,9 +263,9 @@ export default function ManageAdModal({ lang = 'fa', onClose, onDeleted, onUpdat
             <div className="space-y-5">
               
               {/* Ad Card Snapshot */}
-              <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-2.5">
+              <div className="rounded-2xl bg-[#F5F5F7] p-4 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-white text-stone-800 border border-stone-200">
+                  <span className="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FBFBFC] text-[#1D1D1F]">
                     <bdi>{matchedAd.reference_number}</bdi>
                   </span>
                   <span className={`px-2 py-0.5 rounded text-[10.5px] font-semibold uppercase ${
