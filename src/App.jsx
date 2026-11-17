@@ -151,6 +151,15 @@ export default function App() {
         if (branding) {
           if (branding.siteName) setSiteName(branding.siteName);
           if (branding.logoUrl && isSafeHttpUrl(branding.logoUrl)) setLogoUrl(branding.logoUrl);
+          if (branding.faviconUrl && isSafeHttpUrl(branding.faviconUrl)) {
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+              link = document.createElement('link');
+              link.rel = 'icon';
+              document.head.appendChild(link);
+            }
+            link.href = branding.faviconUrl;
+          }
         }
         const stripe = settings.stripe_settings;
         if (stripe) {
