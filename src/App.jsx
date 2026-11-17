@@ -25,8 +25,10 @@ import AdCard from './components/AdCard';
 import { isSafeHttpUrl } from './lib/supabase';
 import { publicApi } from './lib/apiClient';
 import { COUNTRIES, CATEGORIES, t } from './lib/translations';
+import { getGdprConsent } from './lib/gdpr';
 
 const CountryBanner = lazy(() => import('./components/CountryBanner'));
+const LegalModal = lazy(() => import('./components/LegalModal'));
 const AdDetailPage = lazy(() => import('./components/AdDetailPage'));
 const PaymentModal = lazy(() => import('./components/PaymentModal'));
 const PostAdModal = lazy(() => import('./components/PostAdModal'));
@@ -106,12 +108,14 @@ export default function App() {
   }, [selectedCountry]);
 
   // Modals & Pages
+  const [gdprConsent, setGdprConsent] = useState(() => getGdprConsent());
+  const [legalModalTab, setLegalModalTab] = useState(null);
   const [countryModalOpen, setCountryModalOpen] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get('modal') === 'country') return true;
     } catch {}
-    return !localStorage.getItem('scandi_country_popup_seen');
+    return !getGdprConsent()?.accepted || !localStorage.getItem('scandi_country_popup_seen');
   });
   const [activeAdDetail, setActiveAdDetail] = useState(null);
   const [paymentAd, setPaymentAd] = useState(null);
@@ -174,10 +178,10 @@ export default function App() {
     fetchSettings();
   }, []);
 
-  // Load Google Analytics (GA4) dynamically when enabled in Admin & track pageviews
+  // Load Google Analytics (GA4) dynamically when enabled in Admin & user consented under EU GDPR
   useEffect(() => {
     const id = (analyticsSettings?.measurementId || '').trim().toUpperCase();
-    if (!analyticsSettings?.enabled || !/^G-[A-Z0-9]{4,}$/.test(id)) return;
+    if (!analyticsSettings?.enabled || !gdprConsent?.analytics || !/^G-[A-Z0-9]{4,}$/.test(id)) return;
 
     if (!window.dataLayer) window.dataLayer = [];
     if (!window.gtag) {
@@ -200,7 +204,7 @@ export default function App() {
       page_path: window.location.pathname + window.location.search,
       page_title: document.title,
     });
-  }, [analyticsSettings.enabled, analyticsSettings.measurementId, selectedCountry, selectedCategory, activeAdDetail?.id]);
+  }, [analyticsSettings.enabled, analyticsSettings.measurementId, gdprConsent?.analytics, selectedCountry, selectedCategory, activeAdDetail?.id]);
 
   // Dynamic Country SEO Document Title
   useEffect(() => {
@@ -568,6 +572,8 @@ export default function App() {
           onClose={handleCloseCountryModal}
           selectedCountry={selectedCountry}
           onSelectCountry={handleCountryChange}
+          onOpenLegal={setLegalModalTab}
+          onConsentSaved={setGdprConsent}
         />
       </Suspense>
 
@@ -612,7 +618,7 @@ export default function App() {
             onSelectAd={handleSelectAd}
             onOpenPromote={(targetAd) => handleOpenPayment(targetAd)}
           />
-        </Suspense>
+      </Suspense>
       ) : (
         <>
           {/* Hero Section - Displayed only on Home (selectedCategory === 'all') */}
@@ -905,6 +911,7 @@ export default function App() {
         }}
         onOpenPostAd={() => handleOpenPostAd('bostad')}
         onOpenManageAd={handleOpenManageAd}
+        onOpenLegal={setLegalModalTab}
       />
 
       {/* Mobile Sticky Bottom Menu for Collections & Quick Actions */}
@@ -968,6 +975,16 @@ export default function App() {
               setAds(ads.map(a => a.id === updatedAd.id ? updatedAd : a));
               showToast(lang === 'fa' ? 'آگهی بروزرسانی شد.' : 'Annonsen har uppdaterats.');
             }}
+          />
+        )}
+        {/* MODAL 4: EU GDPR Privacy, Cookie Policy & Cookie Settings */}
+        {legalModalTab && (
+          <LegalModal
+            isOpen={Boolean(legalModalTab)}
+            initialTab={legalModalTab}
+            siteName={siteName}
+            onClose={() => setLegalModalTab(null)}
+            onConsentSaved={setGdprConsent}
           />
         )}
       </Suspense>

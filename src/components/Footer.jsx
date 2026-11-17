@@ -10,7 +10,8 @@ export default function Footer({
   onSelectCategory, 
   onSelectCity, 
   onOpenPostAd,
-  onOpenManageAd
+  onOpenManageAd,
+  onOpenLegal
 }) {
   // Scandinavian cities without emoji flags to prevent Windows raw ISO code rendering
   const scandiCities = [
@@ -157,8 +158,29 @@ export default function Footer({
             © {currentYear} {siteName} • سامانه نیازمندی‌های فارسی‌زبانان اسکاندیناوی
           </div>
           
-          <div className="flex items-center gap-4">
-            <span className="hidden md:inline text-slate-400">سوئد • نروژ • دانمارک • فنلاند</span>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-semibold text-[#515154]">
+            <button
+              type="button"
+              onClick={() => onOpenLegal?.('privacy')}
+              className="hover:text-[#0066CC] transition-colors cursor-pointer"
+            >
+              حریم خصوصی (GDPR)
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenLegal?.('cookies')}
+              className="hover:text-[#0066CC] transition-colors cursor-pointer"
+            >
+              سیاست کوکی‌ها
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenLegal?.('settings')}
+              className="hover:text-[#0066CC] transition-colors cursor-pointer"
+            >
+              تنظیمات کوکی‌ها
+            </button>
+            <span className="hidden md:inline text-[#6E6E73]">سوئد • نروژ • دانمارک • فنلاند</span>
           </div>
         </div>
 
