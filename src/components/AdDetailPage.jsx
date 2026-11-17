@@ -565,7 +565,7 @@ export default function AdDetailPage({
               src={images[activeImageIdx]}
               alt={ad.title}
               onClick={() => setZoomed((z) => !z)}
-              className={`rounded-2xl bg-[#FBFBFC] shadow-[0_12px_40px_rgba(29,29,31,0.10)] border border-[#E5E5EA] transition-all duration-200 ${
+              className={`rounded-2xl bg-[#FBFBFC] shadow-[0_12px_40px_rgba(29,29,31,0.10)] border border-[#E5E5EA] transition-all duration-200 [touch-action:pinch-zoom_pan-x_pan-y] ${
                 zoomed
                   ? 'w-[160vw] sm:w-[130vw] max-w-none h-auto cursor-zoom-out'
                   : 'max-h-full max-w-full object-contain cursor-zoom-in'
