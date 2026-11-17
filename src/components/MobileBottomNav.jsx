@@ -78,89 +78,89 @@ export default function MobileBottomNav({
         dir="rtl"
         aria-label="منوی دسترسی موبایل"
       >
-        <div className="flex items-center justify-around max-w-lg mx-auto">
+        <div className="grid grid-cols-5 items-center max-w-lg mx-auto">
           
           {/* Tab 1: خانه (Home) */}
           <button
             type="button"
             onClick={handleGoHome}
-            className={`flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isHomeActive 
-                ? 'text-[#0066CC] font-black' 
+                ? 'text-[#0066CC] font-bold' 
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
-            <div className={`p-0.5 rounded-lg transition-transform duration-200 ${isHomeActive ? 'text-[#0066CC] scale-105' : ''}`}>
-              <Home size={18} strokeWidth={isHomeActive ? 2.5 : 2} />
+            <div className="flex h-6 w-6 items-center justify-center">
+              <Home size={19} strokeWidth={isHomeActive ? 2.4 : 1.9} />
             </div>
-            <span className="text-[9.5px]">خانه</span>
+            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">خانه</span>
           </button>
 
           {/* Tab 2: دسته‌بندی‌ها (Categories) */}
           <button
             type="button"
             onClick={() => setCollectionSheetOpen(true)}
-            className={`relative flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
+            className={`relative flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isCollectionActive 
-                ? 'text-[#0066CC] font-black' 
+                ? 'text-[#0066CC] font-bold' 
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
-            <div className={`p-0.5 rounded-lg transition-transform duration-200 ${isCollectionActive ? 'text-[#0066CC] scale-105' : ''}`}>
-              <LayoutGrid size={18} strokeWidth={isCollectionActive ? 2.5 : 2} />
+            <div className="flex h-6 w-6 items-center justify-center">
+              <LayoutGrid size={19} strokeWidth={isCollectionActive ? 2.4 : 1.9} />
             </div>
-            <span className="text-[9.5px]">دسته‌بندی‌ها</span>
+            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">دسته‌بندی‌ها</span>
 
             {/* Active Category Indicator Dot */}
             {selectedCategory !== 'all' && (
-              <span className="absolute top-0.5 end-2.5 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
+              <span className="absolute top-1 end-4 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
             )}
           </button>
 
-          {/* Tab 3: دکمه مرکزی ثبت آگهی (Post Ad) */}
+          {/* Tab 3: دکمه مرکزی ثبت آگهی (Post Ad — aligned on exact same baseline) */}
           <button
             type="button"
             onClick={onOpenPostAd}
-            className="flex flex-col items-center gap-0.5 -mt-2 py-0.5 px-2 group cursor-pointer transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88]"
+            className="flex flex-col items-center justify-center py-1.5 rounded-xl text-[#1D1D1F] font-bold cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88]"
             title="ثبت رایگان آگهی"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0066CC] text-[#FBFBFC] shadow-sm shadow-[#0066CC]/25 group-active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]">
-              <Plus size={19} strokeWidth={2.7} />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0066CC] text-[#FBFBFC] shadow-xs">
+              <Plus size={15} strokeWidth={2.8} />
             </div>
-            <span className="text-[9.5px] font-bold text-[#1D1D1F]">ثبت آگهی</span>
+            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">ثبت آگهی</span>
           </button>
 
           {/* Tab 4: مدیریت آگهی (Manage Ad) */}
           <button
             type="button"
             onClick={onOpenManageAd}
-            className="flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl text-[#6E6E73] hover:text-[#1D1D1F] font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
-            title="مدیریت یا حذف آگهی با پین کد"
+            className="flex flex-col items-center justify-center py-1.5 rounded-xl text-[#6E6E73] hover:text-[#1D1D1F] font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
+            title="مدیریت یا حذف آگهی با کد امنیتی"
           >
-            <div className="p-0.5 rounded-lg">
-              <KeyRound size={17} className="text-amber-600" />
+            <div className="flex h-6 w-6 items-center justify-center">
+              <KeyRound size={18} strokeWidth={1.9} className="text-amber-600" />
             </div>
-            <span className="text-[9.5px]">مدیریت</span>
+            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">مدیریت</span>
           </button>
 
-          {/* Tab 5: بیشتر (More — Future Hub: Website Builder, News, Country & Settings) */}
+          {/* Tab 5: بیشتر (More) */}
           <button
             type="button"
             onClick={() => {
               setCollectionSheetOpen(false);
               setMoreSheetOpen(true);
             }}
-            className={`flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               moreSheetOpen
-                ? 'text-[#0066CC] font-black'
+                ? 'text-[#0066CC] font-bold'
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
             title="امکانات بیشتر"
           >
-            <div className={`p-0.5 rounded-lg transition-transform duration-200 ${moreSheetOpen ? 'text-[#0066CC] scale-105' : ''}`}>
-              <MoreHorizontal size={18} />
+            <div className="flex h-6 w-6 items-center justify-center">
+              <MoreHorizontal size={19} strokeWidth={moreSheetOpen ? 2.4 : 1.9} />
             </div>
-            <span className="text-[9.5px]">بیشتر</span>
+            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">بیشتر</span>
           </button>
 
         </div>
@@ -266,18 +266,6 @@ export default function MobileBottomNav({
               >
                 <Globe size={14} className="text-slate-400" />
                 <span>تغییر کشور ({currentCountryObj.nameFa})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setCollectionSheetOpen(false);
-                  onOpenPostAd?.();
-                }}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-bold transition-colors cursor-pointer"
-              >
-                <span>+ ثبت آگهی جدید</span>
-                <ChevronLeft size={14} />
               </button>
             </div>
 
