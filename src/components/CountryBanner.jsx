@@ -212,7 +212,8 @@ export default function CountryBanner({
               })}
             </div>
 
-            {/* EU GDPR & Cookies Card */}
+            {/* EU GDPR & Cookies Card (shown only once before initial acceptance; always accessible in Footer) */}
+            {!hasConsented && (
             <div className={`rounded-2xl border p-4 space-y-3 transition-colors ${
               gdprError && !gdprChecked
                 ? 'border-red-400 bg-red-50/70'
@@ -306,6 +307,7 @@ export default function CountryBanner({
                 </button>
               </div>
             </div>
+            )}
 
             {/* Primary CTA */}
             <div className="space-y-1.5">
