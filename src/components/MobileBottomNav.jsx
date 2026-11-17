@@ -66,7 +66,7 @@ export default function MobileBottomNav({
     <>
       {/* 1. Sleek Compact Mobile Bottom Navigation Bar (Apple Frosted Spring Feel) */}
       <nav 
-        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/85 backdrop-blur-xl border-t border-slate-200/70 shadow-[0_-4px_20px_rgba(0,0,0,0.04)] px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.25rem)] font-vazir select-none"
+        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-[#FBFBFC]/88 backdrop-blur-xl border-t border-[#E5E5EA] shadow-[0_-4px_20px_rgba(29,29,31,0.04)] px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.25rem)] font-vazir select-none"
         dir="rtl"
         aria-label="منوی دسترسی موبایل"
       >
@@ -78,11 +78,11 @@ export default function MobileBottomNav({
             onClick={handleGoHome}
             className={`flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isHomeActive 
-                ? 'text-[#1877F2] font-black' 
-                : 'text-slate-500 hover:text-slate-900 font-medium'
+                ? 'text-[#0066CC] font-black' 
+                : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
-            <div className={`p-0.5 rounded-lg transition-transform duration-200 ${isHomeActive ? 'text-[#1877F2] scale-105' : ''}`}>
+            <div className={`p-0.5 rounded-lg transition-transform duration-200 ${isHomeActive ? 'text-[#0066CC] scale-105' : ''}`}>
               <Home size={18} strokeWidth={isHomeActive ? 2.5 : 2} />
             </div>
             <span className="text-[9.5px]">خانه</span>
@@ -94,18 +94,18 @@ export default function MobileBottomNav({
             onClick={() => setCollectionSheetOpen(true)}
             className={`relative flex flex-col items-center gap-0.5 py-0.5 px-2.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isCollectionActive 
-                ? 'text-[#1877F2] font-black' 
-                : 'text-slate-500 hover:text-slate-900 font-medium'
+                ? 'text-[#0066CC] font-black' 
+                : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
-            <div className={`p-0.5 rounded-lg transition-transform duration-200 ${isCollectionActive ? 'text-[#1877F2] scale-105' : ''}`}>
+            <div className={`p-0.5 rounded-lg transition-transform duration-200 ${isCollectionActive ? 'text-[#0066CC] scale-105' : ''}`}>
               <LayoutGrid size={18} strokeWidth={isCollectionActive ? 2.5 : 2} />
             </div>
             <span className="text-[9.5px]">کالکشن‌ها</span>
 
             {/* Active Category Indicator Dot */}
             {selectedCategory !== 'all' && (
-              <span className="absolute top-0.5 end-2.5 h-1.5 w-1.5 rounded-full bg-blue-600 ring-2 ring-white" />
+              <span className="absolute top-0.5 end-2.5 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
             )}
           </button>
 
@@ -116,10 +116,10 @@ export default function MobileBottomNav({
             className="flex flex-col items-center gap-0.5 -mt-2 py-0.5 px-2 group cursor-pointer transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88]"
             title="ثبت رایگان آگهی"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1877F2] text-white shadow-sm shadow-blue-500/25 group-active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0066CC] text-[#FBFBFC] shadow-sm shadow-[#0066CC]/25 group-active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]">
               <Plus size={19} strokeWidth={2.7} />
             </div>
-            <span className="text-[9.5px] font-bold text-slate-800">ثبت آگهی</span>
+            <span className="text-[9.5px] font-bold text-[#1D1D1F]">ثبت آگهی</span>
           </button>
 
           {/* Tab 4: انتخاب کشور (Country Selector) */}

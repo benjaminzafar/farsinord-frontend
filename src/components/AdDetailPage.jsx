@@ -77,10 +77,10 @@ export default function AdDetailPage({
   const displayVipAds = [...vipAds, ...fallbackAds].slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-stone-900 pb-20 font-vazir" dir="rtl">
+    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] pb-20 font-vazir" dir="rtl">
       
       {/* Top Bar / Breadcrumb Navigation */}
-      <div className="bg-white border-b border-slate-200/90 sticky top-16 z-30 shadow-2xs">
+      <div className="bg-[#FBFBFC]/88 backdrop-blur-xl border-b border-[#E5E5EA] sticky top-16 z-30 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
           
           {/* Back button & Breadcrumb */}

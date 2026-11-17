@@ -23,7 +23,7 @@ export default function Footer({
   ];
 
   return (
-    <footer className="border-t border-[#E6E4DD] bg-white pt-10 pb-8 text-slate-600 text-xs select-none font-vazir" dir="rtl">
+    <footer className="border-t border-[#E5E5EA] bg-[#FBFBFC] pt-10 pb-8 text-[#515154] text-xs select-none font-vazir" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
         {/* Brand Header */}

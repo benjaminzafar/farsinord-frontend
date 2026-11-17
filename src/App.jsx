@@ -559,7 +559,7 @@ export default function App() {
   const featuredAds = useMemo(() => filteredAds.filter(a => a.is_featured), [filteredAds]);
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#F7F6F2] text-stone-900 overflow-x-hidden w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-hidden w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
       {/* Geolocation Scandinavian Detection Pop-Up Modal */}
       <Suspense fallback={null}>
@@ -690,10 +690,10 @@ export default function App() {
                   )}
                 </div>
 
-                {/* CTA Button (Royal Nordic Sapphire) */}
+                {/* CTA Button (Apple Calibrated Blue) */}
                 <button
                   type="button"
-                  className="h-11 px-6 rounded-full bg-[#0F4C81] hover:bg-[#0B3A63] text-white text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
+                  className="h-11 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
                 >
                   <Search size={14} />
                   <span>{currentT.searchBtn}</span>
@@ -707,7 +707,7 @@ export default function App() {
       )}
 
       {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-white/85 backdrop-blur-xl border-b border-[#E6E4DD] py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
+      <div className="sticky top-16 z-30 bg-[#FBFBFC]/88 backdrop-blur-xl border-b border-[#E5E5EA] py-2 sm:py-2.5 px-3 sm:px-6 shadow-2xs">
         <div
           ref={categoryStripRef}
           className="relative max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5"
@@ -715,7 +715,7 @@ export default function App() {
           {pillStyle.ready && (
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-full bg-[#0F4C81] shadow-[0_2px_10px_rgba(15,76,129,0.28)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+              className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-full bg-[#0066CC] shadow-[0_2px_10px_rgba(0,102,204,0.25)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
               style={{
                 width: `${pillStyle.width}px`,
                 transform: `translate3d(${pillStyle.left}px, 0, 0)`,
@@ -734,11 +734,11 @@ export default function App() {
                 onClick={() => handleCategoryChange(cat.id)}
                 className={`relative z-10 inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
                   isActive
-                    ? (pillStyle.ready ? 'text-white' : 'bg-[#0F4C81] text-white shadow-xs')
-                    : 'bg-[#F0EFEA] hover:bg-[#E6E4DD] text-slate-700 hover:text-slate-950'
+                    ? (pillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-xs')
+                    : 'bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F]'
                 }`}
               >
-                <CatIcon size={13} className={`transition-transform duration-200 ${isActive ? 'text-white scale-105 shrink-0' : 'text-slate-500 shrink-0'}`} />
+                <CatIcon size={13} className={`transition-transform duration-200 ${isActive ? 'text-[#FBFBFC] scale-105 shrink-0' : 'text-[#515154] shrink-0'}`} />
                 <span>{cat.fa}</span>
               </button>
             );
@@ -785,19 +785,19 @@ export default function App() {
         <section className="space-y-3 sm:space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-[#1D1D1F] tracking-tight">
                 {currentT.recentAds}
               </h2>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-white border border-[#E6E4DD] text-slate-600 text-[11px] font-bold tabular-nums">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FBFBFC] border border-[#E5E5EA] text-[#515154] text-[11px] font-bold tabular-nums">
                 {sortedAds.length} آگهی
               </span>
               {selectedCategory !== 'all' && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EFF5FB] text-[#0F4C81] text-xs font-semibold border border-[#D5E4F4]">
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EAF2FB] text-[#0066CC] text-xs font-semibold border border-[#CDE0F5]">
                   <span>{CATEGORIES.find(c => c.id === selectedCategory)?.fa}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedCategory('all')}
-                    className="hover:text-[#0B3A63] p-0.5 cursor-pointer"
+                    className="hover:text-[#004C99] p-0.5 cursor-pointer"
                     title="حذف فیلتر دسته"
                   >
                     <X size={12} />
@@ -812,7 +812,7 @@ export default function App() {
                     setSelectedCity('all');
                     setSearchQuery('');
                   }}
-                  className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-semibold text-[#515154] hover:text-[#1D1D1F] flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw size={12} />
                   <span>حذف فیلترها</span>
@@ -821,7 +821,7 @@ export default function App() {
             </div>
 
             {/* Apple-feel Sort Pill Bar */}
-            <div className="flex items-center gap-1 bg-white p-1 rounded-full border border-[#E6E4DD] shadow-2xs overflow-x-auto no-scrollbar self-start sm:self-auto">
+            <div className="flex items-center gap-1 bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA] shadow-2xs overflow-x-auto no-scrollbar self-start sm:self-auto">
               {[
                 { id: 'newest', label: 'جدیدترین' },
                 { id: 'most_viewed', label: 'پربازدیدترین' },
@@ -834,8 +834,8 @@ export default function App() {
                   onClick={() => setSortBy(s.id)}
                   className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer ${
                     sortBy === s.id
-                      ? 'bg-[#0F4C81] text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#F7F6F2]'
+                      ? 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs'
+                      : 'text-[#515154] hover:text-[#1D1D1F] hover:bg-[#ECECEF]'
                   }`}
                 >
                   {s.label}
@@ -848,27 +848,27 @@ export default function App() {
             /* Loading skeletons */
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
               {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-[#EAE8E1]/70 animate-pulse" />
+                <div key={i} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-[#E5E5EA]/70 animate-pulse" />
               ))}
             </div>
           ) : sortedAds.length === 0 ? (
             /* Empty State */
-            <div className="rounded-2xl border border-dashed border-[#D8D5CC] bg-white p-10 text-center space-y-3">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F7F6F2] text-slate-400">
+            <div className="rounded-2xl border border-dashed border-[#D2D2D7] bg-[#FBFBFC] p-10 text-center space-y-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#ECECEF] text-[#6E6E73]">
                 <Search size={20} />
               </div>
               <div className="space-y-0.5">
-                <h3 className="text-sm font-semibold text-slate-800">
+                <h3 className="text-sm font-semibold text-[#1D1D1F]">
                   {currentT.noAdsFound}
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#6E6E73]">
                   فیلترها را تغییر دهید یا اولین آگهی را ثبت کنید.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setPostAdOpen(true)}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#0F4C81] hover:bg-[#0B3A63] text-white font-bold text-xs shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] font-bold text-xs shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
               >
                 <PlusCircle size={14} />
                 <span>{currentT.postAdBtn}</span>

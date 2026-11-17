@@ -23,10 +23,10 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
   return (
     <article
       onClick={() => onSelect(ad)}
-      className="group relative flex flex-col bg-white rounded-xl sm:rounded-2xl border border-[#E6E4DD] shadow-[0_1px_3px_rgba(15,23,42,0.03)] sm:hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)] hover:border-[#D0CEC6] transition-all duration-200 cursor-pointer overflow-hidden active:scale-[0.99]"
+      className="group relative flex flex-col bg-[#FBFBFC] rounded-xl sm:rounded-2xl border border-[#E5E5EA] shadow-[0_1px_3px_rgba(29,29,31,0.04)] sm:hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(29,29,31,0.08)] hover:border-[#D2D2D7] transition-all duration-200 cursor-pointer overflow-hidden active:scale-[0.99]"
     >
       {/* Thumbnail */}
-      <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-stone-100">
+      <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-[#ECECEF]">
         <img
           src={coverImage}
           alt={ad.title}
@@ -35,15 +35,15 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
           decoding="async"
         />
 
-        {/* Featured pill (Nordic Sapphire "ویژه") */}
+        {/* Featured pill (Apple Calibrated Blue "ویژه") */}
         {ad.is_featured && (
-          <div className="absolute top-1.5 start-1.5 sm:top-2 sm:start-2 rounded-lg bg-[#0F4C81] text-white px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-bold shadow-2xs">
+          <div className="absolute top-1.5 start-1.5 sm:top-2 sm:start-2 rounded-lg bg-[#0066CC] text-[#FBFBFC] px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-bold shadow-2xs">
             {lang === 'fa' ? 'ویژه' : 'Utvald'}
           </div>
         )}
 
         {/* Category Pill */}
-        <div className="absolute top-1.5 end-1.5 sm:top-2.5 sm:end-2.5 rounded-full bg-white/95 px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10.5px] font-semibold text-slate-700 shadow-2xs border border-slate-200/70 backdrop-blur-xs max-w-[85px] sm:max-w-none truncate">
+        <div className="absolute top-1.5 end-1.5 sm:top-2.5 sm:end-2.5 rounded-full bg-[#FBFBFC]/92 px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10.5px] font-semibold text-[#1D1D1F] shadow-2xs border border-[#E5E5EA] backdrop-blur-md max-w-[85px] sm:max-w-none truncate">
           {catName}
         </div>
 
@@ -59,24 +59,24 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
         <div className="space-y-1 sm:space-y-1.5">
           {/* Price */}
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[13px] sm:text-[16.5px] font-extrabold text-[#0F4C81] tabular-nums tracking-tight truncate">
+            <span className="text-[13px] sm:text-[16.5px] font-extrabold text-[#0066CC] tabular-nums tracking-tight truncate">
               <bdi>{displayPrice}</bdi>
             </span>
           </div>
 
           {/* Title */}
-          <h3 className="text-[12px] sm:text-[14px] font-bold text-slate-900 group-hover:text-[#0F4C81] transition-colors line-clamp-2 leading-snug">
+          <h3 className="text-[12px] sm:text-[14px] font-bold text-[#1D1D1F] group-hover:text-[#0066CC] transition-colors line-clamp-2 leading-snug">
             {lang === 'fa' && ad.title_fa ? ad.title_fa : ad.title}
           </h3>
 
           {/* Description */}
-          <p className="text-[11px] sm:text-[12px] text-slate-500 line-clamp-1 sm:line-clamp-2 leading-relaxed">
+          <p className="text-[11px] sm:text-[12px] text-[#515154] line-clamp-1 sm:line-clamp-2 leading-relaxed">
             {ad.description}
           </p>
         </div>
 
         {/* Footer info */}
-        <div className="pt-2 sm:pt-2.5 border-t border-slate-100 flex items-center justify-between text-[9.5px] sm:text-[11px] text-slate-400 tabular-nums">
+        <div className="pt-2 sm:pt-2.5 border-t border-[#ECECEF] flex items-center justify-between text-[9.5px] sm:text-[11px] text-[#6E6E73] tabular-nums">
           <div className="flex items-center gap-0.5 sm:gap-1 font-medium truncate">
             <Clock size={10} className="shrink-0" />
             <span className="truncate">{dateStr}</span>
