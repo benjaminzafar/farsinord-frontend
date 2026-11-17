@@ -349,7 +349,7 @@ export default function AdDetailPage({
             </div>
 
             {/* Title, Price & Details Card */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-5 sm:p-7 shadow-xs space-y-5">
+            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-5 sm:p-7 space-y-5">
               
               {/* Header: Title & Price */}
               <div className="space-y-3 pb-5 border-b border-slate-100">
@@ -391,12 +391,12 @@ export default function AdDetailPage({
               </div>
 
               {/* Description Section */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+              <div className="space-y-2.5 pt-1">
+                <h3 className="text-sm font-bold text-[#1D1D1F] flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-[#0066CC]" />
                   <span>توضیحات و مشخصات کامل</span>
                 </h3>
-                <div className="text-sm sm:text-base text-slate-700 leading-relaxed sm:leading-loose whitespace-pre-wrap bg-slate-50/60 p-4 sm:p-5 rounded-2xl border border-slate-100">
+                <div className="text-sm sm:text-base text-[#1D1D1F]/85 leading-relaxed sm:leading-loose whitespace-pre-wrap">
                   {ad.description}
                 </div>
               </div>
@@ -628,27 +628,27 @@ export default function AdDetailPage({
           {/* SIDEBAR: 4 VIP PROMOTED ADS & MONETIZATION SLOTS (4 cols on Desktop) */}
           <aside className="lg:col-span-4 lg:sticky lg:top-32 space-y-5">
             
-            {/* VIP Sponsored Ads Box */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+            {/* VIP Sponsored Ads List */}
+            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] overflow-hidden">
               
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#E5E5EA]">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
                     <Crown size={15} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-extrabold text-slate-950">آگهی‌های ویژه و برگزیده</h2>
-                    <p className="text-[10px] text-slate-400 font-medium">۴ جایگاه اسپانسر شده (VIP)</p>
+                    <h2 className="text-sm font-extrabold text-[#1D1D1F]">آگهی‌های ویژه و برگزیده</h2>
+                    <p className="text-[10px] text-[#86868B] font-medium">۴ جایگاه اسپانسر شده (VIP)</p>
                   </div>
                 </div>
 
-                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
+                <span className="px-2 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
                   اسپانسر
                 </span>
               </div>
 
-              {/* The 4 VIP Cards Grid */}
-              <div className="space-y-3">
+              {/* Flat Hairline-Divided Rows */}
+              <div className="divide-y divide-[#E5E5EA]">
                 {displayVipAds.map((vipAd) => {
                   const vipCat = CATEGORIES.find(c => c.id === vipAd.category);
                   const vipCover = (vipAd.images && vipAd.images.length > 0)
@@ -662,37 +662,34 @@ export default function AdDetailPage({
                     <article
                       key={vipAd.id}
                       onClick={() => onSelectAd?.(vipAd)}
-                      className="group flex gap-3 p-2.5 rounded-xl border border-slate-200/70 hover:border-blue-400 bg-slate-50/50 hover:bg-white transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.99]"
+                      className="group flex items-center gap-3.5 px-4 sm:px-5 py-3.5 hover:bg-[#F5F5F7] active:bg-[#EBEBF0] transition-colors cursor-pointer"
                     >
-                      {/* Image */}
-                      <div className="relative h-20 w-24 rounded-lg overflow-hidden shrink-0 bg-slate-200">
+                      {/* Clean Thumbnail */}
+                      <div className="relative h-16 w-20 rounded-xl overflow-hidden shrink-0 bg-[#F5F5F7]">
                         <img
                           src={vipCover}
                           alt={vipAd.title}
                           className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute top-1 start-1 px-1.5 py-0.5 rounded bg-[#1877F2] text-white text-[8px] font-black shadow-xs">
-                          ویژه
-                        </div>
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 flex flex-col justify-between min-w-0">
+                      <div className="flex-1 flex flex-col justify-between min-w-0 gap-1.5">
                         <div className="space-y-0.5">
-                          <span className="text-[10px] font-semibold text-slate-400 block truncate">
+                          <span className="text-[10px] font-semibold text-[#86868B] block truncate">
                             {vipCat?.fa || vipAd.category}
                           </span>
-                          <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug">
+                          <h4 className="text-xs font-bold text-[#1D1D1F] group-hover:text-[#0066CC] transition-colors line-clamp-1 leading-snug">
                             {vipAd.title_fa || vipAd.title}
                           </h4>
                         </div>
 
-                        <div className="flex items-center justify-between pt-1">
-                          <span className="text-xs font-black text-slate-950 tabular-nums">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-[#1D1D1F] tabular-nums">
                             {vipPrice}
                           </span>
-                          <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-                            <MapPin size={9} className="text-slate-400" />
+                          <span className="text-[10px] text-[#86868B] flex items-center gap-0.5">
+                            <MapPin size={9} className="text-[#86868B]" />
                             {vipAd.city}
                           </span>
                         </div>
