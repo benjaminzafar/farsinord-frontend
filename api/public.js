@@ -7,7 +7,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const PUBLIC_AD_COLUMNS =
-  'id, reference_number, title, title_fa, category, country, city, area, price, price_type, description, contact_name, contact_phone, contact_whatsapp, contact_telegram, contact_email, images, is_featured, status, views_count, created_at, updated_at';
+  'id, reference_number, title, title_fa, category, country, city, area, price, price_type, description, contact_name, contact_phone, contact_whatsapp, contact_telegram, contact_email, contact_website, images, is_featured, status, views_count, created_at, updated_at';
 
 function isSafeHttpUrl(url) {
   if (!url || typeof url !== 'string') return false;
@@ -276,6 +276,39 @@ export default async function handler(req, res) {
 
         if (error) throw error;
         return res.status(200).json({ ok: true, ad: data });
+      }
+
+      if (action === 'report_ad') {
+        const { id, reference_number, title, reason, details } = body;
+        if (!id || !reason) return res.status(400).json({ ok: false, error: 'Missing report fields' });
+
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'ad_reports')
+          .maybeSingle();
+
+        const currentList = Array.isArray(existingRow?.value) ? existingRow.value : [];
+        const newReport = {
+          id: crypto.randomUUID(),
+          ad_id: String(id),
+          reference_number: String(reference_number || ''),
+          title: String(title || '').slice(0, 140),
+          reason: String(reason).slice(0, 80),
+          details: String(details || '').slice(0, 400),
+          created_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase
+          .from('swedpersiska_settings')
+          .upsert({
+            key: 'ad_reports',
+            value: [newReport, ...currentList].slice(0, 200),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (error) throw error;
+        return res.status(200).json({ ok: true });
       }
 
       return res.status(400).json({ ok: false, error: 'Unknown action' });

@@ -18,9 +18,11 @@ import {
   Lock,
   ZoomIn,
   Globe,
+  Flag,
   X
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
+import { publicApi } from '../lib/apiClient';
 import { CATEGORIES, t } from '../lib/translations';
 
 export default function AdDetailPage({ 
@@ -38,6 +40,11 @@ export default function AdDetailPage({
   const [showTurnstileGate, setShowTurnstileGate] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('محتوای غیرمجاز یا نامناسب');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportSending, setReportSending] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
   const stageRef = useRef(null);
   const zoomImgRef = useRef(null);
   const zoomStateRef = useRef({ scale: 1, x: 0, y: 0 });
@@ -528,15 +535,90 @@ export default function AdDetailPage({
                 )}
               </div>
 
-              {/* Safety Notice Card */}
-              <div className="rounded-2xl bg-amber-50/80 border border-amber-200/80 p-4 flex items-start gap-3">
-                <ShieldCheck size={20} className="text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-1 text-xs text-amber-900">
-                  <h4 className="font-bold">راهنمای معامله امن:</h4>
-                  <p className="leading-relaxed text-amber-800">
-                    همیشه قبل از واریز هرگونه بیعانه یا وجه، کالا یا مسکن را شخصاً بررسی فرمایید و از قراردادهای رسمی استفاده کنید. سایت سوئد پرشیا بستر ثبت آگهی‌های رایگان جامعه فارسی‌زبان است.
-                  </p>
+              {/* Safety Notice & Report Abuse Card */}
+              <div className="rounded-2xl bg-amber-50/80 border border-amber-200/80 p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1 text-xs text-amber-900">
+                      <h4 className="font-bold">راهنمای معامله امن:</h4>
+                      <p className="leading-relaxed text-amber-800">
+                        همیشه قبل از واریز هرگونه بیعانه یا وجه، کالا یا مسکن را شخصاً بررسی فرمایید و از قراردادهای رسمی استفاده کنید.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen((v) => !v)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-rose-50 text-rose-700 border border-amber-200 text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
+                  >
+                    <Flag size={12} />
+                    <span>گزارش تخلف</span>
+                  </button>
                 </div>
+
+                {reportOpen && (
+                  <div className="pt-3 border-t border-amber-200/80 space-y-2.5">
+                    {reportSent ? (
+                      <p className="text-xs font-bold text-emerald-700">
+                        گزارش شما با موفقیت برای بررسی مدیر ارسال شد. با تشکر از همکاری شما.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <select
+                            value={reportReason}
+                            onChange={(e) => setReportReason(e.target.value)}
+                            className="h-9 rounded-xl border border-amber-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none"
+                          >
+                            <option value="محتوای غیرمجاز یا نامناسب">محتوای غیرمجاز یا نامناسب</option>
+                            <option value="کلاهبرداری یا آگهی جعلی">کلاهبرداری یا آگهی جعلی</option>
+                            <option value="اسپم یا آگهی تکراری">اسپم یا آگهی تکراری</option>
+                            <option value="سایر موارد">سایر موارد</option>
+                          </select>
+                          <input
+                            type="text"
+                            value={reportDetails}
+                            onChange={(e) => setReportDetails(e.target.value)}
+                            placeholder="توضیح کوتاه (اختیاری)..."
+                            className="h-9 rounded-xl border border-amber-200 bg-white px-3 text-xs text-slate-800 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setReportOpen(false)}
+                            className="h-8 px-3 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
+                          >
+                            انصراف
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reportSending}
+                            onClick={async () => {
+                              setReportSending(true);
+                              try {
+                                await publicApi.reportAd({
+                                  id: ad.id,
+                                  reference_number: ad.reference_number,
+                                  title: ad.title,
+                                  reason: reportReason,
+                                  details: reportDetails,
+                                });
+                                setReportSent(true);
+                              } catch {}
+                              setReportSending(false);
+                            }}
+                            className="h-8 px-4 rounded-full bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+                          >
+                            {reportSending ? 'در حال ارسال...' : 'ارسال گزارش'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
             </div>

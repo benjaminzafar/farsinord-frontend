@@ -92,6 +92,45 @@ export const publicApi = {
       .eq('id', id);
   },
 
+  async reportAd({ id, reference_number, title, reason, details }) {
+    try {
+      const res = await fetch(`${API_BASE}/api/public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'report_ad', id, reference_number, title, reason, details })
+      });
+      if (res.ok) return true;
+    } catch {}
+
+    const { data: existingRow } = await supabase
+      .from('swedpersiska_settings')
+      .select('value')
+      .eq('key', 'ad_reports')
+      .maybeSingle();
+
+    const currentList = Array.isArray(existingRow?.value) ? existingRow.value : [];
+    const newReport = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      ad_id: String(id),
+      reference_number: String(reference_number || ''),
+      title: String(title || '').slice(0, 140),
+      reason: String(reason).slice(0, 80),
+      details: String(details || '').slice(0, 400),
+      created_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('swedpersiska_settings')
+      .upsert({
+        key: 'ad_reports',
+        value: [newReport, ...currentList].slice(0, 200),
+        updated_at: new Date().toISOString(),
+      });
+
+    if (error) throw error;
+    return true;
+  },
+
   async presignUpload({ fileName, contentType, fileSize }) {
     const res = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',
