@@ -791,8 +791,8 @@ export default function App() {
         </section>
       )}
 
-      {/* Horizontal Category Strip with Apple-feel sliding pill */}
-      <div className="pt-3 sm:pt-4 pb-1">
+      {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
+      <div className="sticky top-16 z-30 bg-[#FBFBFC] border-b border-[#E5E5EA] py-2 sm:py-2.5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
         <div
           ref={categoryStripRef}
@@ -801,7 +801,7 @@ export default function App() {
           {pillStyle.ready && (
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#0066CC] shadow-[0_2px_10px_rgba(0,102,204,0.25)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#0066CC] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
               style={{
                 width: `${pillStyle.width}px`,
                 transform: `translate3d(${pillStyle.left}px, 0, 0)`,

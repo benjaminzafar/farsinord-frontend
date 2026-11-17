@@ -89,7 +89,7 @@ export default function Navbar({
     : 'همه شهرها';
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 w-full bg-[#FBFBFC]/95 backdrop-blur-md select-none font-vazir transition-colors" dir="rtl">
+    <header className="fixed top-0 inset-x-0 z-40 w-full bg-[#FBFBFC] border-b border-[#E5E5EA] select-none font-vazir transition-colors" dir="rtl">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         
         {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
