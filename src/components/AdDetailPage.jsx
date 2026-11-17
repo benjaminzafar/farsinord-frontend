@@ -216,49 +216,39 @@ export default function AdDetailPage({
   return (
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] pb-20 font-vazir" dir="rtl">
       
-      {/* Top Bar / Breadcrumb Navigation */}
-      <div className="bg-[#FBFBFC] border-b border-[#E5E5EA] sticky top-16 z-30 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
-          
-          {/* Back button & Breadcrumb */}
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0"
-            >
-              <ArrowRight size={15} />
-              <span>بازگشت به آگهی‌ها</span>
-            </button>
+      {/* Inline quiet navigation (no bar / no menu look) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1 -ms-1 px-1 py-1 text-[13px] font-semibold text-[#0066CC] hover:text-[#0055AA] transition-colors active:opacity-60 cursor-pointer shrink-0"
+          >
+            <ArrowRight size={16} />
+            <span>بازگشت</span>
+          </button>
 
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#6E6E73] truncate">
-              <span>خانه</span>
-              <span>/</span>
-              <span className="text-[#1D1D1F] font-semibold">{catName}</span>
-            </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#86868B] truncate">
+            <span>/</span>
+            <span>خانه</span>
+            <span>/</span>
+            <span className="text-[#1D1D1F] font-semibold">{catName}</span>
           </div>
-
-          {/* Right actions: Reference Code & Share */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="hidden xs:inline-flex font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
-              <bdi>{ad.reference_number}</bdi>
-            </span>
-
-            <button
-              type="button"
-              onClick={shareAd}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
-            >
-              {copiedLink ? <Check size={14} className="text-[#86868B]" /> : <Share2 size={14} />}
-              <span>{copiedLink ? currentT.copied : 'اشتراک‌گذاری'}</span>
-            </button>
-          </div>
-
         </div>
+
+        <button
+          type="button"
+          onClick={shareAd}
+          aria-label="اشتراک‌گذاری"
+          className="inline-flex items-center gap-1.5 px-1 py-1 text-[13px] font-semibold text-[#6E6E73] hover:text-[#1D1D1F] transition-colors active:opacity-60 cursor-pointer shrink-0"
+        >
+          {copiedLink ? <Check size={16} /> : <Share2 size={16} />}
+          <span>{copiedLink ? currentT.copied : 'اشتراک‌گذاری'}</span>
+        </button>
       </div>
 
       {/* Main Page Body: 2 Columns on Desktop, Single Column on Mobile */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6 sm:pt-4 sm:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
           {/* MAIN CONTENT COLUMN (8 cols on Desktop) */}
