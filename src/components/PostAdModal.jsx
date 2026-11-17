@@ -112,7 +112,7 @@ export default function PostAdModal({
   const [imagesList, setImagesList] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [showUrlFallback, setShowUrlFallback] = useState(false);
-  const [pinCode, setPinCode] = useState(generatePinCode());
+  const [pinCode] = useState(generatePinCode);
 
   const currentCountryObj = COUNTRIES.find(c => c.id === adCountry) || COUNTRIES[0];
 
@@ -876,28 +876,16 @@ export default function PostAdModal({
                 </div>
               </div>
 
-              {/* Secret 4-digit PIN setting */}
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <KeyRound size={16} className="text-amber-700" />
-                    <span className="text-xs font-bold text-amber-950">
-                      رمز ۴ رقمی برای حذف یا ویرایش آگهی
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    maxLength={4}
-                    value={pinCode}
-                    onChange={(e) => setPinCode(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="w-28 rounded-xl border border-amber-300 bg-white px-3 py-2 text-center font-mono text-base font-extrabold tracking-widest text-amber-950 focus:border-amber-600 focus:outline-none"
-                  />
-                  <span className="text-[11px] text-amber-800 leading-tight">
-                    این کد پیش‌فرض تولید شده است یا می‌توانید عدد ۴ رقمی دلخواه بگذارید.
+              {/* Auto-generated 6-character security PIN notice (not user-editable) */}
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 flex items-start gap-3">
+                <KeyRound size={17} className="text-amber-700 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="block text-xs font-bold text-amber-950">
+                    کد امنیتی ۶ کاراکتری مدیریت آگهی (خودکار)
                   </span>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    برای امنیت بیشتر، یک کد ۶ کاراکتری غیرقابل‌حدس به‌صورت خودکار توسط سیستم تولید و بلافاصله پس از ثبت آگهی به شما نمایش داده می‌شود.
+                  </p>
                 </div>
               </div>
 

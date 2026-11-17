@@ -34,7 +34,12 @@ function generateReferenceNumber() {
 }
 
 function generatePinCode() {
-  return String(crypto.randomInt(1000, 10000));
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(crypto.randomInt(0, chars.length));
+  }
+  return code;
 }
 
 function setCorsHeaders(req, res) {

@@ -55,8 +55,13 @@ export function generateReferenceNumber() {
 }
 
 /**
- * Generate a cryptographically strong 4-digit PIN code for author ad management
+ * Generate a cryptographically strong 6-character hard PIN code for author ad management
  */
 export function generatePinCode() {
-  return String(1000 + secureRandomInt(9000));
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(secureRandomInt(chars.length));
+  }
+  return code;
 }
