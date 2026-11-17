@@ -791,12 +791,12 @@ export default function App() {
         </section>
       )}
 
-      {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-[#FBFBFC]/95 backdrop-blur-md border-b border-[#E5E5EA] py-2 sm:py-2.5">
+      {/* Horizontal Category Strip with Apple-feel sliding pill */}
+      <div className="pt-3 sm:pt-4 pb-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
         <div
           ref={categoryStripRef}
-          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA] shadow-2xs"
+          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA]"
         >
           {pillStyle.ready && (
             <div
