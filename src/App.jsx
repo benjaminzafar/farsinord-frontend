@@ -35,7 +35,7 @@ const PaymentModal = lazy(() => import('./components/PaymentModal'));
 const PostAdModal = lazy(() => import('./components/PostAdModal'));
 const ManageAdModal = lazy(() => import('./components/ManageAdModal'));
 const PodcastPage = lazy(() => import('./components/PodcastPage'));
-const WebsiteBuilderModal = lazy(() => import('./components/WebsiteBuilderModal'));
+const WebsiteBuilderPage = lazy(() => import('./components/WebsiteBuilderPage'));
 
 const CATEGORY_ICONS = {
   all: LayoutGrid,
@@ -132,7 +132,36 @@ export default function App() {
   // Modals & Pages
   const [gdprConsent, setGdprConsent] = useState(() => getGdprConsent());
   const [legalModalTab, setLegalModalTab] = useState(null);
-  const [websiteBuilderOpen, setWebsiteBuilderOpen] = useState(false);
+  const [websiteBuilderOpen, setWebsiteBuilderOpen] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('page') === 'website-builder';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleOpenWebsiteBuilder = () => {
+    setActiveAdDetail(null);
+    setPodcastOpen(false);
+    setWebsiteBuilderOpen(true);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('ad');
+      url.searchParams.set('page', 'website-builder');
+      window.history.pushState({ page: 'website-builder' }, '', url.toString());
+    } catch {}
+  };
+
+  const handleCloseWebsiteBuilder = () => {
+    setWebsiteBuilderOpen(false);
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('page') === 'website-builder') {
+        url.searchParams.delete('page');
+        window.history.pushState({}, '', url.toString());
+      }
+    } catch {}
+  };
   const [podcastOpen, setPodcastOpen] = useState(() => {
     try {
       return new URLSearchParams(window.location.search).get('page') === 'podcast';
@@ -446,12 +475,13 @@ export default function App() {
       try {
         const params = new URLSearchParams(window.location.search);
 
-        // 1. Modals & Podcast Page
+        // 1. Modals & Sub-Pages
         const modal = params.get('modal');
         setPostAdOpen(modal === 'post');
         setManageAdOpen(modal === 'manage');
         setCountryModalOpen(modal === 'country');
         setPodcastOpen(params.get('page') === 'podcast');
+        setWebsiteBuilderOpen(params.get('page') === 'website-builder');
         if (modal !== 'pay') setPaymentAd(null);
 
         // 2. Ad Detail Page
@@ -570,6 +600,7 @@ export default function App() {
   const handleCategoryChange = (catId) => {
     if (activeAdDetail) handleBackToFeed();
     if (podcastOpen) handleClosePodcast();
+    if (websiteBuilderOpen) handleCloseWebsiteBuilder();
     setSelectedCategory(catId);
     try {
       const url = new URL(window.location.href);
@@ -787,7 +818,7 @@ export default function App() {
         onOpenCountryModal={handleOpenCountryModal}
         onOpenLegal={setLegalModalTab}
         onOpenPodcast={handleOpenPodcast}
-        onOpenWebsiteBuilder={() => setWebsiteBuilderOpen(true)}
+        onOpenWebsiteBuilder={handleOpenWebsiteBuilder}
         selectedCountryObj={currentCountryObj}
       />
 
@@ -821,6 +852,13 @@ export default function App() {
           <PodcastPage
             podcastSettings={podcastSettings}
             onBack={handleClosePodcast}
+          />
+        </Suspense>
+      ) : websiteBuilderOpen ? (
+        <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-12 text-center text-xs text-slate-400">در حال بارگذاری صفحه ساخت وب‌سایت...</div>}>
+          <WebsiteBuilderPage
+            stripeSettings={stripeSettings}
+            onBack={handleCloseWebsiteBuilder}
           />
         </Suspense>
       ) : (
@@ -1177,7 +1215,7 @@ export default function App() {
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
         onOpenPodcast={handleOpenPodcast}
-        onOpenWebsiteBuilder={() => setWebsiteBuilderOpen(true)}
+        onOpenWebsiteBuilder={handleOpenWebsiteBuilder}
       />
 
       {/* Mobile Sticky Bottom Menu for Collections & Quick Actions */}
@@ -1190,7 +1228,7 @@ export default function App() {
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
         onOpenPodcast={handleOpenPodcast}
-        onOpenWebsiteBuilder={() => setWebsiteBuilderOpen(true)}
+        onOpenWebsiteBuilder={handleOpenWebsiteBuilder}
       />
 
       <Suspense fallback={null}>
@@ -1260,15 +1298,6 @@ export default function App() {
             siteName={siteName}
             onClose={() => setLegalModalTab(null)}
             onConsentSaved={setGdprConsent}
-          />
-        )}
-
-        {/* MODAL 5: Website & Seller Panel Builder (240 SEK/month -> 1-Click Cloudflare Deploy) */}
-        {websiteBuilderOpen && (
-          <WebsiteBuilderModal
-            isOpen={websiteBuilderOpen}
-            stripeSettings={stripeSettings}
-            onClose={() => setWebsiteBuilderOpen(false)}
           />
         )}
       </Suspense>

@@ -423,6 +423,55 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
 
+      if (action === 'submit_website_order') {
+        const name = String(body.name || '').trim();
+        const phone = String(body.phone || '').trim();
+        const companyNumber = String(body.companyNumber || '').trim();
+        const email = String(body.email || '').trim();
+
+        if (!name || !phone || !companyNumber || !email) {
+          return res.status(400).json({
+            ok: false,
+            error: 'لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را کامل وارد کنید.',
+          });
+        }
+
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
+
+        const orderId = `WEB-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        const createdAt = new Date().toISOString();
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const newOrder = {
+          storeId: orderId,
+          workerName: `pending_${orderId.toLowerCase()}`,
+          dbId: '',
+          name: name.slice(0, 120),
+          phone: phone.slice(0, 40),
+          companyNumber: companyNumber.slice(0, 60),
+          email: email.slice(0, 120),
+          panelUrl: '',
+          storefrontApiUrl: '',
+          status: 'pending_setup',
+          monthlyPrice: 260,
+          expiresAt,
+          createdAt,
+        };
+
+        await supabase.from('swedpersiska_settings').upsert({
+          key: 'seller_deployments',
+          value: [newOrder, ...prev].slice(0, 500),
+          updated_at: createdAt,
+        });
+
+        return res.status(200).json({ ok: true, order: newOrder });
+      }
+
       if (action === 'deploy_seller_website') {
         const name = String(body.name || '').trim();
         const phone = String(body.phone || '').trim();
@@ -626,6 +675,55 @@ export default async function handler(req, res) {
 
         if (error) throw error;
         return res.status(200).json({ ok: true });
+      }
+
+      if (action === 'submit_website_order') {
+        const name = String(body.name || '').trim();
+        const phone = String(body.phone || '').trim();
+        const companyNumber = String(body.companyNumber || '').trim();
+        const email = String(body.email || '').trim();
+
+        if (!name || !phone || !companyNumber || !email) {
+          return res.status(400).json({
+            ok: false,
+            error: 'لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را کامل وارد کنید.',
+          });
+        }
+
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
+
+        const orderId = `WEB-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        const createdAt = new Date().toISOString();
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const newOrder = {
+          storeId: orderId,
+          workerName: `pending_${orderId.toLowerCase()}`,
+          dbId: '',
+          name: name.slice(0, 120),
+          phone: phone.slice(0, 40),
+          companyNumber: companyNumber.slice(0, 60),
+          email: email.slice(0, 120),
+          panelUrl: '',
+          storefrontApiUrl: '',
+          status: 'pending_setup',
+          monthlyPrice: 260,
+          expiresAt,
+          createdAt,
+        };
+
+        await supabase.from('swedpersiska_settings').upsert({
+          key: 'seller_deployments',
+          value: [newOrder, ...prev].slice(0, 500),
+          updated_at: createdAt,
+        });
+
+        return res.status(200).json({ ok: true, order: newOrder });
       }
 
       if (action === 'deploy_seller_website') {
