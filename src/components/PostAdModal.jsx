@@ -112,6 +112,7 @@ export default function PostAdModal({
   const [contactTelegram, setContactTelegram] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactWebsite, setContactWebsite] = useState('');
+  const [sellerApiUrl, setSellerApiUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imagesList, setImagesList] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
@@ -298,6 +299,23 @@ export default function PostAdModal({
         .single();
 
       if (error) throw error;
+
+      // Save optional Seller Panel API URL link for this ad
+      if (data?.id && sellerApiUrl.trim() && isSafeHttpUrl(sellerApiUrl.trim())) {
+        try {
+          const { data: linkRow } = await supabase
+            .from('swedpersiska_settings')
+            .select('value')
+            .eq('key', 'ad_seller_links')
+            .maybeSingle();
+          const prevLinks = (linkRow && linkRow.value && typeof linkRow.value === 'object') ? linkRow.value : {};
+          await supabase.from('swedpersiska_settings').upsert({
+            key: 'ad_seller_links',
+            value: { ...prevLinks, [data.id]: sellerApiUrl.trim().slice(0, 500) },
+            updated_at: new Date().toISOString()
+          });
+        } catch {}
+      }
 
       setSuccessData({
         referenceNumber: refNum,
@@ -877,6 +895,23 @@ export default function PostAdModal({
                       dir="ltr"
                     />
                   </div>
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    لینک API پنل فروش (فروشگاه یا منوی رستوران - اختیاری)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://.../api/storefront?key=sk_live_..."
+                    value={sellerApiUrl}
+                    onChange={(e) => setSellerApiUrl(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none text-left font-mono"
+                    dir="ltr"
+                  />
+                  <p className="text-[10.5px] text-slate-500 mt-1">
+                    اگر در پنل فروش لینک شو فروشگاه یا منوی رستوران دارید، لینک API خود را اینجا وارد کنید تا محصولاتتان داخل آگهی نمایش داده و فروخته شوند.
+                  </p>
                 </div>
               </div>
 

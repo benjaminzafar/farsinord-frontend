@@ -217,6 +217,20 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, settings: podcast, channelId, episodes });
       }
 
+      if (action === 'get_ad_seller_api') {
+        const adId = String(req.query?.ad_id || '').trim();
+        if (!adId) {
+          return res.status(200).json({ ok: true, seller_api_url: '' });
+        }
+        const { data: linkRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'ad_seller_links')
+          .maybeSingle();
+        const links = (linkRow && linkRow.value && typeof linkRow.value === 'object') ? linkRow.value : {};
+        return res.status(200).json({ ok: true, seller_api_url: links[adId] || '' });
+      }
+
       if (action === 'ad' && id) {
         const clean = String(id).trim();
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
@@ -310,6 +324,23 @@ export default async function handler(req, res) {
           .single();
 
         if (error) throw error;
+
+        if (data?.id && body.seller_api_url && isSafeHttpUrl(body.seller_api_url)) {
+          try {
+            const { data: linkRow } = await supabase
+              .from('swedpersiska_settings')
+              .select('value')
+              .eq('key', 'ad_seller_links')
+              .maybeSingle();
+            const prevLinks = (linkRow && linkRow.value && typeof linkRow.value === 'object') ? linkRow.value : {};
+            await supabase.from('swedpersiska_settings').upsert({
+              key: 'ad_seller_links',
+              value: { ...prevLinks, [data.id]: String(body.seller_api_url).trim().slice(0, 500) },
+              updated_at: new Date().toISOString()
+            });
+          } catch {}
+        }
+
         return res.status(200).json({ ok: true, ad: data, reference_number: refNum, pin_code: finalPin });
       }
 

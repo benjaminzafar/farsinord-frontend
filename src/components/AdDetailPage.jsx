@@ -22,6 +22,7 @@ import {
   X
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
+import AdStorefrontBox from './AdStorefrontBox';
 import { publicApi } from '../lib/apiClient';
 import { CATEGORIES, COUNTRIES, t } from '../lib/translations';
 
@@ -398,6 +399,9 @@ export default function AdDetailPage({
                   {ad.description}
                 </div>
               </div>
+
+              {/* Connected Seller Panel Storefront / Restaurant Menu */}
+              <AdStorefrontBox adId={ad.id} />
 
               {/* Contact Seller Section — Centered UX */}
               <div className="pt-6 border-t border-[#E5E5EA] flex flex-col items-center text-center space-y-4">
