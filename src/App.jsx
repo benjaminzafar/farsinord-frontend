@@ -416,9 +416,15 @@ export default function App() {
       el.setAttribute('content', val);
     };
 
+    const countryIso = (selectedCountry || 'se').toUpperCase();
+    const origin = window.location.origin;
+
     setMeta('meta[name="description"]', 'name=description', pageDesc);
     setMeta('meta[name="keywords"]', 'name=keywords', activeSeo.keywords);
+    setMeta('meta[name="geo.region"]', 'name=geo.region', countryIso);
+    setMeta('meta[name="geo.placename"]', 'name=geo.placename', cName);
     setMeta('meta[property="og:site_name"]', 'property=og:site_name', siteName);
+    setMeta('meta[property="og:locale"]', 'property=og:locale', `fa_${countryIso}`);
     setMeta('meta[property="og:type"]', 'property=og:type', activeAdDetail ? 'article' : 'website');
     setMeta('meta[property="og:url"]', 'property=og:url', window.location.href);
     setMeta('meta[property="og:title"]', 'property=og:title', activeSeo.ogTitle || pageTitle);
@@ -437,7 +443,74 @@ export default function App() {
       document.head.appendChild(canonicalEl);
     }
     canonicalEl.setAttribute('href', window.location.href);
-  }, [selectedCountry, seoSettings, activeAdDetail, siteName]);
+
+    // Localized hreflang alternate links for all active European countries + x-default
+    const countriesList = (portalCountries && portalCountries.length > 0) ? portalCountries : COUNTRIES;
+    document.querySelectorAll('link[rel="alternate"][data-linksho-hreflang="1"]').forEach((el) => el.remove());
+    const appendHreflang = (hreflang, href) => {
+      const linkEl = document.createElement('link');
+      linkEl.setAttribute('rel', 'alternate');
+      linkEl.setAttribute('hreflang', hreflang);
+      linkEl.setAttribute('href', href);
+      linkEl.setAttribute('data-linksho-hreflang', '1');
+      document.head.appendChild(linkEl);
+    };
+    countriesList.forEach((c) => {
+      appendHreflang(`fa-${String(c.id || 'se').toUpperCase()}`, `${origin}/?c=${c.id}`);
+    });
+    appendHreflang('x-default', `${origin}/`);
+
+    // Dynamic localized JSON-LD structured data for country or active ad
+    let ldEl = document.getElementById('linksho-dynamic-ld');
+    if (!ldEl) {
+      ldEl = document.createElement('script');
+      ldEl.id = 'linksho-dynamic-ld';
+      ldEl.type = 'application/ld+json';
+      document.head.appendChild(ldEl);
+    }
+    const ldData = activeAdDetail
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: activeAdDetail.title_fa || activeAdDetail.title,
+          description: pageDesc,
+          image: activeAdDetail.images?.[0] || `${origin}/favicon.svg`,
+          url: window.location.href,
+          inLanguage: `fa-${countryIso}`,
+          areaServed: {
+            '@type': 'Country',
+            name: cName,
+          },
+          ...(activeAdDetail.price
+            ? {
+                offers: {
+                  '@type': 'Offer',
+                  price: activeAdDetail.price,
+                  priceCurrency: activeAdDetail.currency || (selectedCountry === 'se' ? 'SEK' : selectedCountry === 'no' ? 'NOK' : selectedCountry === 'dk' ? 'DKK' : 'EUR'),
+                  availability: 'https://schema.org/InStock',
+                },
+              }
+            : {}),
+        }
+      : {
+          '@context': 'https://schema.org',
+          '@type': 'WebPage',
+          name: pageTitle,
+          description: pageDesc,
+          url: `${origin}/?c=${selectedCountry}`,
+          inLanguage: `fa-${countryIso}`,
+          about: {
+            '@type': 'Country',
+            name: cName,
+          },
+          isPartOf: {
+            '@type': 'WebSite',
+            name: siteName,
+            url: `${origin}/`,
+          },
+        };
+    ldEl.textContent = JSON.stringify(ldData);
+  }, [selectedCountry, seoSettings, activeAdDetail, siteName, portalCountries]);
 
   // Success Toast
   const [toastMsg, setToastMsg] = useState('');

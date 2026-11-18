@@ -23,13 +23,13 @@ export default async function handler(req, res) {
   const todayIso = new Date().toISOString().slice(0, 10);
 
   const urls = [
-    { loc: `${baseUrl}/`, lastmod: todayIso, changefreq: 'hourly', priority: '1.0' },
+    { loc: `${baseUrl}/`, lastmod: todayIso, changefreq: 'hourly', priority: '1.0', alternates: true },
     { loc: `${baseUrl}/?page=website-builder`, lastmod: todayIso, changefreq: 'weekly', priority: '0.8' },
     { loc: `${baseUrl}/?page=podcast`, lastmod: todayIso, changefreq: 'daily', priority: '0.8' },
   ];
 
   for (const c of COUNTRY_IDS) {
-    urls.push({ loc: `${baseUrl}/?c=${c}`, lastmod: todayIso, changefreq: 'daily', priority: '0.9' });
+    urls.push({ loc: `${baseUrl}/?c=${c}`, lastmod: todayIso, changefreq: 'daily', priority: '0.9', alternates: true });
   }
   for (const cat of CATEGORY_IDS) {
     urls.push({ loc: `${baseUrl}/?cat=${cat}`, lastmod: todayIso, changefreq: 'daily', priority: '0.8' });
@@ -57,15 +57,23 @@ export default async function handler(req, res) {
     }
   } catch {}
 
+  const hreflangLinks = [
+    ...COUNTRY_IDS.map(
+      (cid) =>
+        `    <xhtml:link rel="alternate" hreflang="fa-${cid.toUpperCase()}" href="${escapeXml(`${baseUrl}/?c=${cid}`)}" />`
+    ),
+    `    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(`${baseUrl}/`)}" />`,
+  ].join('\n');
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${urls
   .map(
     (u) => `  <url>
     <loc>${escapeXml(u.loc)}</loc>
     <lastmod>${escapeXml(u.lastmod)}</lastmod>
     <changefreq>${u.changefreq}</changefreq>
-    <priority>${u.priority}</priority>
+    <priority>${u.priority}</priority>${u.alternates ? `\n${hreflangLinks}` : ''}
   </url>`
   )
   .join('\n')}
