@@ -23,6 +23,10 @@ import {
   saveAdCredential,
   removeAdCredential,
 } from '../lib/myAdsStorage';
+import {
+  containsLinkInDescription,
+  DESCRIPTION_LINK_ERROR_MSG,
+} from '../lib/moderation';
 import { t } from '../lib/translations';
 
 function formatFaDateTime(isoStr, withTime = false) {
@@ -113,6 +117,7 @@ export default function ManageAdModal({
   const [editDesc, setEditDesc] = useState('');
   const [editStatus, setEditStatus] = useState('active');
   const [editPhone, setEditPhone] = useState('');
+  const editDescHasLink = containsLinkInDescription(editDesc);
 
   // Delete confirmation
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -284,6 +289,10 @@ export default function ManageAdModal({
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!matchedAd || !matchedPin) return;
+    if (containsLinkInDescription(editDesc)) {
+      setErrorMsg(DESCRIPTION_LINK_ERROR_MSG);
+      return;
+    }
     setLoading(true);
     setErrorMsg('');
     setActionSuccessMsg('');
@@ -834,15 +843,24 @@ export default function ManageAdModal({
                       required
                       value={editDesc}
                       onChange={(e) => setEditDesc(e.target.value)}
-                      className="w-full rounded-xl border border-stone-300 p-3 text-xs leading-relaxed focus:border-[#0066CC] focus:outline-none"
+                      className={`w-full rounded-xl border p-3 text-xs leading-relaxed focus:outline-none ${
+                        editDescHasLink
+                          ? 'border-rose-400 focus:border-rose-500'
+                          : 'border-stone-300 focus:border-[#0066CC]'
+                      }`}
                     />
+                    {editDescHasLink && (
+                      <p role="alert" className="mt-1.5 text-[11px] font-bold text-rose-600">
+                        {DESCRIPTION_LINK_ERROR_MSG}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-2 pt-1">
                     <button
                       type="submit"
-                      disabled={loading}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 active:scale-95 transition-all cursor-pointer"
+                      disabled={loading || editDescHasLink}
+                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs py-2.5 active:scale-95 transition-all cursor-pointer"
                     >
                       <Save size={14} />
                       <span>{loading ? 'در حال ذخیره...' : 'ذخیره تغییرات و تمدید فعالیت'}</span>

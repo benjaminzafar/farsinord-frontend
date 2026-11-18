@@ -23,7 +23,11 @@ import CloudflareTurnstile from './CloudflareTurnstile';
 import { isSafeHttpUrl } from '../lib/supabase';
 import { publicApi } from '../lib/apiClient';
 import { saveAdCredential } from '../lib/myAdsStorage';
-import { checkProhibitedContent } from '../lib/moderation';
+import {
+  checkProhibitedContent,
+  containsLinkInDescription,
+  DESCRIPTION_LINK_ERROR_MSG,
+} from '../lib/moderation';
 import { COUNTRIES, CATEGORIES, t, buildAdPolicyRules } from '../lib/translations';
 
 async function computeFileSha256(file) {
@@ -141,6 +145,7 @@ export default function PostAdModal({
   const [showUrlFallback, setShowUrlFallback] = useState(false);
 
   const currentCountryObj = activeCountries.find(c => c.id === adCountry) || activeCountries[0];
+  const descriptionHasLink = containsLinkInDescription(description);
 
   // Add image to list (only safe http/https URLs, max 4 photos)
   const addImage = () => {
@@ -246,6 +251,10 @@ export default function PostAdModal({
         setErrorMsg('لطفاً عنوان و توضیحات کامل آگهی را وارد فرمایید.');
         return;
       }
+      if (containsLinkInDescription(description)) {
+        setErrorMsg(DESCRIPTION_LINK_ERROR_MSG);
+        return;
+      }
       setStep(3);
       scrollBodyTop();
     }
@@ -265,6 +274,11 @@ export default function PostAdModal({
 
     if (!title.trim() || !description.trim() || !contactName.trim()) {
       setErrorMsg('لطفاً عنوان، توضیحات و نام تماس‌گیرنده را وارد فرمایید.');
+      return;
+    }
+
+    if (containsLinkInDescription(description)) {
+      setErrorMsg(DESCRIPTION_LINK_ERROR_MSG);
       return;
     }
 
@@ -783,8 +797,17 @@ export default function PostAdModal({
                   placeholder="مشخصات کامل ملک، خدمات، ساعات کار، شرایط یا توضیحات مربوطه را بنویسید..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none leading-relaxed"
+                  className={`w-full rounded-xl border bg-white p-3 text-xs font-medium text-slate-900 focus:outline-none leading-relaxed ${
+                    descriptionHasLink
+                      ? 'border-rose-400 focus:border-rose-500'
+                      : 'border-slate-300 focus:border-blue-600'
+                  }`}
                 />
+                {descriptionHasLink && (
+                  <p role="alert" className="mt-1.5 text-[11px] font-bold text-rose-600">
+                    {DESCRIPTION_LINK_ERROR_MSG}
+                  </p>
+                )}
               </div>
 
               {/* Photos (Cloudflare R2 Direct Upload: Max 4 photos, Max 1 MB each) */}
@@ -896,8 +919,9 @@ export default function PostAdModal({
                 </button>
                 <button
                   type="button"
+                  disabled={descriptionHasLink}
                   onClick={handleNextStep}
-                  className="flex-1 h-12 rounded-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
+                  className="flex-1 h-12 rounded-full bg-[#1877F2] hover:bg-[#166fe5] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-center gap-2 shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
                 >
                   <span>مرحله بعدی: اطلاعات تماس و انتشار</span>
                   <ChevronLeft size={17} />
@@ -1080,6 +1104,12 @@ export default function PostAdModal({
                 </div>
               )}
 
+              {descriptionHasLink && (
+                <p role="alert" className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+                  {DESCRIPTION_LINK_ERROR_MSG}
+                </p>
+              )}
+
               {/* Submit CTA */}
               <div className="pt-2 flex items-center gap-2.5">
                 <button
@@ -1092,8 +1122,8 @@ export default function PostAdModal({
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="flex-1 h-12 flex items-center justify-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#166fe5] disabled:opacity-50 text-white font-bold text-sm shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
+                  disabled={loading || descriptionHasLink}
+                  className="flex-1 h-12 flex items-center justify-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#166fe5] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
                 >
                   <PlusCircle size={16} />
                   <span>
