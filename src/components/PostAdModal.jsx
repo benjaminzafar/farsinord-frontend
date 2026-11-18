@@ -351,7 +351,7 @@ export default function PostAdModal({
                 {currentT.postAdBtn}
               </h2>
               <span className="text-[11px] font-medium text-slate-500">
-                انتشار رایگان در کشورهای حوزه اسکاندیناوی
+                انتشار رایگان در کشورهای اروپایی
               </span>
             </div>
           </div>

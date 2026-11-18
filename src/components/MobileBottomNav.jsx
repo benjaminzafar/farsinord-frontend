@@ -203,7 +203,7 @@ export default function MobileBottomNav({
                     دسته‌بندی‌های نیازمندی‌ها
                   </h3>
                   <span className="text-[11px] text-slate-500 font-medium">
-                    دسته‌بندی موضوعی آگهی‌های جامعه فارسی‌زبانان اسکاندیناوی
+                    دسته‌بندی موضوعی آگهی‌های جامعه فارسی‌زبانان اروپا
                   </span>
                 </div>
               </div>
