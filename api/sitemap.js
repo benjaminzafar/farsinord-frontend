@@ -24,7 +24,6 @@ export default async function handler(req, res) {
 
   const urls = [
     { loc: `${baseUrl}/`, lastmod: todayIso, changefreq: 'hourly', priority: '1.0', alternates: true },
-    { loc: `${baseUrl}/?page=website-builder`, lastmod: todayIso, changefreq: 'weekly', priority: '0.8' },
     { loc: `${baseUrl}/?page=podcast`, lastmod: todayIso, changefreq: 'daily', priority: '0.8' },
   ];
 

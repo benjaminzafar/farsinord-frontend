@@ -19,7 +19,6 @@ import {
   Check,
   MoreHorizontal,
   Headphones,
-  MonitorSmartphone,
   ShieldCheck
 } from 'lucide-react';
 import { CATEGORIES, COUNTRIES } from '../lib/translations';
@@ -47,7 +46,6 @@ export default function MobileBottomNav({
   onOpenManageAd,
   onOpenLegal,
   onOpenPodcast,
-  onOpenWebsiteBuilder,
 }) {
   const [collectionSheetOpen, setCollectionSheetOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -356,28 +354,6 @@ export default function MobileBottomNav({
             {/* Upcoming Future Services */}
             <div className="pt-2 space-y-2">
               <span className="block text-[11px] font-bold text-[#6E6E73] px-1">سرویس‌های آینده</span>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreSheetOpen(false);
-                  onOpenWebsiteBuilder?.();
-                }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200/80 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-[#0066CC] text-white flex items-center justify-center">
-                    <MonitorSmartphone size={18} />
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-[13px] font-bold text-[#1D1D1F]">ساخت وب‌سایت و پنل فروش</span>
-                    <span className="block text-[11px] text-[#6E6E73]">نصب خودکار روی کلودفلر</span>
-                  </div>
-                </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#0066CC] text-white text-[10px] font-bold">
-                  شروع ۱۵۰۰ کرون
-                </span>
-              </button>
 
               <button
                 type="button"
