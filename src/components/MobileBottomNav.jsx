@@ -78,42 +78,42 @@ export default function MobileBottomNav({
         dir="rtl"
         aria-label="منوی دسترسی موبایل"
       >
-        <div className="grid grid-cols-5 items-center max-w-lg mx-auto">
+        <div className="grid grid-cols-5 items-stretch max-w-lg mx-auto">
           
           {/* Tab 1: خانه (Home) */}
           <button
             type="button"
             onClick={handleGoHome}
-            className={`flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
+            className={`h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isHomeActive 
                 ? 'text-[#0066CC] font-bold' 
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
-            <div className="flex h-6 w-6 items-center justify-center">
-              <Home size={19} strokeWidth={isHomeActive ? 2.4 : 1.9} />
-            </div>
-            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">خانه</span>
+            <span className="flex h-6 w-6 items-center justify-center shrink-0">
+              <Home size={20} strokeWidth={isHomeActive ? 2.3 : 1.9} className="block" />
+            </span>
+            <span className="text-[10px] leading-none whitespace-nowrap">خانه</span>
           </button>
 
           {/* Tab 2: دسته‌بندی‌ها (Categories) */}
           <button
             type="button"
             onClick={() => setCollectionSheetOpen(true)}
-            className={`relative flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
+            className={`relative h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isCollectionActive 
                 ? 'text-[#0066CC] font-bold' 
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
-            <div className="flex h-6 w-6 items-center justify-center">
-              <LayoutGrid size={19} strokeWidth={isCollectionActive ? 2.4 : 1.9} />
-            </div>
-            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">دسته‌بندی‌ها</span>
+            <span className="flex h-6 w-6 items-center justify-center shrink-0">
+              <LayoutGrid size={20} strokeWidth={isCollectionActive ? 2.3 : 1.9} className="block" />
+            </span>
+            <span className="text-[10px] leading-none whitespace-nowrap">دسته‌بندی‌ها</span>
 
             {/* Active Category Indicator Dot */}
             {selectedCategory !== 'all' && (
-              <span className="absolute top-1 end-4 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
+              <span className="absolute top-1.5 end-4 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
             )}
           </button>
 
@@ -121,26 +121,26 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={onOpenPostAd}
-            className="flex flex-col items-center justify-center py-1.5 rounded-xl text-[#1D1D1F] font-bold cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88]"
+            className="h-12 flex flex-col items-center justify-center gap-1 rounded-xl text-[#1D1D1F] font-bold cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88]"
             title="ثبت رایگان آگهی"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0066CC] text-[#FBFBFC] shadow-xs">
-              <Plus size={15} strokeWidth={2.8} />
-            </div>
-            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">ثبت آگهی</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0066CC] text-[#FBFBFC] shrink-0">
+              <Plus size={15} strokeWidth={2.6} className="block" />
+            </span>
+            <span className="text-[10px] leading-none whitespace-nowrap">ثبت آگهی</span>
           </button>
 
           {/* Tab 4: مدیریت آگهی (Manage Ad) */}
           <button
             type="button"
             onClick={onOpenManageAd}
-            className="flex flex-col items-center justify-center py-1.5 rounded-xl text-[#6E6E73] hover:text-[#1D1D1F] font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
+            className="h-12 flex flex-col items-center justify-center gap-1 rounded-xl text-[#6E6E73] hover:text-[#1D1D1F] font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
             title="مدیریت یا حذف آگهی با کد امنیتی"
           >
-            <div className="flex h-6 w-6 items-center justify-center">
-              <KeyRound size={18} strokeWidth={1.9} className="text-[#86868B]" />
-            </div>
-            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">مدیریت</span>
+            <span className="flex h-6 w-6 items-center justify-center shrink-0">
+              <KeyRound size={20} strokeWidth={1.9} className="block" />
+            </span>
+            <span className="text-[10px] leading-none whitespace-nowrap">مدیریت</span>
           </button>
 
           {/* Tab 5: بیشتر (More) */}
@@ -150,17 +150,17 @@ export default function MobileBottomNav({
               setCollectionSheetOpen(false);
               setMoreSheetOpen(true);
             }}
-            className={`flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
+            className={`h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               moreSheetOpen
                 ? 'text-[#0066CC] font-bold'
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
             title="امکانات بیشتر"
           >
-            <div className="flex h-6 w-6 items-center justify-center">
-              <MoreHorizontal size={19} strokeWidth={moreSheetOpen ? 2.4 : 1.9} />
-            </div>
-            <span className="text-[10px] leading-none mt-1 whitespace-nowrap">بیشتر</span>
+            <span className="flex h-6 w-6 items-center justify-center shrink-0">
+              <MoreHorizontal size={20} strokeWidth={moreSheetOpen ? 2.3 : 1.9} className="block" />
+            </span>
+            <span className="text-[10px] leading-none whitespace-nowrap">بیشتر</span>
           </button>
 
         </div>

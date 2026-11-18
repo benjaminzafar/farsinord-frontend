@@ -48,9 +48,9 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
         </div>
 
         {/* City Pill */}
-        <div className="absolute bottom-1.5 start-1.5 sm:bottom-2.5 sm:start-2.5 flex items-center gap-0.5 sm:gap-1 rounded-full bg-slate-950/80 px-2 sm:px-2.5 py-0.5 text-[9.5px] sm:text-[11px] font-medium text-slate-200 backdrop-blur-xs max-w-[90%] truncate">
-          <MapPin size={10} className="text-[#86868B] shrink-0" />
-          <span className="truncate">{ad.city}{ad.area ? ` • ${ad.area}` : ''}</span>
+        <div className="absolute bottom-1.5 start-1.5 sm:bottom-2.5 sm:start-2.5 inline-flex items-center gap-1 rounded-full bg-slate-950/80 px-2 sm:px-2.5 h-5 sm:h-6 text-[9.5px] sm:text-[11px] font-medium leading-none text-slate-200 backdrop-blur-xs max-w-[90%] truncate">
+          <MapPin size={11} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+          <span className="truncate leading-none">{ad.city}{ad.area ? ` • ${ad.area}` : ''}</span>
         </div>
       </div>
 
@@ -76,14 +76,14 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
         </div>
 
         {/* Footer info */}
-        <div className="pt-2 sm:pt-2.5 border-t border-[#ECECEF] flex items-center justify-between text-[9.5px] sm:text-[11px] text-[#6E6E73] tabular-nums">
-          <div className="flex items-center gap-0.5 sm:gap-1 font-medium truncate">
-            <Clock size={10} className="shrink-0" />
-            <span className="truncate">{dateStr}</span>
+        <div className="pt-2 sm:pt-2.5 border-t border-[#ECECEF] flex items-center justify-between text-[9.5px] sm:text-[11px] leading-none text-[#6E6E73] tabular-nums">
+          <div className="inline-flex items-center gap-1 font-medium truncate">
+            <Clock size={11} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+            <span className="truncate leading-none">{dateStr}</span>
           </div>
-          <div className="flex items-center gap-0.5 sm:gap-1 font-medium shrink-0">
-            <Eye size={10} className="shrink-0" />
-            <span>{ad.views_count || 1} {lang === 'fa' ? 'بازدید' : 'visningar'}</span>
+          <div className="inline-flex items-center gap-1 font-medium shrink-0">
+            <Eye size={11} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+            <span className="leading-none">{ad.views_count || 1} {lang === 'fa' ? 'بازدید' : 'visningar'}</span>
           </div>
         </div>
       </div>

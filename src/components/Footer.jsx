@@ -223,10 +223,10 @@ export default function Footer({
                   <button
                     type="button"
                     onClick={onOpenPostAd}
-                    className="flex items-center gap-1.5 hover:text-[#1D1D1F] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] transition-colors cursor-pointer"
                   >
-                    <PlusCircle size={13} className="text-[#86868B] shrink-0" />
-                    <span>ثبت رایگان آگهی</span>
+                    <PlusCircle size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                    <span className="leading-none">ثبت رایگان آگهی</span>
                   </button>
                 </li>
               )}
@@ -235,10 +235,10 @@ export default function Footer({
                   <button
                     type="button"
                     onClick={onOpenManageAd}
-                    className="flex items-center gap-1.5 hover:text-[#1D1D1F] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] transition-colors cursor-pointer"
                   >
-                    <KeyRound size={13} className="text-[#86868B] shrink-0" />
-                    <span>ویرایش و مدیریت آگهی</span>
+                    <KeyRound size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                    <span className="leading-none">ویرایش و مدیریت آگهی</span>
                   </button>
                 </li>
               )}
@@ -247,10 +247,10 @@ export default function Footer({
                   <button
                     type="button"
                     onClick={onOpenCountryModal}
-                    className="flex items-center gap-1.5 hover:text-[#1D1D1F] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] transition-colors cursor-pointer"
                   >
-                    <Globe size={13} className="text-[#86868B] shrink-0" />
-                    <span>تغییر کشور ({selectedCountryObj?.nameFa || 'انتخاب'})</span>
+                    <Globe size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                    <span className="leading-none">تغییر کشور ({selectedCountryObj?.nameFa || 'انتخاب'})</span>
                   </button>
                 </li>
               )}

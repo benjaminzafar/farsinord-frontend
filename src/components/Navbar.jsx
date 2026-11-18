@@ -96,11 +96,13 @@ export default function Navbar({
         {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
         <div className="relative flex md:hidden h-16 items-center">
 
-          <div className="flex-1 flex items-center h-11 rounded-2xl bg-slate-100/90 border border-slate-200/90 px-2.5 gap-2 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15">
+          <div className="flex-1 flex items-center h-11 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] px-3 gap-2.5 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15">
 
-            {/* Search Input (Icon on Right) */}
-            <div className="relative flex-1 flex items-center min-w-0">
-              <Search size={15} className="text-slate-400 shrink-0 pointer-events-none me-1.5" />
+            {/* Search Input (Icon on Right — exact same vertical center as City Selector) */}
+            <div className="relative flex-1 flex items-center gap-2 min-w-0 h-full">
+              <span className="flex h-5 w-5 items-center justify-center shrink-0 text-[#86868B] pointer-events-none">
+                <Search size={15} strokeWidth={2} className="block" />
+              </span>
               <input
                 type="text"
                 value={searchQuery}
@@ -108,31 +110,35 @@ export default function Navbar({
                 onBlur={() => setTimeout(() => setMobileSearchFocused(false), 150)}
                 onChange={(e) => onSearchChange?.(e.target.value)}
                 placeholder="جستجو در نیازمندی‌ها..."
-                className="w-full h-9 bg-transparent text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none min-w-0"
+                className="w-full h-full bg-transparent text-[13px] leading-none text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none min-w-0"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => onSearchChange?.('')}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 active:scale-95 shrink-0"
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] active:scale-95 shrink-0"
                   aria-label="پاک کردن متن جستجو"
                 >
-                  <X size={13} />
+                  <X size={14} strokeWidth={2} className="block" />
                 </button>
               )}
             </div>
 
             {/* Vertical separator */}
-            <div className="h-4.5 w-px bg-slate-300/80 shrink-0" />
+            <div className="h-5 w-px bg-[#E5E5EA] shrink-0" />
 
-            {/* City Selector Pill on Left */}
-            <div className="relative shrink-0 flex items-center">
-              <div className="flex items-center gap-1.5 ps-2.5 pe-2 py-1.5 rounded-xl bg-white text-slate-800 text-[11.5px] font-bold border border-slate-200 shadow-2xs">
-                <MapPin size={12} className="text-[#86868B] shrink-0" />
-                <span className="truncate max-w-[68px]">
+            {/* City Selector on Left (Flat, aligned on exact same horizontal axis) */}
+            <div className="relative shrink-0 flex items-center h-full">
+              <div className="inline-flex items-center gap-1.5 h-8 px-2 rounded-xl text-[#1D1D1F] text-xs font-bold leading-none">
+                <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
+                  <MapPin size={14} strokeWidth={2} className="block" />
+                </span>
+                <span className="truncate max-w-[72px] leading-none">
                   {cityLabel}
                 </span>
-                <ChevronDown size={12} className="text-slate-400 shrink-0" />
+                <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
+                  <ChevronDown size={14} strokeWidth={2} className="block" />
+                </span>
               </div>
 
               {/* Invisible native select over pill */}
@@ -233,10 +239,10 @@ export default function Navbar({
                 <button
                   type="button"
                   onClick={() => setCategoriesDropdownOpen(!categoriesDropdownOpen)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[13px] font-medium text-slate-600 hover:text-slate-950 hover:bg-slate-100 transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-medium leading-none text-slate-600 hover:text-slate-950 hover:bg-slate-100 transition-all cursor-pointer"
                 >
-                  <span>سایر دسته‌ها</span>
-                  <ChevronDown size={14} className={`transition-transform duration-200 ${categoriesDropdownOpen ? 'rotate-180' : ''}`} />
+                  <span className="leading-none">سایر دسته‌ها</span>
+                  <ChevronDown size={14} strokeWidth={2} className={`block shrink-0 transition-transform duration-200 ${categoriesDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {categoriesDropdownOpen && (
@@ -276,7 +282,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-                className={`flex items-center gap-1.5 h-10 px-3.5 rounded-full border text-[13px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer active:scale-[0.94] ${
+                className={`inline-flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-full border text-[13px] font-semibold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer active:scale-[0.94] ${
                   moreDropdownOpen
                     ? 'bg-[#ECECEF] border-[#D2D2D7] text-[#1D1D1F]'
                     : 'bg-[#F5F5F7] hover:bg-[#ECECEF] border-[#E5E5EA] text-[#1D1D1F]'
@@ -284,9 +290,9 @@ export default function Navbar({
                 aria-expanded={moreDropdownOpen}
                 title="امکانات بیشتر"
               >
-                <MoreHorizontal size={16} className="text-[#515154]" />
-                <span>بیشتر</span>
-                <ChevronDown size={13} className={`text-[#6E6E73] transition-transform duration-200 ${moreDropdownOpen ? 'rotate-180' : ''}`} />
+                <MoreHorizontal size={15} strokeWidth={2} className="block text-[#515154] shrink-0" />
+                <span className="leading-none">بیشتر</span>
+                <ChevronDown size={14} strokeWidth={2} className={`block text-[#6E6E73] shrink-0 transition-transform duration-200 ${moreDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {moreDropdownOpen && (
@@ -376,16 +382,16 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setAdDropdownOpen(!adDropdownOpen)}
-                className={`flex items-center gap-2 h-10 px-4 rounded-full text-[13px] font-bold text-[#FBFBFC] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shadow-xs active:scale-[0.94] ${
+                className={`inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-full text-[13px] font-bold leading-none text-[#FBFBFC] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shadow-xs active:scale-[0.94] ${
                   adDropdownOpen 
                     ? 'bg-[#0055AA] ring-2 ring-[#0066CC]/30' 
                     : 'bg-[#0066CC] hover:bg-[#0055AA]'
                 }`}
                 aria-expanded={adDropdownOpen}
               >
-                <Plus size={16} strokeWidth={2.5} />
-                <span>آگهی</span>
-                <ChevronDown size={14} className={`transition-transform duration-200 text-white/80 ${adDropdownOpen ? 'rotate-180' : ''}`} />
+                <Plus size={15} strokeWidth={2.4} className="block shrink-0" />
+                <span className="leading-none">آگهی</span>
+                <ChevronDown size={14} strokeWidth={2} className={`block shrink-0 transition-transform duration-200 text-white/80 ${adDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Single Dropdown Menu with "ثبت آگهی" and "مدیریت آگهی" */}

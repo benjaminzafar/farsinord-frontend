@@ -804,11 +804,13 @@ export default function App() {
 
               {/* Flat Unified Search Capsule — Hairline-Divided (No Box-in-Box) */}
               <div className="pt-2 sm:pt-3 px-1 hidden md:block">
-                <div className="bg-[#FBFBFC] rounded-full p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] border border-white/40 max-w-2xl mx-auto flex items-center gap-1 transition-all">
+                <div className="bg-[#FBFBFC] rounded-full p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] border border-white/40 max-w-2xl mx-auto flex items-center gap-1.5 transition-all">
                   
                   {/* Keyword Input with Google-style Smart Autocomplete (Right side in RTL) */}
-                  <div className="relative flex-1 min-w-0">
-                    <Search size={15} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-[#86868B] pointer-events-none" />
+                  <div className="relative flex-1 flex items-center gap-2 h-10 px-3 min-w-0">
+                    <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B] pointer-events-none">
+                      <Search size={15} strokeWidth={2} className="block" />
+                    </span>
                     <input
                       type="text"
                       placeholder={currentT.searchPlaceholder}
@@ -816,16 +818,16 @@ export default function App() {
                       onFocus={() => setHeroSearchFocused(true)}
                       onBlur={() => setTimeout(() => setHeroSearchFocused(false), 150)}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full h-10 rounded-full bg-transparent border-0 ps-9 pe-8 text-xs font-medium text-[#1D1D1F] placeholder-[#86868B] focus:outline-none text-right"
+                      className="w-full h-full bg-transparent border-0 text-xs font-medium leading-none text-[#1D1D1F] placeholder-[#86868B] focus:outline-none text-right min-w-0"
                     />
                     {searchQuery && (
                       <button
                         type="button"
                         onClick={() => setSearchQuery('')}
-                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#86868B] hover:text-[#1D1D1F] cursor-pointer transition-colors"
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] cursor-pointer transition-colors shrink-0"
                         aria-label="پاک کردن جستجو"
                       >
-                        <X size={14} />
+                        <X size={14} strokeWidth={2} className="block" />
                       </button>
                     )}
 
@@ -843,10 +845,10 @@ export default function App() {
                             className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <Search size={13} className="text-[#86868B] shrink-0" />
-                              <span className="text-xs font-semibold text-[#1D1D1F] truncate">{item.label}</span>
+                              <Search size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                              <span className="text-xs font-semibold leading-none text-[#1D1D1F] truncate">{item.label}</span>
                             </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5F5F7] text-[#6E6E73] shrink-0">
+                            <span className="text-[10px] font-bold leading-none px-2 py-1 rounded-full bg-[#F5F5F7] text-[#6E6E73] shrink-0">
                               {item.badge}
                             </span>
                           </button>
@@ -858,13 +860,24 @@ export default function App() {
                   {/* Clean Hairline Divider (No inner box) */}
                   <div className="h-5 w-px bg-[#E5E5EA] shrink-0" />
 
-                  {/* Flat Borderless City Selector */}
-                  <div className="relative w-40 shrink-0">
-                    <MapPin size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-[#86868B] pointer-events-none" />
+                  {/* Flat Borderless City Selector (Flex-aligned on exact same baseline) */}
+                  <div className="relative flex items-center h-10 px-2.5 shrink-0">
+                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold leading-none text-[#1D1D1F]">
+                      <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
+                        <MapPin size={15} strokeWidth={2} className="block" />
+                      </span>
+                      <span className="truncate max-w-[96px] leading-none">
+                        {availableCities.find(c => c.id === selectedCity)?.fa || 'همه شهرها'}
+                      </span>
+                      <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
+                        <ChevronDown size={14} strokeWidth={2} className="block" />
+                      </span>
+                    </div>
                     <select
                       value={selectedCity}
                       onChange={(e) => setSelectedCity(e.target.value)}
-                      className="w-full h-10 bg-transparent ps-8 pe-7 text-xs font-semibold text-[#1D1D1F] border-0 focus:outline-none cursor-pointer appearance-none text-right"
+                      aria-label="انتخاب شهر"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     >
                       {availableCities.map(c => (
                         <option key={c.id} value={c.id}>
@@ -872,16 +885,15 @@ export default function App() {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown size={13} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-[#86868B] pointer-events-none" />
                   </div>
 
                   {/* CTA Button */}
                   <button
                     type="button"
-                    className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                    className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-xs font-bold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
                   >
-                    <Search size={14} />
-                    <span>{currentT.searchBtn}</span>
+                    <Search size={15} strokeWidth={2} className="block shrink-0" />
+                    <span className="leading-none">{currentT.searchBtn}</span>
                   </button>
 
                 </div>
@@ -918,14 +930,16 @@ export default function App() {
                 ref={(el) => { if (el) categoryPillRefs.current[cat.id] = el; }}
                 type="button"
                 onClick={() => handleCategoryChange(cat.id)}
-                className={`relative z-10 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
+                className={`relative z-10 h-8 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-full text-xs font-bold leading-none whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
                   isActive
                     ? (pillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs')
                     : 'text-[#515154] hover:text-[#1D1D1F]'
                 }`}
               >
-                <CatIcon size={13} className={`shrink-0 transition-colors duration-200 ${isActive ? 'text-[#FBFBFC]' : 'text-[#86868B]'}`} />
-                <span>{cat.fa}</span>
+                <span className="flex h-4 w-4 items-center justify-center shrink-0">
+                  <CatIcon size={14} strokeWidth={2} className={`block transition-colors duration-200 ${isActive ? 'text-[#FBFBFC]' : 'text-[#86868B]'}`} />
+                </span>
+                <span className="leading-none">{cat.fa}</span>
               </button>
             );
           })}

@@ -218,17 +218,17 @@ export default function AdDetailPage({
       
       {/* Inline quiet navigation (no bar / no menu look) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 leading-none">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1 -ms-1 px-1 py-1 text-[13px] font-semibold text-[#0066CC] hover:text-[#0055AA] transition-colors active:opacity-60 cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 -ms-1 px-1 h-8 text-[13px] font-semibold leading-none text-[#0066CC] hover:text-[#0055AA] transition-colors active:opacity-60 cursor-pointer shrink-0"
           >
-            <ArrowRight size={16} />
-            <span>بازگشت</span>
+            <ArrowRight size={15} strokeWidth={2} className="block shrink-0" />
+            <span className="leading-none">بازگشت</span>
           </button>
 
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#86868B] truncate">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs leading-none text-[#86868B] truncate">
             <span>/</span>
             <span>خانه</span>
             <span>/</span>
@@ -240,10 +240,14 @@ export default function AdDetailPage({
           type="button"
           onClick={shareAd}
           aria-label="اشتراک‌گذاری"
-          className="inline-flex items-center gap-1.5 px-1 py-1 text-[13px] font-semibold text-[#6E6E73] hover:text-[#1D1D1F] transition-colors active:opacity-60 cursor-pointer shrink-0"
+          className="inline-flex items-center gap-1.5 px-1 h-8 text-[13px] font-semibold leading-none text-[#6E6E73] hover:text-[#1D1D1F] transition-colors active:opacity-60 cursor-pointer shrink-0"
         >
-          {copiedLink ? <Check size={16} /> : <Share2 size={16} />}
-          <span>{copiedLink ? currentT.copied : 'اشتراک‌گذاری'}</span>
+          {copiedLink ? (
+            <Check size={15} strokeWidth={2} className="block shrink-0" />
+          ) : (
+            <Share2 size={15} strokeWidth={2} className="block shrink-0" />
+          )}
+          <span className="leading-none">{copiedLink ? currentT.copied : 'اشتراک‌گذاری'}</span>
         </button>
       </div>
 
@@ -356,27 +360,27 @@ export default function AdDetailPage({
                   </div>
                 </div>
 
-                {/* Clean Inline Meta Row (No mismatched pills) */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#6E6E73]">
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-[#1D1D1F]">
-                    <MapPin size={13.5} className="text-[#86868B] shrink-0" />
-                    <span>{ad.city}{ad.area ? `، ${ad.area}` : ''}</span>
+                {/* Clean Inline Meta Row (No mismatched pills, uniform 14px icons on exact same baseline) */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs leading-none text-[#6E6E73]">
+                  <span className="inline-flex items-center gap-1.5 font-semibold leading-none text-[#1D1D1F]">
+                    <MapPin size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                    <span className="leading-none">{ad.city}{ad.area ? `، ${ad.area}` : ''}</span>
                   </span>
 
-                  <span className="inline-flex items-center gap-1">
-                    <Clock size={13} className="text-[#86868B] shrink-0" />
-                    <span>{dateStr}</span>
+                  <span className="inline-flex items-center gap-1.5 leading-none">
+                    <Clock size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                    <span className="leading-none">{dateStr}</span>
                   </span>
 
-                  <span className="inline-flex items-center gap-1">
-                    <Eye size={13} className="text-[#86868B] shrink-0" />
-                    <span>{ad.views_count || 1} بازدید</span>
+                  <span className="inline-flex items-center gap-1.5 leading-none">
+                    <Eye size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                    <span className="leading-none">{ad.views_count || 1} بازدید</span>
                   </span>
 
                   {ad.reference_number && (
-                    <span className="inline-flex items-center gap-1 text-[#86868B]">
-                      <span>کد:</span>
-                      <bdi className="font-mono font-semibold text-[#6E6E73]">{ad.reference_number}</bdi>
+                    <span className="inline-flex items-center gap-1 leading-none text-[#86868B]">
+                      <span className="leading-none">کد:</span>
+                      <bdi className="font-mono font-semibold leading-none text-[#6E6E73]">{ad.reference_number}</bdi>
                     </span>
                   )}
                 </div>
