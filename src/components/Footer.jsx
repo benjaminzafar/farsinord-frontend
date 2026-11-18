@@ -10,7 +10,6 @@ export default function Footer({
   selectedCountryObj = null,
   onOpenCountryModal,
   onSelectCategory, 
-  onSelectCity, 
   onOpenPostAd,
   onOpenManageAd,
   onOpenLegal
@@ -18,18 +17,17 @@ export default function Footer({
   const [failedLogoUrl, setFailedLogoUrl] = useState('');
 
   const allCategories = CATEGORIES.filter(c => c.id !== 'all');
-  const activeCountryCities = (selectedCountryObj?.cities || [])
-    .filter(c => c.id !== 'all')
-    .slice(0, 6);
+  const primaryCategories = allCategories.slice(0, 5);
+  const secondaryCategories = allCategories.slice(5);
 
   return (
     <footer className="border-t border-[#E5E5EA] bg-[#FBFBFC] pt-10 pb-8 text-[#515154] text-xs select-none font-vazir" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
-        {/* Brand Header & Concise Professional Introduction */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#E5E5EA]">
-          <div className="space-y-1.5 max-w-xl">
-            <div className="flex items-center gap-3">
+        {/* Brand Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E5EA]">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
               {logoUrl && failedLogoUrl !== logoUrl ? (
                 <img 
                   src={logoUrl} 
@@ -40,42 +38,38 @@ export default function Footer({
               ) : (
                 <span className="font-black text-base text-[#1D1D1F] tracking-tight">{siteName}</span>
               )}
-              <span className="text-[11px] font-semibold text-[#86868B]">
-                • نیازمندی‌های فارسی‌زبانان اسکاندیناوی
-              </span>
             </div>
-            <p className="text-xs text-[#6E6E73] leading-relaxed">
-              پلتفرم تخصصی ثبت و جستجوی مستقیم آگهی‌های مسکن، رستوران، کاریابی، خدمات و کسب‌وکارهای فارسی‌زبان در سوئد، نروژ، دانمارک و فنلاند.
+            <p className="text-xs font-medium text-[#6E6E73]">
+              محل رشد کسب و کار فارسی‌زبانان
             </p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#6E6E73] shrink-0">
-            <span>سوئد • نروژ • دانمارک • فنلاند</span>
-            {onOpenCountryModal && (
+          {onOpenCountryModal && (
+            <div className="flex items-center shrink-0">
               <button
                 type="button"
                 onClick={onOpenCountryModal}
                 className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
-                title="تغییر کشور"
+                title="تغییر موقعیت"
               >
                 <Globe size={13.5} className="text-[#86868B]" />
-                <span>{selectedCountryObj?.nameFa || 'انتخاب کشور'}</span>
+                <span>{selectedCountryObj?.nameFa || 'انتخاب موقعیت'}</span>
                 <ChevronDown size={12} className="text-[#86868B]" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* 4-Column Footer Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-12 gap-6 sm:gap-8">
+        {/* 4-Column Universal Footer Grid (Not restricted to specific countries) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           
-          {/* Column 1: دسته‌بندی آگهی‌ها (All 9 Categories in 2 sub-columns) */}
-          <div className="col-span-2 sm:col-span-1 md:col-span-4 space-y-3">
+          {/* Column 1: دسته‌بندی‌های اصلی */}
+          <div className="space-y-3">
             <h4 className="font-extrabold text-[#1D1D1F] text-xs">
-              دسته‌بندی آگهی‌ها
+              دسته‌بندی‌ها
             </h4>
-            <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-[#6E6E73]">
-              {allCategories.map(cat => (
+            <ul className="space-y-2 text-xs text-[#6E6E73]">
+              {primaryCategories.map(cat => (
                 <li key={cat.id}>
                   <button
                     type="button"
@@ -92,31 +86,31 @@ export default function Footer({
             </ul>
           </div>
 
-          {/* Column 2: شهرهای کشور انتخاب‌شده */}
-          <div className="col-span-1 md:col-span-3 space-y-3">
+          {/* Column 2: سایر دسته‌بندی‌ها */}
+          <div className="space-y-3">
             <h4 className="font-extrabold text-[#1D1D1F] text-xs">
-              شهرهای {selectedCountryObj?.nameFa || 'اسکاندیناوی'}
+              سایر بخش‌ها
             </h4>
             <ul className="space-y-2 text-xs text-[#6E6E73]">
-              {activeCountryCities.map(city => (
-                <li key={city.id}>
+              {secondaryCategories.map(cat => (
+                <li key={cat.id}>
                   <button
                     type="button"
                     onClick={() => {
-                      onSelectCity?.(city.id);
+                      onSelectCategory?.(cat.id);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className="hover:text-[#1D1D1F] transition-colors text-right cursor-pointer"
                   >
-                    {city.fa}
+                    {cat.fa}
                   </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Column 3: دسترسی سریع و مدیریت */}
-          <div className="col-span-1 md:col-span-2 space-y-3">
+          {/* Column 3: ثبت و مدیریت */}
+          <div className="space-y-3">
             <h4 className="font-extrabold text-[#1D1D1F] text-xs">
               ثبت و مدیریت
             </h4>
@@ -149,17 +143,17 @@ export default function Footer({
           </div>
 
           {/* Column 4: امنیت و راهنمای معاملات */}
-          <div className="col-span-2 md:col-span-3 space-y-3">
+          <div className="space-y-3">
             <h4 className="font-extrabold text-[#1D1D1F] text-xs">
               معاملات مستقیم و امن
             </h4>
             <div className="space-y-1.5 text-xs leading-relaxed">
               <div className="flex items-center gap-1.5 font-semibold text-[#1D1D1F]">
                 <ShieldCheck size={14} className="text-[#86868B] shrink-0" />
-                <span>بدون واسطه و بدون نیاز به ثبت‌نام</span>
+                <span>ارتباط مستقیم و بی‌واسطه</span>
               </div>
               <p className="text-[#6E6E73] text-[11px] leading-relaxed">
-                هر آگهی پس از ثبت دارای کد پیگیری و پین امنیتی ۶ کاراکتری اختصاصی جهت ویرایش یا حذف فوری در هر زمان است.
+                هر آگهی پس از ثبت دارای کد پیگیری و پین امنیتی ۶ کاراکتری اختصاصی جهت ویرایش یا حذف در هر زمان است.
               </p>
             </div>
           </div>
@@ -169,7 +163,7 @@ export default function Footer({
         {/* Bottom bar */}
         <div className="border-t border-[#E5E5EA] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#86868B]">
           <div>
-            © {currentYear} {siteName} • مرجع نیازمندی‌های فارسی‌زبانان اسکاندیناوی
+            © {currentYear} {siteName} • محل رشد کسب و کار فارسی‌زبانان
           </div>
           
           <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-semibold text-[#6E6E73]">
