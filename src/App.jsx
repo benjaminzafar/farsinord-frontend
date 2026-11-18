@@ -357,10 +357,11 @@ export default function App() {
     fetchSettings();
   }, []);
 
-  // Load Google Analytics (GA4) dynamically when enabled in Admin & user consented under EU GDPR
+  // Google Analytics (GA4) with Consent Mode v2: tag is always present (so Google detects it),
+  // but analytics_storage stays 'denied' until the visitor accepts analytics under EU GDPR.
   useEffect(() => {
     const id = (analyticsSettings?.measurementId || '').trim().toUpperCase();
-    if (!analyticsSettings?.enabled || !gdprConsent?.analytics || !/^G-[A-Z0-9]{4,}$/.test(id)) return;
+    if (!analyticsSettings?.enabled || !/^G-[A-Z0-9]{4,}$/.test(id)) return;
 
     if (!window.dataLayer) window.dataLayer = [];
     if (!window.gtag) {
@@ -369,14 +370,29 @@ export default function App() {
       };
     }
 
-    const scriptId = `ga4-script-${id}`;
-    if (!document.getElementById(scriptId)) {
+    if (!window.__lsGtagBooted) {
+      window.gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+      });
+      window.gtag('js', new Date());
+      window.__lsGtagBooted = true;
+    }
+
+    window.gtag('consent', 'update', {
+      analytics_storage: gdprConsent?.analytics ? 'granted' : 'denied',
+    });
+
+    const alreadyLoaded = Array.from(document.scripts).some((s) =>
+      (s.src || '').includes(`googletagmanager.com/gtag/js?id=${id}`)
+    );
+    if (!alreadyLoaded) {
       const script = document.createElement('script');
-      script.id = scriptId;
       script.async = true;
       script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
       document.head.appendChild(script);
-      window.gtag('js', new Date());
     }
 
     window.gtag('config', id, {

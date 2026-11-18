@@ -29,15 +29,38 @@
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "لینک شو | LinkSho",
-        "url": "https://swedpersiska.vercel.app/",
+        "url": "https://www.linksho.eu/",
         "inLanguage": "fa",
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://swedpersiska.vercel.app/?q={search_term_string}",
+          "target": "https://www.linksho.eu/?q={search_term_string}",
           "query-input": "required name=search_term_string"
         }
       }
     </script>
+
+    <!-- Google tag (gtag.js) with Consent Mode v2: analytics cookies stay denied until the visitor accepts (GDPR) -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+        wait_for_update: 500
+      });
+      try {
+        var lsConsent = JSON.parse(localStorage.getItem('scandi_gdpr_consent') || 'null');
+        if (lsConsent && lsConsent.accepted === true && lsConsent.analytics) {
+          gtag('consent', 'update', { analytics_storage: 'granted' });
+        }
+      } catch (e) {}
+      window.__lsGtagBooted = true;
+      gtag('js', new Date());
+      gtag('config', 'G-PKNWW7EPYH', { send_page_view: false });
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PKNWW7EPYH"></script>
 
     <!-- Google Fonts: Vazirmatn (Farsi) & Plus Jakarta Sans (Nordic/Latin) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
