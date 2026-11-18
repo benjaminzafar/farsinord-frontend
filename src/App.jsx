@@ -675,9 +675,8 @@ export default function App() {
       </Suspense>
       ) : (
         <>
-          {/* Hero Section - Displayed only on Home (selectedCategory === 'all') */}
-          {selectedCategory === 'all' && (
-            <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-1 animate-in fade-in duration-200">
+          {/* Hero Section - Always visible on Desktop; hidden on Mobile when filtering by category */}
+          <section className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-1 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
           <div className="relative min-h-[200px] sm:min-h-[300px] md:min-h-[350px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-14 md:py-16">
             
             {/* Rounded Architectural Cityscape Backdrop */}
@@ -788,7 +787,6 @@ export default function App() {
             </div>
           </div>
         </section>
-      )}
 
       {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
       <div className="sticky top-16 z-30 bg-[#F5F5F7]/90 backdrop-blur-md py-2.5 sm:py-3">
