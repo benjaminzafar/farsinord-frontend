@@ -238,20 +238,8 @@ export const publicApi = {
   },
 
   async promoteAd(id, country) {
-    try {
-      const json = await postPublic('promote_ad', { id, country });
-      return normalizeClientAd(json.ad);
-    } catch (err) {
-      if (!err.isNetworkOrUnavailable) throw err;
-      const { data, error } = await supabase.rpc('activate_ad_promotion_from_payment', {
-        p_ad_id: id,
-        p_target_country: country || 'se',
-        p_provider: 'stripe_test',
-        p_session_id: `test_vip_${Date.now()}`,
-      });
-      if (error || !data?.ok) throw new Error(data?.error || 'خطا در ارتقای آگهی');
-      return normalizeClientAd(data.ad);
-    }
+    const json = await postPublic('promote_ad', { id, country });
+    return normalizeClientAd(json.ad);
   },
 
   async createVipCheckout(id, country) {

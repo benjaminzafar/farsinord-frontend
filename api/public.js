@@ -4,9 +4,17 @@ import {
   detectDuplicates,
   prepareIncomingAdFingerprint,
 } from './_lib/duplicateDetection.js';
+import {
+  computeVipPrice,
+  resolveSafeRedirectOrigin,
+  validateStripeSecretKeyForMode,
+  verifyVerifiedCheckoutSession,
+} from './_lib/stripeSecurity.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://bezbnymjcnmazdonfzky.supabase.co';
+const HAS_SERVICE_ROLE = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlemJueW1qY25tYXpkb25memt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2OTM1NjksImV4cCI6MjExMDI2OTU2OX0.ylsHBAZ1zo1z_aKpHx7hgl-yZu2yt2puFNhR8jBm6S4';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -146,16 +154,19 @@ async function getStripeConfig() {
     .select('value')
     .eq('key', 'stripe_settings')
     .maybeSingle();
-  const mode = stripeRow?.value?.mode === 'live' ? 'live' : 'test';
+  const stripeCfg = stripeRow?.value && typeof stripeRow.value === 'object' ? stripeRow.value : {};
+  const enabled = stripeCfg.enabled !== false;
+  const mode = stripeCfg.mode === 'live' ? 'live' : 'test';
   const secretKey = String(process.env.STRIPE_SECRET_KEY || '').trim();
-  return { mode, secretKey };
+  return { enabled, mode, secretKey, stripeCfg };
 }
 
-async function createStripeCheckoutSession({ secretKey, amountOre, currency = 'sek', productName, successUrl, cancelUrl, customerEmail, metadata = {} }) {
+async function createStripeCheckoutSession({ secretKey, amountOre, currency = 'sek', productName, successUrl, cancelUrl, customerEmail, metadata = {}, idempotencyKey = '' }) {
   const params = new URLSearchParams();
   params.set('mode', 'payment');
   params.set('success_url', successUrl);
   params.set('cancel_url', cancelUrl);
+  params.set('expires_at', String(Math.floor(Date.now() / 1000) + 3600));
   if (customerEmail) params.set('customer_email', customerEmail);
   params.set('line_items[0][price_data][currency]', String(currency || 'sek').toLowerCase());
   params.set('line_items[0][price_data][unit_amount]', String(amountOre));
@@ -165,12 +176,17 @@ async function createStripeCheckoutSession({ secretKey, amountOre, currency = 's
     params.set(`metadata[${k}]`, String(v || ''));
   }
 
+  const headers = {
+    Authorization: `Bearer ${secretKey}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  if (idempotencyKey) {
+    headers['Idempotency-Key'] = idempotencyKey;
+  }
+
   const resp = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${secretKey}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+    headers,
     body: params.toString(),
   });
   const data = await resp.json().catch(() => ({}));
@@ -227,6 +243,8 @@ export default async function handler(req, res) {
         const settings = {};
         (data || []).forEach((item) => {
           if (item.key === 'stripe_settings' && item.value) {
+            const stripeMode = item.value.mode === 'live' ? 'live' : 'test';
+            const keyCheck = validateStripeSecretKeyForMode(process.env.STRIPE_SECRET_KEY, stripeMode);
             settings.stripe_settings = {
               enabled: item.value.enabled,
               mode: item.value.mode,
@@ -234,7 +252,9 @@ export default async function handler(req, res) {
               vipPrice: item.value.vipPrice,
               currency: item.value.currency,
               vipDurationDays: item.value.vipDurationDays,
-              vipBadgeText: item.value.vipBadgeText
+              vipBadgeText: item.value.vipBadgeText,
+              stripeReady: Boolean(String(process.env.STRIPE_SECRET_KEY || '').trim()),
+              stripeKeyMatchesMode: keyCheck.ok,
             };
           } else if (item.key === 'turnstile_settings' && item.value) {
             settings.turnstile_settings = {
@@ -833,21 +853,22 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: validated.error });
         }
 
-        const { secretKey } = await getStripeConfig();
-        if (!secretKey) {
-          return res.status(503).json({
-            ok: false,
-            error: 'کلید امنیتی درگاه Stripe روی سرور تنظیم نشده است. لطفاً با پشتیبانی تماس بگیرید.',
-          });
+        const { enabled, mode, secretKey } = await getStripeConfig();
+        if (!enabled) {
+          return res.status(403).json({ ok: false, error: 'درگاه پرداخت در حال حاضر غیرفعال است.' });
+        }
+        const keyCheck = validateStripeSecretKeyForMode(secretKey, mode);
+        if (!keyCheck.ok) {
+          return res.status(503).json({ ok: false, error: keyCheck.error });
         }
 
-        const originHeader = String(req.headers.origin || 'https://swedpersiska.vercel.app').replace(/\/$/, '');
+        const safeOrigin = resolveSafeRedirectOrigin(req, ALLOWED_ORIGINS, 'https://www.linksho.eu');
         const session = await createStripeCheckoutSession({
           secretKey,
           amountOre: 150000, // 1,500 SEK
           productName: `راه‌اندازی وب‌سایت اختصاصی (${validated.name})`,
-          successUrl: `${originHeader}/?page=website-builder&stripe_session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${originHeader}/?page=website-builder&cancelled=1`,
+          successUrl: `${safeOrigin}/?page=website-builder&stripe_session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${safeOrigin}/?page=website-builder&cancelled=1`,
           customerEmail: validated.email,
           metadata: {
             type: 'website_builder_setup',
@@ -867,9 +888,10 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
         }
 
-        const { secretKey } = await getStripeConfig();
-        if (!secretKey) {
-          return res.status(503).json({ ok: false, error: 'درگاه Stripe پیکربندی نشده است.' });
+        const { mode, secretKey } = await getStripeConfig();
+        const keyCheck = validateStripeSecretKeyForMode(secretKey, mode);
+        if (!keyCheck.ok) {
+          return res.status(503).json({ ok: false, error: keyCheck.error });
         }
 
         const { data: existingRow } = await supabase
@@ -886,8 +908,14 @@ export default async function handler(req, res) {
         }
 
         const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
-        if (session.payment_status !== 'paid' || session.metadata?.type !== 'website_builder_setup') {
-          return res.status(402).json({ ok: false, error: 'پرداخت هنوز تایید نشده است.' });
+        const sessionCheck = verifyVerifiedCheckoutSession(session, {
+          expectedType: 'website_builder_setup',
+          expectedMode: mode,
+          expectedMinAmountMinor: 150000,
+          expectedCurrency: 'sek',
+        });
+        if (!sessionCheck.ok) {
+          return res.status(402).json({ ok: false, error: sessionCheck.error || 'پرداخت هنوز تایید نشده است.' });
         }
 
         const orderId = `WEB-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
@@ -956,13 +984,17 @@ export default async function handler(req, res) {
           const { mode: stripeMode, secretKey } = await getStripeConfig();
           if (stripeMode === 'live') {
             if (secretKey) {
-              const originHeader = String(req.headers.origin || 'https://swedpersiska.vercel.app').replace(/\/$/, '');
+              const keyCheck = validateStripeSecretKeyForMode(secretKey, stripeMode);
+              if (!keyCheck.ok) {
+                return res.status(503).json({ ok: false, error: keyCheck.error });
+              }
+              const safeOrigin = resolveSafeRedirectOrigin(req, ALLOWED_ORIGINS, 'https://www.linksho.eu');
               const session = await createStripeCheckoutSession({
                 secretKey,
                 amountOre: 26000, // 260 SEK
                 productName: `تمدید ماهانه اشتراک وب‌سایت (${current.name})`,
-                successUrl: `${originHeader}/?page=website-builder&renew_session_id={CHECKOUT_SESSION_ID}`,
-                cancelUrl: `${originHeader}/?page=website-builder&cancelled=1`,
+                successUrl: `${safeOrigin}/?page=website-builder&renew_session_id={CHECKOUT_SESSION_ID}`,
+                cancelUrl: `${safeOrigin}/?page=website-builder&cancelled=1`,
                 customerEmail: current.email || '',
                 metadata: {
                   type: 'website_builder_renew',
@@ -1035,14 +1067,21 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
         }
 
-        const { secretKey } = await getStripeConfig();
-        if (!secretKey) {
-          return res.status(503).json({ ok: false, error: 'درگاه Stripe پیکربندی نشده است.' });
+        const { mode, secretKey } = await getStripeConfig();
+        const keyCheck = validateStripeSecretKeyForMode(secretKey, mode);
+        if (!keyCheck.ok) {
+          return res.status(503).json({ ok: false, error: keyCheck.error });
         }
 
         const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
-        if (session.payment_status !== 'paid' || session.metadata?.type !== 'website_builder_renew') {
-          return res.status(402).json({ ok: false, error: 'پرداخت تمدید هنوز تایید نشده است.' });
+        const sessionCheck = verifyVerifiedCheckoutSession(session, {
+          expectedType: 'website_builder_renew',
+          expectedMode: mode,
+          expectedMinAmountMinor: 26000,
+          expectedCurrency: 'sek',
+        });
+        if (!sessionCheck.ok) {
+          return res.status(402).json({ ok: false, error: sessionCheck.error || 'پرداخت تمدید هنوز تایید نشده است.' });
         }
 
         const cleanCode = String(session.metadata?.manageCode || '').replace(/\D/g, '').trim();
@@ -1222,8 +1261,30 @@ export default async function handler(req, res) {
       }
 
       if (action === 'promote_ad') {
+        if (!HAS_SERVICE_ROLE) {
+          return res.status(503).json({ ok: false, error: 'تنظیمات امنیتی سرور پرداخت تکمیل نشده است.' });
+        }
+
         const { id, country } = body;
-        if (!id) return res.status(400).json({ ok: false, error: 'Missing ad ID' });
+        if (!id || !UUID_RE.test(String(id).trim())) {
+          return res.status(400).json({ ok: false, error: 'شناسه آگهی نامعتبر است.' });
+        }
+
+        const { enabled, mode, secretKey } = await getStripeConfig();
+        if (!enabled) {
+          return res.status(403).json({ ok: false, error: 'درگاه پرداخت ویژه در حال حاضر غیرفعال است.' });
+        }
+        if (
+          mode === 'live' ||
+          Boolean(secretKey) ||
+          (process.env.VERCEL_ENV === 'production' && process.env.ALLOW_SIMULATED_TEST_PAYMENTS !== 'true')
+        ) {
+          return res.status(403).json({
+            ok: false,
+            code: 'STRIPE_CHECKOUT_REQUIRED',
+            error: 'ارتقای ویژه فقط از طریق درگاه پرداخت رسمی Stripe انجام می‌شود.',
+          });
+        }
 
         const targetCountry = country && /^[a-z0-9_-]{2,10}$/i.test(String(country))
           ? String(country).toLowerCase()
@@ -1245,91 +1306,117 @@ export default async function handler(req, res) {
       }
 
       if (action === 'create_vip_checkout') {
+        if (!HAS_SERVICE_ROLE) {
+          return res.status(503).json({ ok: false, error: 'متغیر امنیتی SUPABASE_SERVICE_ROLE_KEY روی سرور تنظیم نشده است.' });
+        }
+
         const { id, country } = body;
-        if (!id) return res.status(400).json({ ok: false, error: 'شناسه آگهی الزامی است.' });
+        if (!id || !UUID_RE.test(String(id).trim())) {
+          return res.status(400).json({ ok: false, error: 'شناسه آگهی نامعتبر است.' });
+        }
 
         const targetCountry = country && /^[a-z0-9_-]{2,10}$/i.test(String(country))
           ? String(country).toLowerCase()
           : 'se';
 
-        const [{ secretKey }, { data: stripeRow }, { data: adRow }] = await Promise.all([
+        const [{ enabled, mode, secretKey, stripeCfg }, { data: adRow }] = await Promise.all([
           getStripeConfig(),
-          supabase.from('swedpersiska_settings').select('value').eq('key', 'stripe_settings').maybeSingle(),
-          supabase.from('swedpersiska_ads').select('id, reference_number, title, title_fa, contact_email').eq('id', id).is('deleted_at', null).maybeSingle(),
+          supabase
+            .from('swedpersiska_ads')
+            .select('id, reference_number, title, title_fa, contact_email, status')
+            .eq('id', String(id).trim())
+            .is('deleted_at', null)
+            .maybeSingle(),
         ]);
 
+        if (!enabled) {
+          return res.status(403).json({ ok: false, error: 'درگاه پرداخت ویژه در حال حاضر غیرفعال است.' });
+        }
+        const keyCheck = validateStripeSecretKeyForMode(secretKey, mode);
+        if (!keyCheck.ok) {
+          return res.status(503).json({ ok: false, error: keyCheck.error });
+        }
         if (!adRow) {
           return res.status(404).json({ ok: false, error: 'آگهی یافت نشد.' });
         }
-        if (!secretKey) {
-          return res.status(503).json({
-            ok: false,
-            error: 'کلید امنیتی درگاه Stripe روی سرور تنظیم نشده است.',
-          });
+        if (adRow.status === 'rejected') {
+          return res.status(400).json({ ok: false, error: 'آگهی ردشده امکان ارتقای ویژه ندارد.' });
         }
 
-        const stripeCfg = stripeRow?.value || {};
-        const durationDays = Math.max(1, Math.min(365, Number(stripeCfg.vipDurationDays) || 30));
-        const basePrice = Number(stripeCfg.vipPrice) || 99;
-        const countryCurrencyMap = { se: 'SEK', no: 'NOK', dk: 'DKK', fi: 'EUR', de: 'EUR', at: 'EUR', nl: 'EUR', fr: 'EUR' };
-        const resolvedCurrency = countryCurrencyMap[targetCountry] || stripeCfg.currency || 'SEK';
-        const finalPrice = resolvedCurrency === 'EUR' && stripeCfg.currency !== 'EUR' && basePrice >= 50
-          ? Math.max(9, Math.round(basePrice / 10))
-          : basePrice;
-
-        const originHeader = String(req.headers.origin || 'https://www.linksho.eu').replace(/\/$/, '');
+        const pricing = computeVipPrice({ stripeCfg, targetCountry });
+        const safeOrigin = resolveSafeRedirectOrigin(req, ALLOWED_ORIGINS, 'https://www.linksho.eu');
+        const minuteBucket = Math.floor(Date.now() / 60000);
         const session = await createStripeCheckoutSession({
           secretKey,
-          amountOre: Math.round(finalPrice * 100),
-          currency: resolvedCurrency.toLowerCase(),
-          productName: `ارتقای ویژه (VIP) آگهی ${adRow.reference_number} (${durationDays} روز)`,
-          successUrl: `${originHeader}/?vip_session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${originHeader}/?vip_cancelled=1`,
+          amountOre: pricing.amountMinor,
+          currency: pricing.currency.toLowerCase(),
+          productName: `ارتقای ویژه (VIP) آگهی ${adRow.reference_number} (${pricing.durationDays} روز)`,
+          successUrl: `${safeOrigin}/?vip_session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${safeOrigin}/?vip_cancelled=1`,
           customerEmail: adRow.contact_email || undefined,
+          idempotencyKey: `vip_${adRow.id}_${pricing.targetCountry}_${minuteBucket}`,
           metadata: {
             type: 'ad_vip_promotion',
             adId: adRow.id,
-            targetCountry,
-            durationDays: String(durationDays),
+            targetCountry: pricing.targetCountry,
+            durationDays: String(pricing.durationDays),
           },
         });
 
-        try {
-          await supabase.rpc('create_pending_ad_payment', {
-            p_ad_id: adRow.id,
-            p_target_country: targetCountry,
-            p_session_id: session.id,
-            p_amount: finalPrice,
-            p_currency: resolvedCurrency,
-            p_duration_days: durationDays,
-          });
-        } catch {}
+        const { error: pendErr } = await supabase.rpc('create_pending_ad_payment', {
+          p_ad_id: adRow.id,
+          p_target_country: pricing.targetCountry,
+          p_session_id: session.id,
+          p_amount: pricing.amountMajor,
+          p_currency: pricing.currency,
+          p_duration_days: pricing.durationDays,
+        });
+        if (pendErr) throw pendErr;
 
-        return res.status(200).json({ ok: true, checkoutUrl: session.url, sessionId: session.id });
+        return res.status(200).json({ ok: true, checkoutUrl: session.url, sessionId: session.id, mode });
       }
 
       if (action === 'verify_vip_checkout') {
+        if (!HAS_SERVICE_ROLE) {
+          return res.status(503).json({ ok: false, error: 'متغیر امنیتی SUPABASE_SERVICE_ROLE_KEY روی سرور تنظیم نشده است.' });
+        }
+
         const sessionId = String(body.sessionId || '').trim();
         if (!sessionId || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
           return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
         }
-        const { secretKey } = await getStripeConfig();
-        if (!secretKey) {
-          return res.status(503).json({ ok: false, error: 'درگاه Stripe پیکربندی نشده است.' });
+        const { mode, secretKey, stripeCfg } = await getStripeConfig();
+        const keyCheck = validateStripeSecretKeyForMode(secretKey, mode);
+        if (!keyCheck.ok) {
+          return res.status(503).json({ ok: false, error: keyCheck.error });
         }
+
         const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
-        if (session.payment_status !== 'paid' || session.metadata?.type !== 'ad_vip_promotion') {
-          return res.status(402).json({ ok: false, error: 'پرداخت ارتقای ویژه هنوز تایید نشده است.' });
-        }
-        const adId = String(session.metadata?.adId || '').trim();
         const targetCountry = String(session.metadata?.targetCountry || 'se').trim().toLowerCase();
-        const amountPaid = session.amount_total ? Number(session.amount_total) / 100 : null;
-        const paidCurrency = session.currency ? String(session.currency).toUpperCase() : null;
+        const pricing = computeVipPrice({ stripeCfg, targetCountry });
+
+        const sessionCheck = verifyVerifiedCheckoutSession(session, {
+          expectedType: 'ad_vip_promotion',
+          expectedMode: mode,
+          expectedMinAmountMinor: pricing.amountMinor,
+          expectedCurrency: pricing.currency,
+        });
+        if (!sessionCheck.ok) {
+          return res.status(402).json({ ok: false, error: sessionCheck.error || 'پرداخت ارتقای ویژه هنوز تایید نشده است.' });
+        }
+
+        const adId = String(session.metadata?.adId || '').trim();
+        if (!UUID_RE.test(adId)) {
+          return res.status(400).json({ ok: false, error: 'شناسه آگهی مرتبط با پرداخت نامعتبر است.' });
+        }
+
+        const amountPaid = session.amount_total ? Number(session.amount_total) / 100 : pricing.amountMajor;
+        const paidCurrency = session.currency ? String(session.currency).toUpperCase() : pricing.currency;
 
         const { data, error } = await supabase.rpc('activate_ad_promotion_from_payment', {
           p_ad_id: adId,
-          p_target_country: targetCountry,
-          p_provider: 'stripe_live',
+          p_target_country: pricing.targetCountry,
+          p_provider: mode === 'live' ? 'stripe_live' : 'stripe_test',
           p_session_id: session.id,
           p_amount: amountPaid,
           p_currency: paidCurrency,
@@ -1338,6 +1425,18 @@ export default async function handler(req, res) {
         if (!data?.ok) {
           return res.status(400).json({ ok: false, error: data?.error || 'خطا در فعال‌سازی آگهی ویژه' });
         }
+
+        if (session.payment_intent) {
+          try {
+            await supabase.rpc('sync_ad_payment_webhook_event', {
+              p_event_type: 'attach_payment_intent',
+              p_session_id: session.id,
+              p_payment_intent_id: String(session.payment_intent),
+              p_reason: null,
+            });
+          } catch {}
+        }
+
         return res.status(200).json({ ok: true, ad: data.ad, expires_at: data.expires_at });
       }
 

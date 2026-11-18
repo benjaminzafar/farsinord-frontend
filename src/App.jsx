@@ -581,6 +581,7 @@ export default function App() {
         });
       }
       const vipSessionId = params.get('vip_session_id');
+      const vipCancelled = params.get('vip_cancelled') === '1';
       if (vipSessionId) {
         publicApi.verifyVipCheckout(vipSessionId)
           .then((res) => {
@@ -590,7 +591,10 @@ export default function App() {
               setTimeout(() => setToastMsg(''), 4000);
             }
           })
-          .catch(() => {})
+          .catch((err) => {
+            setToastMsg(err?.message || 'تایید پرداخت ویژه انجام نشد. در صورت کسر وجه با پشتیبانی تماس بگیرید.');
+            setTimeout(() => setToastMsg(''), 5000);
+          })
           .finally(() => {
             try {
               const clean = new URL(window.location.href);
@@ -598,6 +602,16 @@ export default function App() {
               window.history.replaceState({}, '', clean.toString());
             } catch {}
           });
+      } else if (vipCancelled) {
+        Promise.resolve().then(() => {
+          setToastMsg('پرداخت لغو شد؛ هر زمان مایل بودید می‌توانید دوباره اقدام کنید.');
+          setTimeout(() => setToastMsg(''), 4000);
+        });
+        try {
+          const clean = new URL(window.location.href);
+          clean.searchParams.delete('vip_cancelled');
+          window.history.replaceState({}, '', clean.toString());
+        } catch {}
       }
     } catch {}
   }, []);
