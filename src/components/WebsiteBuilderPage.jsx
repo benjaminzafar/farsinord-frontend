@@ -5,7 +5,6 @@ import {
   CreditCard,
   Lock,
   CheckCircle2,
-  Clock,
   AlertCircle,
   KeyRound,
   Copy,
