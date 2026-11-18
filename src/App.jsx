@@ -677,124 +677,121 @@ export default function App() {
         <>
           {/* Hero Section - Displayed only on Home (selectedCategory === 'all') */}
           {selectedCategory === 'all' && (
-        <section className="relative overflow-hidden bg-[#07090e] border-b border-slate-800/80 pt-6 sm:pt-14 pb-7 sm:pb-16 px-4 sm:px-6 lg:px-8 w-full animate-in fade-in duration-200">
-          
-          {/* Dynamic Architectural Cityscape Backdrop */}
-          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
-            <img
-              key={activeHero.image}
-              src={activeHero.image}
-              alt={activeHero.cityFa}
-              className="w-full h-full object-cover object-center opacity-70 filter brightness-105 contrast-100 transition-all duration-700 ease-out"
-            />
-            {/* Lighter, softer gradient overlay for clean text contrast without hiding the vibrant cityscape */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#07090e]/60 via-[#07090e]/20 to-[#07090e]/70" />
-          </div>
-
-          <div className="relative z-10 max-w-4xl mx-auto text-center space-y-2.5 sm:space-y-3.5">
+            <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-1 animate-in fade-in duration-200">
+          <div className="relative min-h-[200px] sm:min-h-[300px] md:min-h-[350px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-14 md:py-16">
             
-            {/* Nordic Pill Tag */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/60 backdrop-blur-md text-sky-200 text-[10.5px] sm:text-[11px] font-bold border border-white/15 shadow-xs">
-              <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
-              <span>بازارچه آنلاین فارسی‌زبانان اسکاندیناوی</span>
+            {/* Rounded Architectural Cityscape Backdrop */}
+            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#E5E5EA] bg-[#1D1D1F] pointer-events-none select-none">
+              <img
+                key={activeHero.image}
+                src={activeHero.image}
+                alt={activeHero.cityFa}
+                className="w-full h-full object-cover object-center opacity-90 transition-all duration-700 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/55" />
             </div>
 
-            <h1 className="text-xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-snug sm:leading-tight px-1 break-words drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
-              {heroHeading}
-            </h1>
+            <div className="relative z-10 w-full max-w-3xl mx-auto text-center space-y-2.5 sm:space-y-4">
+              <h1 className="text-2xl sm:text-4xl md:text-[42px] font-black tracking-tight text-white leading-snug sm:leading-tight px-1 break-words drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]">
+                {heroHeading}
+              </h1>
 
-            <p className="text-xs sm:text-base text-slate-200 max-w-xl mx-auto leading-relaxed px-2 font-normal drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
-              {heroSubheading}
-            </p>
+              <p className="text-xs sm:text-[15px] text-white/90 max-w-lg mx-auto leading-relaxed px-2 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.45)]">
+                {heroSubheading}
+              </p>
 
-            {/* Meta Floating Search Capsule (Desktop Only) */}
-            <div className="pt-2 px-1 hidden md:block">
-              <div className="bg-[#FBFBFC] rounded-full p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.28)] border border-[#E5E5EA] max-w-3xl mx-auto flex flex-row gap-1.5 transition-all">
-                
-                {/* City Dropdown */}
-                <div className="relative w-48 shrink-0">
-                  <MapPin size={15} className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  <select
-                    value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full h-11 rounded-full bg-slate-50 hover:bg-slate-100 ps-8 pe-8 text-xs font-semibold text-slate-800 border-0 focus:ring-1 focus:ring-slate-300 cursor-pointer appearance-none text-right"
-                  >
-                    {availableCities.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.fa}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={14} className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                </div>
+              {/* Flat Unified Search Capsule — Hairline-Divided (No Box-in-Box) */}
+              <div className="pt-2 sm:pt-3 px-1 hidden md:block">
+                <div className="bg-[#FBFBFC] rounded-full p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] border border-white/40 max-w-2xl mx-auto flex items-center gap-1 transition-all">
+                  
+                  {/* Keyword Input with Google-style Smart Autocomplete (Right side in RTL) */}
+                  <div className="relative flex-1 min-w-0">
+                    <Search size={15} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-[#86868B] pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder={currentT.searchPlaceholder}
+                      value={searchQuery}
+                      onFocus={() => setHeroSearchFocused(true)}
+                      onBlur={() => setTimeout(() => setHeroSearchFocused(false), 150)}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full h-10 rounded-full bg-transparent border-0 ps-9 pe-8 text-xs font-medium text-[#1D1D1F] placeholder-[#86868B] focus:outline-none text-right"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#86868B] hover:text-[#1D1D1F] cursor-pointer transition-colors"
+                        aria-label="پاک کردن جستجو"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
 
-                {/* Keyword Input with Google-style Smart Autocomplete */}
-                <div className="relative flex-1">
-                  <Search size={15} className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder={currentT.searchPlaceholder}
-                    value={searchQuery}
-                    onFocus={() => setHeroSearchFocused(true)}
-                    onBlur={() => setTimeout(() => setHeroSearchFocused(false), 150)}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-11 rounded-full bg-transparent border-0 ps-9 pe-9 text-xs text-slate-900 placeholder-slate-400 focus:outline-none text-right"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute end-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
-                      aria-label="پاک کردن جستجو"
+                    {heroSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
+                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] border border-[#E5E5EA] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5 text-right">
+                        {searchSuggestions.map((item, idx) => (
+                          <button
+                            key={`${item.label}-${idx}`}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setSearchQuery(item.label);
+                              setHeroSearchFocused(false);
+                            }}
+                            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Search size={13} className="text-[#86868B] shrink-0" />
+                              <span className="text-xs font-semibold text-[#1D1D1F] truncate">{item.label}</span>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5F5F7] text-[#6E6E73] shrink-0">
+                              {item.badge}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Clean Hairline Divider (No inner box) */}
+                  <div className="h-5 w-px bg-[#E5E5EA] shrink-0" />
+
+                  {/* Flat Borderless City Selector */}
+                  <div className="relative w-40 shrink-0">
+                    <MapPin size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-[#86868B] pointer-events-none" />
+                    <select
+                      value={selectedCity}
+                      onChange={(e) => setSelectedCity(e.target.value)}
+                      className="w-full h-10 bg-transparent ps-8 pe-7 text-xs font-semibold text-[#1D1D1F] border-0 focus:outline-none cursor-pointer appearance-none text-right"
                     >
-                      <X size={14} />
-                    </button>
-                  )}
-
-                  {heroSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-                    <div className="absolute inset-x-0 top-full mt-2 bg-[#FBFBFC] border border-[#E5E5EA] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5 text-right">
-                      {searchSuggestions.map((item, idx) => (
-                        <button
-                          key={`${item.label}-${idx}`}
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setSearchQuery(item.label);
-                            setHeroSearchFocused(false);
-                          }}
-                          className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] transition-colors cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Search size={13} className="text-[#6E6E73] shrink-0" />
-                            <span className="text-xs font-semibold text-[#1D1D1F] truncate">{item.label}</span>
-                          </div>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECECEF] text-[#515154] shrink-0">
-                            {item.badge}
-                          </span>
-                        </button>
+                      {availableCities.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.fa}
+                        </option>
                       ))}
-                    </div>
-                  )}
+                    </select>
+                    <ChevronDown size={13} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-[#86868B] pointer-events-none" />
+                  </div>
+
+                  {/* CTA Button */}
+                  <button
+                    type="button"
+                    className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <Search size={14} />
+                    <span>{currentT.searchBtn}</span>
+                  </button>
+
                 </div>
-
-                {/* CTA Button (Apple Calibrated Blue) */}
-                <button
-                  type="button"
-                  className="h-11 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
-                >
-                  <Search size={14} />
-                  <span>{currentT.searchBtn}</span>
-                </button>
-
               </div>
-            </div>
 
+            </div>
           </div>
         </section>
       )}
 
       {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-[#FBFBFC] border-b border-[#E5E5EA] py-2 sm:py-2.5">
+      <div className="sticky top-16 z-30 bg-[#F5F5F7]/90 backdrop-blur-md py-2.5 sm:py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
         <div
           ref={categoryStripRef}
