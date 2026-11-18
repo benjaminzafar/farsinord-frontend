@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight,
   Headphones,
@@ -7,16 +7,24 @@ import {
   Radio,
   Calendar,
   RefreshCw,
+  ChevronDown,
 } from 'lucide-react';
+
+const INITIAL_VISIBLE = 5;
+const LOAD_STEP = 5;
 
 export default function PodcastPage({
   podcastSettings = null,
   onBack,
 }) {
   const [episodes, setEpisodes] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const [activeVideo, setActiveVideo] = useState(null);
   const [channelUrl, setChannelUrl] = useState(podcastSettings?.youtubeChannelUrl || '');
   const [loading, setLoading] = useState(false);
+
+  const listScrollRef = useRef(null);
+  const loadMoreSentinelRef = useRef(null);
 
   const title = podcastSettings?.title || 'پادکست خبری لینک شو';
   const subtitle = podcastSettings?.subtitle || 'تازه‌ترین گزارش‌ها و پادکست‌های خبری فارسی‌زبانان اروپا';
@@ -30,6 +38,7 @@ export default function PodcastPage({
         if (json?.ok) {
           const list = Array.isArray(json.episodes) ? json.episodes : [];
           setEpisodes(list);
+          setVisibleCount(INITIAL_VISIBLE);
           if (list.length > 0) setActiveVideo((prev) => prev || list[0]);
           if (json.settings?.youtubeChannelUrl) {
             setChannelUrl(json.settings.youtubeChannelUrl);
@@ -53,6 +62,7 @@ export default function PodcastPage({
           }))
       : [];
     setEpisodes(fallbackList);
+    setVisibleCount(INITIAL_VISIBLE);
     if (fallbackList.length > 0) setActiveVideo((prev) => prev || fallbackList[0]);
     setLoading(false);
   };
@@ -62,6 +72,25 @@ export default function PodcastPage({
     loadFeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Progressive Infinite Scroll: renders only top 5 initially, loads +5 on scroll
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel || visibleCount >= episodes.length) return;
+
+    const rootEl = window.innerWidth >= 1024 ? listScrollRef.current : null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + LOAD_STEP, episodes.length));
+        }
+      },
+      { root: rootEl, rootMargin: '120px', threshold: 0.05 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [visibleCount, episodes.length]);
 
   const formatDate = (iso) => {
     if (!iso) return '';
@@ -83,11 +112,14 @@ export default function PodcastPage({
     }
   };
 
+  const visibleEpisodes = episodes.slice(0, visibleCount);
+  const hasMore = visibleCount < episodes.length;
+
   return (
-    <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 font-vazir min-h-[70vh]" dir="rtl">
+    <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-5 font-vazir min-h-[70vh]" dir="rtl">
       {/* Top Page Header Bar */}
-      <div className="rounded-3xl bg-white border border-[#E5E5EA] p-4 sm:p-6 shadow-[0_2px_12px_rgba(29,29,31,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+      <div className="rounded-3xl bg-white border border-[#E5E5EA] p-4 sm:p-5 shadow-[0_2px_12px_rgba(29,29,31,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
@@ -97,13 +129,13 @@ export default function PodcastPage({
             <span>بازگشت</span>
           </button>
 
-          <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white flex items-center justify-center shrink-0 shadow-[0_6px_16px_rgba(225,29,72,0.22)]">
-            <Headphones size={20} strokeWidth={2} />
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white flex items-center justify-center shrink-0 shadow-[0_6px_16px_rgba(225,29,72,0.22)]">
+            <Headphones size={19} strokeWidth={2} />
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base sm:text-xl font-black text-[#1D1D1F] tracking-tight truncate">
+              <h1 className="text-base sm:text-lg font-black text-[#1D1D1F] tracking-tight truncate">
                 {title}
               </h1>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/80 text-[10px] font-bold">
@@ -111,7 +143,7 @@ export default function PodcastPage({
                 <span>فید خبری</span>
               </span>
             </div>
-            <p className="text-xs text-[#6E6E73] mt-0.5 truncate">
+            <p className="text-[11.5px] text-[#6E6E73] mt-0.5 truncate">
               {subtitle}
             </p>
           </div>
@@ -172,8 +204,8 @@ export default function PodcastPage({
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Primary Video Player Column */}
-          <div className="lg:col-span-7 xl:col-span-8">
+          {/* Primary Video Player Column (Sticky on Desktop) */}
+          <div className="lg:col-span-7 xl:col-span-8 lg:sticky lg:top-20">
             {activeVideo && (
               <div className="rounded-3xl border border-[#E5E5EA] bg-white overflow-hidden shadow-[0_6px_28px_rgba(29,29,31,0.06)]">
                 <div className="relative aspect-video w-full bg-black">
@@ -181,6 +213,7 @@ export default function PodcastPage({
                     key={activeVideo.videoId}
                     src={`https://www.youtube-nocookie.com/embed/${activeVideo.videoId}?rel=0`}
                     title={activeVideo.title}
+                    loading="lazy"
                     className="w-full h-full border-0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -208,7 +241,7 @@ export default function PodcastPage({
                     </div>
                   )}
                   {activeVideo.description && (
-                    <p className="text-xs sm:text-[13px] text-[#515154] leading-relaxed whitespace-pre-line pt-1 border-t border-[#F0F0F2]">
+                    <p className="text-xs sm:text-[13px] text-[#515154] leading-relaxed whitespace-pre-line pt-2 border-t border-[#F0F0F2]">
                       {activeVideo.description}
                     </p>
                   )}
@@ -217,17 +250,23 @@ export default function PodcastPage({
             )}
           </div>
 
-          {/* Episodes Feed Column */}
+          {/* Progressive Top-5 + Scroll-to-Load Episodes Feed Column */}
           <div className="lg:col-span-5 xl:col-span-4 rounded-3xl border border-[#E5E5EA] bg-white p-4 sm:p-5 space-y-3.5 shadow-[0_2px_12px_rgba(29,29,31,0.04)]">
             <div className="flex items-center justify-between border-b border-[#F0F0F2] pb-3">
-              <h3 className="text-sm font-black text-[#1D1D1F]">
-                تازه‌ترین قسمت‌ها ({episodes.length})
-              </h3>
-              <span className="text-[11px] text-[#6E6E73]">انتخاب برای پخش</span>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black text-[#1D1D1F]">تازه‌ترین قسمت‌ها</h3>
+                <span className="px-2 py-0.5 rounded-full bg-[#F5F5F7] text-[#6E6E73] text-[10.5px] font-bold tabular-nums">
+                  {visibleEpisodes.length} / {episodes.length}
+                </span>
+              </div>
+              <span className="text-[11px] text-[#6E6E73]">اسکرول برای بیشتر</span>
             </div>
 
-            <div className="space-y-2.5 lg:max-h-[560px] lg:overflow-y-auto no-scrollbar">
-              {episodes.map((ep) => {
+            <div
+              ref={listScrollRef}
+              className="space-y-2.5 lg:max-h-[540px] lg:overflow-y-auto no-scrollbar"
+            >
+              {visibleEpisodes.map((ep, idx) => {
                 const isPlaying = activeVideo?.videoId === ep.videoId;
                 return (
                   <button
@@ -236,7 +275,7 @@ export default function PodcastPage({
                     onClick={() => handleSelectEpisode(ep)}
                     className={`w-full group flex items-center gap-3 p-2.5 rounded-2xl border text-right transition-all cursor-pointer ${
                       isPlaying
-                        ? 'bg-rose-50/70 border-rose-300 shadow-xs'
+                        ? 'bg-rose-50/75 border-rose-300 shadow-xs'
                         : 'bg-[#FBFBFC] border-[#E5E5EA] hover:border-[#0066CC]/50 hover:bg-[#F5F5F7]'
                     }`}
                   >
@@ -262,12 +301,16 @@ export default function PodcastPage({
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        {isPlaying && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isPlaying ? (
                           <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[9.5px] font-bold">
                             در حال پخش
                           </span>
-                        )}
+                        ) : idx === 0 ? (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[9.5px] font-bold">
+                            جدیدترین
+                          </span>
+                        ) : null}
                         {ep.publishedAt && (
                           <span className="text-[10px] text-[#6E6E73]">
                             {formatDate(ep.publishedAt)}
@@ -281,6 +324,20 @@ export default function PodcastPage({
                   </button>
                 );
               })}
+
+              {/* Scroll Sentinel + Fallback Load More Button */}
+              {hasMore && (
+                <div ref={loadMoreSentinelRef} className="pt-1 pb-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((prev) => Math.min(prev + LOAD_STEP, episodes.length))}
+                    className="w-full h-9 rounded-xl bg-[#F5F5F7] hover:bg-[#ECECEF] text-[#1D1D1F] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <ChevronDown size={14} />
+                    <span>نمایش قسمت‌های بیشتر ({episodes.length - visibleEpisodes.length} باقیمانده)</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
