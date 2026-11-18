@@ -93,7 +93,7 @@ export default function MobileBottomNav({
             }`}
           >
             <span className="flex h-6 w-6 items-center justify-center shrink-0">
-              <Home size={20} strokeWidth={isHomeActive ? 2.3 : 1.9} className="block" />
+              <Home size={19} strokeWidth={isHomeActive ? 2.2 : 1.85} className="block" />
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">خانه</span>
           </button>
@@ -108,15 +108,13 @@ export default function MobileBottomNav({
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
-            <span className="flex h-6 w-6 items-center justify-center shrink-0">
-              <LayoutGrid size={20} strokeWidth={isCollectionActive ? 2.3 : 1.9} className="block" />
+            <span className="relative flex h-6 w-6 items-center justify-center shrink-0">
+              <LayoutGrid size={19} strokeWidth={isCollectionActive ? 2.2 : 1.85} className="block" />
+              {selectedCategory !== 'all' && (
+                <span className="absolute -top-0.5 -end-0.5 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
+              )}
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">دسته‌بندی‌ها</span>
-
-            {/* Active Category Indicator Dot */}
-            {selectedCategory !== 'all' && (
-              <span className="absolute top-1.5 end-4 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
-            )}
           </button>
 
           {/* Tab 3: دکمه مرکزی ثبت آگهی (Post Ad — aligned on exact same baseline) */}
@@ -127,7 +125,7 @@ export default function MobileBottomNav({
             title="ثبت رایگان آگهی"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0066CC] text-[#FBFBFC] shrink-0">
-              <Plus size={15} strokeWidth={2.6} className="block" />
+              <Plus size={14} strokeWidth={2.5} className="block" />
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">ثبت آگهی</span>
           </button>
@@ -140,7 +138,7 @@ export default function MobileBottomNav({
             title="مدیریت یا حذف آگهی با کد امنیتی"
           >
             <span className="flex h-6 w-6 items-center justify-center shrink-0">
-              <KeyRound size={20} strokeWidth={1.9} className="block" />
+              <KeyRound size={19} strokeWidth={1.85} className="block" />
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">مدیریت</span>
           </button>
@@ -160,7 +158,7 @@ export default function MobileBottomNav({
             title="امکانات بیشتر"
           >
             <span className="flex h-6 w-6 items-center justify-center shrink-0">
-              <MoreHorizontal size={20} strokeWidth={moreSheetOpen ? 2.3 : 1.9} className="block" />
+              <MoreHorizontal size={19} strokeWidth={moreSheetOpen ? 2.2 : 1.85} className="block" />
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">بیشتر</span>
           </button>
@@ -239,16 +237,16 @@ export default function MobileBottomNav({
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`flex h-9 w-9 items-center justify-center rounded-xl border shrink-0 ${meta.bg}`}>
-                        <IconComponent size={18} />
+                        <IconComponent size={17} strokeWidth={2} className="block" />
                       </div>
-                      <span className={`text-xs truncate ${isSelected ? 'font-black text-blue-900' : 'font-bold text-slate-800'}`}>
+                      <span className={`text-xs leading-none truncate ${isSelected ? 'font-black text-blue-900' : 'font-bold text-slate-800'}`}>
                         {cat.fa}
                       </span>
                     </div>
 
                     {isSelected && (
                       <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1877F2] text-white shrink-0 ms-1">
-                        <Check size={12} strokeWidth={3} />
+                        <Check size={11} strokeWidth={2.75} className="block" />
                       </div>
                     )}
                   </button>
@@ -264,10 +262,12 @@ export default function MobileBottomNav({
                   setCollectionSheetOpen(false);
                   onOpenCountryModal?.();
                 }}
-                className="flex items-center gap-1.5 hover:text-blue-600 transition-colors cursor-pointer font-medium"
+                className="inline-flex items-center gap-1.5 hover:text-blue-600 transition-colors cursor-pointer font-medium leading-none"
               >
-                <Globe size={14} className="text-slate-400" />
-                <span>تغییر کشور ({currentCountryObj.nameFa})</span>
+                <span className="flex h-4 w-4 items-center justify-center shrink-0">
+                  <Globe size={14} strokeWidth={2} className="block text-slate-400" />
+                </span>
+                <span className="leading-none">تغییر کشور ({currentCountryObj.nameFa})</span>
               </button>
             </div>
 

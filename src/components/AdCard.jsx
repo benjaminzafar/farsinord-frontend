@@ -49,7 +49,9 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
 
         {/* City Pill */}
         <div className="absolute bottom-1.5 start-1.5 sm:bottom-2.5 sm:start-2.5 inline-flex items-center gap-1 rounded-full bg-slate-950/80 px-2 sm:px-2.5 h-5 sm:h-6 text-[9.5px] sm:text-[11px] font-medium leading-none text-slate-200 backdrop-blur-xs max-w-[90%] truncate">
-          <MapPin size={11} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+          <span className="flex h-3.5 w-3.5 items-center justify-center shrink-0">
+            <MapPin size={11} strokeWidth={2} className="block text-[#86868B]" />
+          </span>
           <span className="truncate leading-none">{ad.city}{ad.area ? ` • ${ad.area}` : ''}</span>
         </div>
       </div>
@@ -78,11 +80,15 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
         {/* Footer info */}
         <div className="pt-2 sm:pt-2.5 border-t border-[#ECECEF] flex items-center justify-between text-[9.5px] sm:text-[11px] leading-none text-[#6E6E73] tabular-nums">
           <div className="inline-flex items-center gap-1 font-medium truncate">
-            <Clock size={11} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+            <span className="flex h-3.5 w-3.5 items-center justify-center shrink-0">
+              <Clock size={11} strokeWidth={2} className="block text-[#86868B]" />
+            </span>
             <span className="truncate leading-none">{dateStr}</span>
           </div>
           <div className="inline-flex items-center gap-1 font-medium shrink-0">
-            <Eye size={11} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+            <span className="flex h-3.5 w-3.5 items-center justify-center shrink-0">
+              <Eye size={11} strokeWidth={2} className="block text-[#86868B]" />
+            </span>
             <span className="leading-none">{ad.views_count || 1} {lang === 'fa' ? 'بازدید' : 'visningar'}</span>
           </div>
         </div>
