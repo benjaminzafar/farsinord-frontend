@@ -202,6 +202,7 @@ export default function App() {
   const [activeAdDetail, setActiveAdDetail] = useState(null);
   const [paymentAd, setPaymentAd] = useState(null);
   const [stripeSettings, setStripeSettings] = useState(null);
+  const [lifecycleSettings, setLifecycleSettings] = useState(null);
   const [postAdOpen, setPostAdOpen] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -355,6 +356,9 @@ export default function App() {
         }
         if (settings.podcast_settings) {
           setPodcastSettings(settings.podcast_settings);
+        }
+        if (settings.ad_lifecycle_settings) {
+          setLifecycleSettings(settings.ad_lifecycle_settings);
         }
       }
     } catch {}
@@ -1420,6 +1424,7 @@ export default function App() {
             initialCategory={postAdCategory}
             selectedCountry={selectedCountry}
             countries={portalCountries}
+            lifecycleSettings={lifecycleSettings}
             onClose={handleClosePostAd}
             onOpenManageExisting={(refNum) => {
               handleClosePostAd();
@@ -1442,6 +1447,7 @@ export default function App() {
           <ManageAdModal
             lang={lang}
             initialRef={manageInitialRef}
+            lifecycleSettings={lifecycleSettings}
             onClose={handleCloseManageAd}
             onOpenPromote={handleOpenPayment}
             onDeleted={(deletedId) => {

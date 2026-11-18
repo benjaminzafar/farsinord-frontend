@@ -75,6 +75,7 @@ function getStatusBadge(ad) {
 export default function ManageAdModal({
   lang = 'fa',
   initialRef = '',
+  lifecycleSettings = null,
   onClose,
   onDeleted,
   onUpdated,
@@ -82,6 +83,10 @@ export default function ManageAdModal({
   onOpenPromote,
 }) {
   const currentT = t[lang] || t.fa;
+  const freeBoostDays = Number.isInteger(Number(lifecycleSettings?.freeBoostCooldownDays)) && Number(lifecycleSettings?.freeBoostCooldownDays) >= 1
+    ? Number(lifecycleSettings.freeBoostCooldownDays)
+    : 7;
+  const freeBoostDaysFa = String(freeBoostDays).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
 
   const [savedCreds, setSavedCreds] = useState(() => getSavedAdCredentials());
   const [dashboardAds, setDashboardAds] = useState([]);
@@ -334,7 +339,7 @@ export default function ManageAdModal({
             </div>
             <div>
               <h4 className="text-xs sm:text-[13px] font-black text-[#1D1D1F]">
-                {isActiveVip ? 'بوست و تازه‌سازی آگهی ویژه (VIP)' : 'بوست رایگان آگهی (هر ۷ روز یک‌بار)'}
+                {isActiveVip ? 'بوست و تازه‌سازی آگهی ویژه (VIP)' : `بوست رایگان آگهی (هر ${freeBoostDaysFa} روز یک‌بار)`}
               </h4>
               <p className="text-[11px] text-[#6E6E73]">
                 {isActiveVip
@@ -444,7 +449,7 @@ export default function ManageAdModal({
                 {matchedAd ? 'مدیریت و بوست آگهی' : 'پنل آگهی‌های من'}
               </h2>
               <span className="text-[11px] font-medium text-stone-500">
-                داشبورد وضعیت، بوست رایگان ۷ روزه، ویرایش و حذف
+                داشبورد وضعیت، بوست رایگان {freeBoostDaysFa} روزه، ویرایش و حذف
               </span>
             </div>
           </div>

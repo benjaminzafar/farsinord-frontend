@@ -334,6 +334,36 @@ export const CATEGORIES = [
   { id: 'ovrigt', fa: 'سایر', icon: 'Tag' },
 ];
 
+function toFaDigits(num) {
+  return String(num).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+}
+
+export function buildAdPolicyRules(lifecycleSettings = {}) {
+  const cfg = lifecycleSettings && typeof lifecycleSettings === 'object' ? lifecycleSettings : {};
+  const enabled = cfg.enabled !== false;
+  const rawInactivity = Number(cfg.inactivityDays);
+  const rawWarning = Number(cfg.warningDays);
+  const rawBoost = Number(cfg.freeBoostCooldownDays);
+  const inactivityDays = Number.isInteger(rawInactivity) && rawInactivity >= 7 ? rawInactivity : 30;
+  const warningDays = Number.isInteger(rawWarning) && rawWarning >= 1 ? rawWarning : 7;
+  const boostDays = Number.isInteger(rawBoost) && rawBoost >= 1 ? rawBoost : 7;
+
+  const inactivityFa = toFaDigits(inactivityDays);
+  const warningFa = toFaDigits(warningDays);
+  const boostFa = toFaDigits(boostDays);
+
+  return [
+    'ثبت آگهی تکراری (حتی با تغییر جزئی در متن یا تصاویر) مجاز نیست.',
+    'به‌جای ثبت آگهی جدید، می‌توانید از دکمه «بوست رایگان» برای تازه‌سازی آگهی قبلی خود استفاده کنید.',
+    `بوست رایگان برای هر آگهی فعال و تاییدشده، یک بار در هر ${boostFa} روز در دسترس است.`,
+    'با بوست کردن، آگهی شما دوباره در کنار آگهی‌های جدید فهرست قرار می‌گیرد بدون آنکه آگهی تکراری بسازید.',
+    enabled
+      ? `آگهی‌های قدیمی که به مدت ${inactivityFa} روز بروزرسانی یا بوست نشوند، پس از ارسال هشدار ${warningFa} روزه به صورت خودکار حذف می‌شوند.`
+      : 'پاکسازی خودکار آگهی‌های غیرفعال در حال حاضر توسط مدیریت سایت متوقف است؛ همچنان می‌توانید در هر زمان آگهی خود را بروزرسانی یا بوست کنید.',
+    `آگهی‌های ویژه و پرداختی (VIP) قوانین نمایش و نگهداری اختصاصی دارند و مشمول محدودیت بوست ${boostFa} روزه یا حذف خودکار نخواهند شد.`,
+  ];
+}
+
 export const t = {
   fa: {
     siteTitle: 'نیازمندی‌های فارسی‌زبانان اروپا',
@@ -371,13 +401,6 @@ export const t = {
     safetyNoticeTitle: 'راهنمای معامله امن در اروپا',
     safetyNoticeText: 'پیش از رویت حضوری مسکن یا کالا و دریافت قرارداد رسمی، از واریز هرگونه بیعانه خودداری فرمایید.',
     adPolicyTitle: 'قوانین انتشار، بوست رایگان و نگهداری آگهی‌ها',
-    adPolicyRules: [
-      'ثبت آگهی تکراری (حتی با تغییر جزئی در متن یا تصاویر) مجاز نیست.',
-      'به‌جای ثبت آگهی جدید، می‌توانید از دکمه «بوست رایگان» برای تازه‌سازی آگهی قبلی خود استفاده کنید.',
-      'بوست رایگان برای هر آگهی فعال و تاییدشده، یک بار در هر ۷ روز در دسترس است.',
-      'با بوست کردن، آگهی شما دوباره در کنار آگهی‌های جدید فهرست قرار می‌گیرد بدون آنکه آگهی تکراری بسازید.',
-      'آگهی‌های قدیمی که به مدت ۳۰ روز بروزرسانی یا بوست نشوند، پس از ارسال هشدار ۷ روزه به صورت خودکار حذف می‌شوند.',
-      'آگهی‌های ویژه و پرداختی (VIP) قوانین نمایش و نگهداری اختصاصی دارند و مشمول محدودیت بوست ۷ روزه یا حذف خودکار نخواهند شد.',
-    ],
+    adPolicyRules: buildAdPolicyRules(),
   }
 };

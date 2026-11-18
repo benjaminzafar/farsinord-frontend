@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { buildAdPolicyRules } from '../src/lib/translations.js';
 
 /**
  * Verifies core lifecycle & paid exemption ranking logic plus helper edge cases
@@ -95,4 +96,26 @@ test('Concurrent simultaneous boost requests serialize via row lock so only 1 su
   assert.equal(successes.length, 1);
   assert.equal(blocked.length, 4);
   assert.equal(state.boost_count, 1);
+});
+
+test('buildAdPolicyRules reflects dynamic DB cleanup & boost settings without hardcoded thresholds', () => {
+  const customRules = buildAdPolicyRules({
+    enabled: true,
+    inactivityDays: 60,
+    warningDays: 14,
+    freeBoostCooldownDays: 10,
+  });
+  assert.equal(customRules.length, 6);
+  assert.ok(customRules[2].includes('۱۰ روز'));
+  assert.ok(customRules[4].includes('۶۰ روز'));
+  assert.ok(customRules[4].includes('۱۴ روزه'));
+  assert.ok(customRules[5].includes('۱۰ روزه'));
+
+  const disabledRules = buildAdPolicyRules({
+    enabled: false,
+    inactivityDays: 45,
+    warningDays: 7,
+    freeBoostCooldownDays: 7,
+  });
+  assert.ok(disabledRules[4].includes('متوقف'));
 });

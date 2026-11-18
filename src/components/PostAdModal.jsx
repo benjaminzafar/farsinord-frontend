@@ -24,7 +24,7 @@ import { isSafeHttpUrl } from '../lib/supabase';
 import { publicApi } from '../lib/apiClient';
 import { saveAdCredential } from '../lib/myAdsStorage';
 import { checkProhibitedContent } from '../lib/moderation';
-import { COUNTRIES, CATEGORIES, t } from '../lib/translations';
+import { COUNTRIES, CATEGORIES, t, buildAdPolicyRules } from '../lib/translations';
 
 async function computeFileSha256(file) {
   try {
@@ -84,11 +84,13 @@ export default function PostAdModal({
   initialCategory = 'bostad', 
   selectedCountry = 'se',
   countries = COUNTRIES,
+  lifecycleSettings = null,
   onClose, 
   onCreated,
   onOpenManageExisting
 }) {
   const currentT = t.fa;
+  const policyRules = buildAdPolicyRules(lifecycleSettings || {});
   const activeCountries = Array.isArray(countries) && countries.length > 0
     ? countries.filter(c => c.enabled !== false)
     : COUNTRIES;
@@ -1057,7 +1059,7 @@ export default function PostAdModal({
                   </span>
                 </div>
                 <ul className="space-y-1 text-[11px] text-[#515154] leading-relaxed list-disc list-inside pr-1">
-                  {currentT.adPolicyRules.map((rule, idx) => (
+                  {policyRules.map((rule, idx) => (
                     <li key={idx}>{rule}</li>
                   ))}
                 </ul>
