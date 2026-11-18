@@ -4,19 +4,29 @@ import { COUNTRIES } from '../lib/translations';
 import { getGdprConsent, saveGdprConsent } from '../lib/gdpr';
 import { GdprTabs, GdprTabBody } from './GdprContent';
 
-function detectBrowserCountry() {
+function detectBrowserCountry(validIds = ['se', 'no', 'dk', 'fi', 'de', 'at', 'nl', 'fr', 'ca']) {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
     if (tz.includes('Oslo')) return 'no';
     if (tz.includes('Copenhagen')) return 'dk';
     if (tz.includes('Helsinki')) return 'fi';
+    if (tz.includes('Berlin')) return 'de';
+    if (tz.includes('Vienna')) return 'at';
+    if (tz.includes('Amsterdam')) return 'nl';
+    if (tz.includes('Paris')) return 'fr';
+    if (tz.includes('Toronto') || tz.includes('Vancouver') || tz.includes('Montreal')) return 'ca';
     if (tz.includes('Stockholm')) return 'se';
     const langs = navigator.languages || [navigator.language || ''];
     if (langs.some(l => l.startsWith('nb') || l.startsWith('nn') || l.startsWith('no'))) return 'no';
     if (langs.some(l => l.startsWith('da'))) return 'dk';
     if (langs.some(l => l.startsWith('fi'))) return 'fi';
+    if (langs.some(l => l.startsWith('de-AT'))) return 'at';
+    if (langs.some(l => l.startsWith('de'))) return 'de';
+    if (langs.some(l => l.startsWith('nl'))) return 'nl';
+    if (langs.some(l => l.startsWith('fr-CA') || l.startsWith('en-CA'))) return 'ca';
+    if (langs.some(l => l.startsWith('fr'))) return 'fr';
   } catch {}
-  return 'se';
+  return validIds[0] || 'se';
 }
 
 export default function CountryBanner({
@@ -26,11 +36,16 @@ export default function CountryBanner({
   onSelectCountry,
   onConsentSaved,
   siteName = 'لینک شو',
+  countries = COUNTRIES,
 }) {
-  const [detectedCountryId, setDetectedCountryId] = useState(detectBrowserCountry);
+  const activeCountries = Array.isArray(countries) && countries.length > 0
+    ? countries.filter(c => c.enabled !== false)
+    : COUNTRIES;
+  const validCountryIds = activeCountries.map(c => c.id);
+  const [detectedCountryId, setDetectedCountryId] = useState(() => detectBrowserCountry(validCountryIds));
   const [activeChoice, setActiveChoice] = useState(() => {
     if (selectedCountry && selectedCountry !== 'all') return selectedCountry;
-    return detectBrowserCountry();
+    return detectBrowserCountry(validCountryIds);
   });
 
   const existingConsent = getGdprConsent();
@@ -61,7 +76,7 @@ export default function CountryBanner({
       .then(data => {
         if (!active || !data || !data.country) return;
         const code = data.country.toLowerCase();
-        if (['se', 'no', 'dk', 'fi'].includes(code)) {
+        if (validCountryIds.includes(code)) {
           setDetectedCountryId(code);
           if (!localStorage.getItem('scandi_country_selected')) {
             setActiveChoice(code);
@@ -70,7 +85,7 @@ export default function CountryBanner({
       })
       .catch(() => {});
     return () => { active = false; };
-  }, []);
+  }, [validCountryIds]);
 
   const handleConfirm = (countryId) => {
     if (!gdprChecked) {
@@ -115,8 +130,8 @@ export default function CountryBanner({
 
   if (!isOpen) return null;
 
-  const detectedObj = COUNTRIES.find(c => c.id === detectedCountryId) || COUNTRIES[0];
-  const chosenObj = COUNTRIES.find(c => c.id === activeChoice) || COUNTRIES[0];
+  const detectedObj = activeCountries.find(c => c.id === detectedCountryId) || activeCountries[0];
+  const chosenObj = activeCountries.find(c => c.id === activeChoice) || activeCountries[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-vazir select-none" dir="rtl">
@@ -155,7 +170,7 @@ export default function CountryBanner({
                   کشور خود را انتخاب کنید
                 </h2>
                 <p className="text-xs text-[#6E6E73]">
-                  نیازمندی‌های فارسی‌زبانان اسکاندیناوی
+                  محل رشد کسب و کار فارسی‌زبانان
                 </p>
               </div>
 
@@ -166,9 +181,9 @@ export default function CountryBanner({
               </div>
             </div>
 
-            {/* 2x2 Country Grid */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {COUNTRIES.map(country => {
+            {/* Country Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {activeCountries.map(country => {
                 const isSelected = activeChoice === country.id;
                 const isDetected = detectedCountryId === country.id;
 

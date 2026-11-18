@@ -24,7 +24,7 @@ import MobileBottomNav from './components/MobileBottomNav';
 import AdCard from './components/AdCard';
 import { isSafeHttpUrl } from './lib/supabase';
 import { publicApi } from './lib/apiClient';
-import { COUNTRIES, CATEGORIES, t } from './lib/translations';
+import { COUNTRIES, CATEGORIES, mergePortalCountries, t } from './lib/translations';
 import { getGdprConsent } from './lib/gdpr';
 import { matchesSmartSearch, getSearchSuggestions } from './lib/smartSearch';
 
@@ -58,17 +58,36 @@ export default function App() {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Country & URL synchronization (Address bar: /?c=se, /?c=no, etc.)
+  // Country & URL synchronization (Address bar: /?c=se, /?c=de, /?c=ca, etc.)
+  const [customCountries, setCustomCountries] = useState(() => {
+    try {
+      const saved = localStorage.getItem('swedpersiska_portal_countries');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+  const [customCities, setCustomCities] = useState(() => {
+    try {
+      const saved = localStorage.getItem('swedpersiska_portal_cities');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+  const portalCountries = useMemo(
+    () => mergePortalCountries(customCountries, customCities).filter(c => c.enabled !== false),
+    [customCountries, customCities]
+  );
+
   const [selectedCountry, setSelectedCountry] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const urlC = (params.get('c') || params.get('country') || '').toLowerCase();
-      if (['se', 'no', 'dk', 'fi'].includes(urlC)) {
+      if (/^[a-z0-9_-]{2,10}$/.test(urlC)) {
         return urlC;
       }
     } catch {}
     const saved = localStorage.getItem('scandi_country_selected');
-    if (['se', 'no', 'dk', 'fi'].includes(saved)) {
+    if (saved && /^[a-z0-9_-]{2,10}$/.test(saved)) {
       return saved;
     }
     return 'se';
@@ -85,7 +104,7 @@ export default function App() {
   const [selectedCity, setSelectedCity] = useState('all');
 
   const handleCountryChange = (c) => {
-    const valid = ['se', 'no', 'dk', 'fi'].includes(c) ? c : 'se';
+    const valid = portalCountries.some(x => x.id === c) ? c : (portalCountries[0]?.id || 'se');
     setSelectedCountry(valid);
     setSelectedCity('all');
     localStorage.setItem('scandi_country_selected', valid);
@@ -217,22 +236,35 @@ export default function App() {
               : str;
           setSeoSettings(prev => {
             const next = { ...prev };
-            ['se', 'no', 'dk', 'fi'].forEach((cid) => {
+            Object.keys(settings.seo_settings).forEach((cid) => {
               const incoming = settings.seo_settings[cid];
               if (incoming && typeof incoming === 'object') {
+                const base = prev[cid] || {};
                 next[cid] = {
-                  ...prev[cid],
+                  ...base,
                   ...incoming,
-                  title: sanitizeBrandText(incoming.title) || prev[cid].title,
-                  description: sanitizeBrandText(incoming.description) || prev[cid].description,
-                  keywords: sanitizeBrandText(incoming.keywords) || prev[cid].keywords,
-                  heroHeading: sanitizeBrandText(incoming.heroHeading) || prev[cid].heroHeading,
-                  heroSubheading: sanitizeBrandText(incoming.heroSubheading) || prev[cid].heroSubheading,
+                  title: sanitizeBrandText(incoming.title) || base.title,
+                  description: sanitizeBrandText(incoming.description) || base.description,
+                  keywords: sanitizeBrandText(incoming.keywords) || base.keywords,
+                  heroHeading: sanitizeBrandText(incoming.heroHeading) || base.heroHeading,
+                  heroSubheading: sanitizeBrandText(incoming.heroSubheading) || base.heroSubheading,
                 };
               }
             });
             return next;
           });
+        }
+        if (Array.isArray(settings.portal_countries) && settings.portal_countries.length > 0) {
+          setCustomCountries(settings.portal_countries);
+          try {
+            localStorage.setItem('swedpersiska_portal_countries', JSON.stringify(settings.portal_countries));
+          } catch {}
+        }
+        if (settings.portal_cities && typeof settings.portal_cities === 'object' && !Array.isArray(settings.portal_cities)) {
+          setCustomCities(settings.portal_cities);
+          try {
+            localStorage.setItem('swedpersiska_portal_cities', JSON.stringify(settings.portal_cities));
+          } catch {}
         }
         const stripe = settings.stripe_settings;
         if (stripe) {
@@ -290,8 +322,13 @@ export default function App() {
 
   // Dynamic Country SEO (Document Title + Meta Description + Keywords + OpenGraph + Twitter)
   useEffect(() => {
-    const activeSeo = seoSettings[selectedCountry] || seoSettings.se;
-    if (!activeSeo) return;
+    const cObj = portalCountries.find(c => c.id === selectedCountry) || portalCountries[0] || COUNTRIES[0];
+    const cName = cObj?.nameFa || 'سوئد';
+    const activeSeo = seoSettings[selectedCountry] || {
+      title: `${siteName} ${cName} | نیازمندی‌ها، مسکن، کاریابی و خدمات فارسی‌زبانان در ${cName}`,
+      description: `${siteName} — محل رشد کسب و کار فارسی‌زبانان و مرجع آگهی‌های رایگان مسکن، رستوران، کاریابی و خدمات در سراسر ${cName}.`,
+      keywords: `${siteName}, نیازمندیهای ${cName}, فارسی زبانان ${cName}, مسکن ${cName}, کار در ${cName}`,
+    };
 
     const pageTitle = activeAdDetail
       ? `${activeAdDetail.title_fa || activeAdDetail.title} | ${siteName}`
@@ -599,42 +636,23 @@ export default function App() {
     clearAdDetailForFilter();
   };
 
-  // Active country details
-  const currentCountryObj = COUNTRIES.find(c => c.id === selectedCountry) || COUNTRIES[0];
+  // Active country details (from merged dynamic countries list)
+  const currentCountryObj = portalCountries.find(c => c.id === selectedCountry) || portalCountries[0] || COUNTRIES[0];
 
   // Dynamic available cities for current country
   const availableCities = currentCountryObj.cities;
 
-  // Dynamic Hero Architectural Cityscape Backgrounds
-  const HERO_BACKGROUNDS = {
-    se: {
-      image: '/images/cities/stockholm.jpg',
-      cityFa: 'استکهلم، سوئد',
-      cityEn: 'Stockholm, Sweden'
-    },
-    no: {
-      image: '/images/cities/oslo.jpg',
-      cityFa: 'اسلو، نروژ',
-      cityEn: 'Oslo, Norway'
-    },
-    dk: {
-      image: '/images/cities/copenhagen.jpg',
-      cityFa: 'کپنهاگ، دانمارک',
-      cityEn: 'Copenhagen, Denmark'
-    },
-    fi: {
-      image: '/images/cities/helsinki.jpg',
-      cityFa: 'هلسینکی، فنلاند',
-      cityEn: 'Helsinki, Finland'
-    }
+  // Dynamic Hero Background Photo (Per Country — customizable from Admin Panel)
+  const activeHero = {
+    image: currentCountryObj.heroImage || '/images/cities/stockholm.jpg',
+    cityFa: currentCountryObj.nameFa,
+    cityEn: currentCountryObj.nameNative || currentCountryObj.nameFa
   };
 
-  const activeHero = HERO_BACKGROUNDS[selectedCountry] || HERO_BACKGROUNDS.se;
-
   // Dynamic Hero Titles based on selected country & synced SEO settings
-  const activeCountrySeo = seoSettings[selectedCountry] || seoSettings.se;
-  const heroHeading = activeCountrySeo?.heroHeading || 'نیازمندی‌های فارسی‌زبانان سوئد';
-  const heroSubheading = activeCountrySeo?.heroSubheading || 'مسکن، رستوران، خدمات و کاریابی در سراسر سوئد';
+  const activeCountrySeo = seoSettings[selectedCountry];
+  const heroHeading = activeCountrySeo?.heroHeading || `نیازمندی‌های فارسی‌زبانان ${currentCountryObj.nameFa}`;
+  const heroSubheading = activeCountrySeo?.heroSubheading || `مسکن، رستوران، خدمات و کاریابی در سراسر ${currentCountryObj.nameFa}`;
 
   const [sortBy, setSortBy] = useState(null); // null | 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
 
@@ -701,7 +719,7 @@ export default function App() {
   return (
     <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-clip w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
-      {/* Geolocation Scandinavian Detection Pop-Up Modal */}
+      {/* Geolocation Country Detection Pop-Up Modal */}
       <Suspense fallback={null}>
         <CountryBanner
           isOpen={countryModalOpen}
@@ -710,6 +728,7 @@ export default function App() {
           onSelectCountry={handleCountryChange}
           onConsentSaved={setGdprConsent}
           siteName={siteName}
+          countries={portalCountries}
         />
       </Suspense>
 
@@ -1134,6 +1153,7 @@ export default function App() {
             lang={lang}
             initialCategory={postAdCategory}
             selectedCountry={selectedCountry}
+            countries={portalCountries}
             onClose={handleClosePostAd}
             onCreated={(newAd, wantVip) => {
               fetchAds();

@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         const { data } = await supabase
           .from('swedpersiska_settings')
           .select('key, value')
-          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'stripe_settings', 'turnstile_settings', 'analytics_settings']);
+          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings', 'analytics_settings']);
 
         const settings = {};
         (data || []).forEach((item) => {
@@ -180,7 +180,7 @@ export default async function handler(req, res) {
               title: String(title).trim().slice(0, 160),
               title_fa: String(title).trim().slice(0, 160),
               category: category || 'bostad',
-              country: ['se', 'no', 'dk', 'fi'].includes(country) ? country : 'se',
+              country: /^[a-z0-9_-]{2,10}$/i.test(String(country || '')) ? String(country).toLowerCase() : 'se',
               city: String(city || 'Stockholm').trim().slice(0, 80),
               area: area ? String(area).trim().slice(0, 80) : null,
               price: price ? parseFloat(price) : null,

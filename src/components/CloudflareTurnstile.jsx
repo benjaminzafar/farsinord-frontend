@@ -27,6 +27,8 @@ export default function CloudflareTurnstile({
 }) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
+  const callbacksRef = useRef({ onVerify, onExpire, onError });
+  callbacksRef.current = { onVerify, onExpire, onError };
   const [loaded, setLoaded] = useState(() => typeof window !== 'undefined' && Boolean(window.turnstile));
   const [error, setError] = useState('');
 
@@ -37,10 +39,7 @@ export default function CloudflareTurnstile({
       const saved = localStorage.getItem('swedpersiska_turnstile_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.mode === 'live' && parsed.siteKey) {
-          return parsed.siteKey;
-        }
-        if (parsed.siteKey && parsed.siteKey.trim()) {
+        if (parsed.mode === 'live' && parsed.siteKey && parsed.siteKey.trim()) {
           return parsed.siteKey.trim();
         }
       }
@@ -72,10 +71,10 @@ export default function CloudflareTurnstile({
     };
     script.onerror = () => {
       setError('خطا در بارگذاری سامانه امنیتی کلودفلر');
-      onError?.('Script load error');
+      callbacksRef.current.onError?.('Script load error');
     };
     document.head.appendChild(script);
-  }, [onError]);
+  }, []);
 
   // 2. Render Turnstile widget once script and container are ready
   useEffect(() => {
@@ -95,15 +94,15 @@ export default function CloudflareTurnstile({
         theme: theme,
         callback: (token) => {
           setError('');
-          onVerify?.(token);
+          callbacksRef.current.onVerify?.(token);
         },
         'expired-callback': () => {
-          onExpire?.();
+          callbacksRef.current.onExpire?.();
         },
         'error-callback': (err) => {
           console.warn('Cloudflare Turnstile error:', err);
           setError('خطا در احراز هویت امنیتی');
-          onError?.(err);
+          callbacksRef.current.onError?.(err);
         }
       });
 
@@ -120,7 +119,7 @@ export default function CloudflareTurnstile({
         widgetIdRef.current = null;
       }
     };
-  }, [loaded, effectiveKey, theme, onVerify, onExpire, onError]);
+  }, [loaded, effectiveKey, theme]);
 
   return (
     <div className={`cloudflare-turnstile-container flex flex-col items-center justify-center min-h-[68px] ${className}`} dir="ltr">

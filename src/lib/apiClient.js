@@ -21,7 +21,7 @@ export const publicApi = {
     const { data } = await supabase
       .from('swedpersiska_settings')
       .select('key, value')
-      .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'stripe_settings', 'turnstile_settings']);
+      .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings']);
     const settings = {};
     (data || []).forEach((item) => {
       settings[item.key] = item.value;

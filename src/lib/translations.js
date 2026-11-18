@@ -6,6 +6,9 @@ export const COUNTRIES = [
     flag: '🇸🇪', 
     currency: 'kr', 
     currencyName: 'کرون سوئد',
+    heroImage: '/images/cities/stockholm.jpg',
+    enabled: true,
+    isSystem: true,
     cities: [
       { id: 'all', fa: 'همه شهرها' },
       { id: 'Stockholm', fa: 'استکهلم' },
@@ -38,6 +41,9 @@ export const COUNTRIES = [
     flag: '🇳🇴', 
     currency: 'kr', 
     currencyName: 'کرون نروژ',
+    heroImage: '/images/cities/oslo.jpg',
+    enabled: true,
+    isSystem: true,
     cities: [
       { id: 'all', fa: 'همه شهرها' },
       { id: 'Oslo', fa: 'اسلو' },
@@ -64,6 +70,9 @@ export const COUNTRIES = [
     flag: '🇩🇰', 
     currency: 'kr', 
     currencyName: 'کرون دانمارک',
+    heroImage: '/images/cities/copenhagen.jpg',
+    enabled: true,
+    isSystem: true,
     cities: [
       { id: 'all', fa: 'همه شهرها' },
       { id: 'København', fa: 'کپنهاگ' },
@@ -88,6 +97,9 @@ export const COUNTRIES = [
     flag: '🇫🇮', 
     currency: '€', 
     currencyName: 'یورو',
+    heroImage: '/images/cities/helsinki.jpg',
+    enabled: true,
+    isSystem: true,
     cities: [
       { id: 'all', fa: 'همه شهرها' },
       { id: 'Helsinki', fa: 'هلسینکی' },
@@ -105,8 +117,187 @@ export const COUNTRIES = [
       { id: 'Joensuu', fa: 'یوئنسو' },
       { id: 'Lappeenranta', fa: 'لاپنرانتا' },
     ]
+  },
+  {
+    id: 'de',
+    nameFa: 'آلمان',
+    nameNative: 'آلمان',
+    flag: '🇩🇪',
+    currency: '€',
+    currencyName: 'یورو',
+    heroImage: 'https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&w=1600&q=80',
+    enabled: true,
+    isSystem: true,
+    cities: [
+      { id: 'all', fa: 'همه شهرها' },
+      { id: 'Berlin', fa: 'برلین' },
+      { id: 'Hamburg', fa: 'هامبورگ' },
+      { id: 'München', fa: 'مونیخ' },
+      { id: 'Köln', fa: 'کلن' },
+      { id: 'Frankfurt', fa: 'فرانکفورت' },
+      { id: 'Düsseldorf', fa: 'دوسلدورف' },
+      { id: 'Stuttgart', fa: 'اشتوتگارت' },
+      { id: 'Hannover', fa: 'هانوفر' },
+      { id: 'Dortmund', fa: 'دورتموند' },
+      { id: 'Essen', fa: 'اسن' },
+      { id: 'Bremen', fa: 'برمن' },
+      { id: 'Bonn', fa: 'بن' },
+    ]
+  },
+  {
+    id: 'at',
+    nameFa: 'اتریش',
+    nameNative: 'اتریش',
+    flag: '🇦🇹',
+    currency: '€',
+    currencyName: 'یورو',
+    heroImage: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?auto=format&fit=crop&w=1600&q=80',
+    enabled: true,
+    isSystem: true,
+    cities: [
+      { id: 'all', fa: 'همه شهرها' },
+      { id: 'Wien', fa: 'وین' },
+      { id: 'Graz', fa: 'گراتس' },
+      { id: 'Linz', fa: 'لینتس' },
+      { id: 'Salzburg', fa: 'زالتسبورگ' },
+      { id: 'Innsbruck', fa: 'اینسبروک' },
+      { id: 'Klagenfurt', fa: 'کلاگنفورت' },
+    ]
+  },
+  {
+    id: 'nl',
+    nameFa: 'هلند',
+    nameNative: 'هلند',
+    flag: '🇳🇱',
+    currency: '€',
+    currencyName: 'یورو',
+    heroImage: 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?auto=format&fit=crop&w=1600&q=80',
+    enabled: true,
+    isSystem: true,
+    cities: [
+      { id: 'all', fa: 'همه شهرها' },
+      { id: 'Amsterdam', fa: 'آمستردام' },
+      { id: 'Rotterdam', fa: 'روتردام' },
+      { id: 'Den Haag', fa: 'لاهه' },
+      { id: 'Utrecht', fa: 'اوترخت' },
+      { id: 'Eindhoven', fa: 'آیندهوون' },
+      { id: 'Groningen', fa: 'خرونینگن' },
+      { id: 'Tilburg', fa: 'تیلبورخ' },
+      { id: 'Almere', fa: 'آلمیره' },
+    ]
+  },
+  {
+    id: 'fr',
+    nameFa: 'فرانسه',
+    nameNative: 'فرانسه',
+    flag: '🇫🇷',
+    currency: '€',
+    currencyName: 'یورو',
+    heroImage: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1600&q=80',
+    enabled: true,
+    isSystem: true,
+    cities: [
+      { id: 'all', fa: 'همه شهرها' },
+      { id: 'Paris', fa: 'پاریس' },
+      { id: 'Lyon', fa: 'لیون' },
+      { id: 'Marseille', fa: 'مارسی' },
+      { id: 'Toulouse', fa: 'تولوز' },
+      { id: 'Nice', fa: 'نیس' },
+      { id: 'Strasbourg', fa: 'استراسبورگ' },
+      { id: 'Bordeaux', fa: 'بوردو' },
+      { id: 'Lille', fa: 'لیل' },
+    ]
+  },
+  {
+    id: 'ca',
+    nameFa: 'کانادا',
+    nameNative: 'کانادا',
+    flag: '🇨🇦',
+    currency: 'CAD',
+    currencyName: 'دلار کانادا',
+    heroImage: 'https://images.unsplash.com/photo-1517935706615-2717063c2225?auto=format&fit=crop&w=1600&q=80',
+    enabled: true,
+    isSystem: true,
+    cities: [
+      { id: 'all', fa: 'همه شهرها' },
+      { id: 'Toronto', fa: 'تورنتو' },
+      { id: 'Vancouver', fa: 'ونکوور' },
+      { id: 'Montreal', fa: 'مونترال' },
+      { id: 'Ottawa', fa: 'اتاوا' },
+      { id: 'Calgary', fa: 'کلگری' },
+      { id: 'Edmonton', fa: 'ادمونتون' },
+      { id: 'Richmond Hill', fa: 'ریچموند هیل' },
+      { id: 'North Vancouver', fa: 'نورث ونکوور' },
+    ]
   }
 ];
+
+export function mergePortalCountries(customCountries, citiesByCountry) {
+  const baseMap = new Map();
+  COUNTRIES.forEach((c) => {
+    baseMap.set(c.id, { ...c });
+  });
+
+  if (Array.isArray(customCountries)) {
+    customCountries.forEach((item) => {
+      if (!item || !item.id) return;
+      const cid = String(item.id).trim().toLowerCase();
+      if (!cid) return;
+      const existing = baseMap.get(cid);
+      if (existing) {
+        baseMap.set(cid, {
+          ...existing,
+          ...item,
+          id: cid,
+          nameFa: item.nameFa || existing.nameFa,
+          nameNative: item.nameNative || item.nameFa || existing.nameNative,
+          currency: item.currency || existing.currency,
+          currencyName: item.currencyName || existing.currencyName,
+          heroImage: item.heroImage || existing.heroImage,
+          enabled: item.enabled !== false,
+          cities: Array.isArray(item.cities) && item.cities.length > 0 ? item.cities : existing.cities,
+        });
+      } else {
+        const rawCities = Array.isArray(item.cities) && item.cities.length > 0
+          ? item.cities
+          : [{ id: 'all', fa: 'همه شهرها' }];
+        const normalizedCities = rawCities.some((ct) => ct.id === 'all')
+          ? rawCities
+          : [{ id: 'all', fa: 'همه شهرها' }, ...rawCities];
+        baseMap.set(cid, {
+          id: cid,
+          nameFa: item.nameFa || cid.toUpperCase(),
+          nameNative: item.nameNative || item.nameFa || cid.toUpperCase(),
+          flag: item.flag || '🌍',
+          currency: item.currency || '€',
+          currencyName: item.currencyName || item.currency || 'یورو',
+          heroImage: item.heroImage || '/images/cities/stockholm.jpg',
+          enabled: item.enabled !== false,
+          isSystem: false,
+          cities: normalizedCities,
+        });
+      }
+    });
+  }
+
+  const merged = Array.from(baseMap.values());
+  if (citiesByCountry && typeof citiesByCountry === 'object') {
+    return merged.map((country) => {
+      const customCityList = citiesByCountry[country.id];
+      if (Array.isArray(customCityList) && customCityList.length > 0) {
+        const activeCities = customCityList
+          .filter((ct) => ct && ct.id && ct.enabled !== false)
+          .map((ct) => ({ id: ct.id, fa: ct.fa || ct.id }));
+        return {
+          ...country,
+          cities: [{ id: 'all', fa: 'همه شهرها' }, ...activeCities.filter((ct) => ct.id !== 'all')],
+        };
+      }
+      return country;
+    });
+  }
+  return merged;
+}
 
 export const CATEGORIES = [
   { id: 'all', fa: 'همه', icon: 'Tag' },

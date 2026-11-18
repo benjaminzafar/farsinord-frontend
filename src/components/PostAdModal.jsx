@@ -65,10 +65,14 @@ async function compressImageUnder1MB(file) {
 export default function PostAdModal({ 
   initialCategory = 'bostad', 
   selectedCountry = 'se',
+  countries = COUNTRIES,
   onClose, 
   onCreated 
 }) {
   const currentT = t.fa;
+  const activeCountries = Array.isArray(countries) && countries.length > 0
+    ? countries.filter(c => c.enabled !== false)
+    : COUNTRIES;
 
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Location & Category | 2: Details & Photos | 3: Contact & Publish
@@ -91,14 +95,14 @@ export default function PostAdModal({
   const [adCountry, setAdCountry] = useState(selectedCountry === 'all' ? 'se' : (selectedCountry || 'se'));
   const [category, setCategory] = useState(initialCategory || 'bostad');
   const [city, setCity] = useState(() => {
-    const defaultCountry = COUNTRIES.find(c => c.id === (selectedCountry === 'all' ? 'se' : selectedCountry)) || COUNTRIES[0];
+    const defaultCountry = activeCountries.find(c => c.id === (selectedCountry === 'all' ? 'se' : selectedCountry)) || activeCountries[0];
     return defaultCountry.cities.find(c => c.id !== 'all')?.id || 'Stockholm';
   });
   const [area, setArea] = useState('');
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [priceType, setPriceType] = useState(() => {
-    const defaultCountry = COUNTRIES.find(c => c.id === (selectedCountry === 'all' ? 'se' : selectedCountry)) || COUNTRIES[0];
+    const defaultCountry = activeCountries.find(c => c.id === (selectedCountry === 'all' ? 'se' : selectedCountry)) || activeCountries[0];
     return defaultCountry.currency || 'kr';
   });
   const [description, setDescription] = useState('');
@@ -114,7 +118,7 @@ export default function PostAdModal({
   const [showUrlFallback, setShowUrlFallback] = useState(false);
   const [pinCode] = useState(generatePinCode);
 
-  const currentCountryObj = COUNTRIES.find(c => c.id === adCountry) || COUNTRIES[0];
+  const currentCountryObj = activeCountries.find(c => c.id === adCountry) || activeCountries[0];
 
   // Add image to list (only safe http/https URLs, max 4 photos)
   const addImage = () => {
@@ -507,13 +511,13 @@ export default function PostAdModal({
               {/* STEP 1: Country, Category, City & Area */}
               {step === 1 && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-              {/* 1. Country Selection in Scandinavia */}
+              {/* 1. Country Selection */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  کشور محل آگهی در حوزه اسکاندیناوی *
+                  کشور محل آگهی *
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {COUNTRIES.map(c => (
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {activeCountries.map(c => (
                     <button
                       key={c.id}
                       type="button"
