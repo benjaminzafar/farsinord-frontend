@@ -25,13 +25,19 @@ export default function LegalModal({
   }, [isOpen, initialTab]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose?.();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -44,27 +50,27 @@ export default function LegalModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-vazir select-none"
+      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-6 font-vazir select-none"
       dir="rtl"
     >
       <div
-        className="fixed inset-0 bg-[#1D1D1F]/55 transition-opacity"
+        className="fixed inset-0 bg-[#1D1D1F]/60 transition-opacity"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-xl bg-[#FBFBFC] rounded-[28px] shadow-[0_24px_70px_rgba(29,29,31,0.22)] border border-[#E5E5EA] overflow-hidden z-10 flex flex-col max-h-[88vh]">
+      <div className="relative w-full sm:max-w-xl bg-[#FBFBFC] rounded-t-[28px] sm:rounded-[28px] shadow-[0_24px_70px_rgba(29,29,31,0.24)] border border-[#E5E5EA] overflow-hidden z-10 flex flex-col max-h-[88dvh] sm:max-h-[85dvh]">
 
-        <div className="px-6 pt-6 pb-4 space-y-4 border-b border-[#E5E5EA] shrink-0">
+        <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-3.5 sm:pb-4 space-y-3.5 sm:space-y-4 border-b border-[#E5E5EA] shrink-0">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="h-10 w-10 rounded-2xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center shrink-0">
                 <ShieldCheck size={20} strokeWidth={1.9} />
               </div>
-              <div>
-                <h2 className="text-[17px] sm:text-[18px] font-black text-[#1D1D1F] tracking-tight">
+              <div className="min-w-0">
+                <h2 className="text-[16px] sm:text-[18px] font-black text-[#1D1D1F] tracking-tight truncate">
                   حریم خصوصی و کوکی‌ها (GDPR)
                 </h2>
-                <p className="text-[11.5px] text-[#6E6E73] mt-0.5">
+                <p className="text-[11px] sm:text-[11.5px] text-[#6E6E73] mt-0.5 truncate">
                   {siteName} — مطابق با قوانین حفاظت از داده‌های اتحادیه اروپا
                 </p>
               </div>
@@ -83,7 +89,7 @@ export default function LegalModal({
           <GdprTabs activeTab={activeTab} onChangeTab={setActiveTab} />
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        <div className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto overscroll-contain">
           <GdprTabBody
             activeTab={activeTab}
             siteName={siteName}
@@ -92,7 +98,7 @@ export default function LegalModal({
           />
         </div>
 
-        <div className="px-6 py-4 border-t border-[#E5E5EA] bg-[#F5F5F7] flex items-center justify-between gap-3 shrink-0">
+        <div className="px-4 sm:px-6 pt-3.5 pb-[max(env(safe-area-inset-bottom),1rem)] sm:py-4 border-t border-[#E5E5EA] bg-[#F5F5F7] flex items-center justify-between gap-3 shrink-0">
           {activeTab === 'settings' ? (
             <>
               <button

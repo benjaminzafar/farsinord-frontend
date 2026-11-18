@@ -3,8 +3,8 @@ import { ShieldCheck, Cookie, SlidersHorizontal, Lock } from 'lucide-react';
 
 export const GDPR_TABS = [
   { id: 'privacy', label: 'حریم خصوصی', icon: ShieldCheck },
-  { id: 'cookies', label: 'سیاست کوکی‌ها', icon: Cookie },
-  { id: 'settings', label: 'تنظیمات کوکی‌ها', icon: SlidersHorizontal },
+  { id: 'cookies', label: 'سیاست کوکی', icon: Cookie },
+  { id: 'settings', label: 'تنظیمات کوکی', icon: SlidersHorizontal },
 ];
 
 export function GdprTabs({ activeTab, onChangeTab }) {
