@@ -42,6 +42,121 @@ function generatePinCode() {
   return code;
 }
 
+// In-memory rate limiter for 8-digit subscription code lookups/actions (per IP)
+const subRateLimitMap = new Map();
+function checkSubRateLimit(req) {
+  const rawIp = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown')
+    .split(',')[0]
+    .trim();
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const maxAttempts = 15;
+  const entry = subRateLimitMap.get(rawIp);
+  if (!entry || now - entry.windowStart > windowMs) {
+    subRateLimitMap.set(rawIp, { windowStart: now, count: 1 });
+    return true;
+  }
+  if (entry.count >= maxAttempts) return false;
+  entry.count += 1;
+  return true;
+}
+
+function generateUniqueManageCode(existingList = []) {
+  const used = new Set(existingList.map((item) => String(item?.manageCode || '')));
+  for (let i = 0; i < 20; i++) {
+    const candidate = String(crypto.randomInt(10000000, 100000000));
+    if (!used.has(candidate)) return candidate;
+  }
+  return String(crypto.randomInt(10000000, 100000000));
+}
+
+function sanitizePublicSubscription(item) {
+  if (!item) return null;
+  return {
+    storeId: item.storeId,
+    name: item.name,
+    status: item.status,
+    expiresAt: item.expiresAt,
+    panelUrl: item.panelUrl || '',
+    websiteUrl: item.websiteUrl || '',
+    monthlyPrice: item.monthlyPrice || 260,
+    renewRequestedAt: item.renewRequestedAt || '',
+    paymentStatus: item.paymentStatus || 'pending',
+  };
+}
+
+function validateWebsiteOrderFields(body) {
+  const name = String(body.name || '').trim();
+  const phone = String(body.phone || '').trim();
+  const companyNumber = String(body.companyNumber || '').trim();
+  const email = String(body.email || '').trim().toLowerCase();
+
+  if (name.length < 2 || phone.length < 6 || companyNumber.length < 4 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return {
+      ok: false,
+      error: 'لطفاً نام سایت، شماره تماس معتبر، شماره ثبت شرکت و ایمیل صحیح را وارد کنید.',
+    };
+  }
+  return {
+    ok: true,
+    name: name.slice(0, 120),
+    phone: phone.slice(0, 40),
+    companyNumber: companyNumber.slice(0, 60),
+    email: email.slice(0, 120),
+  };
+}
+
+async function getStripeConfig() {
+  const { data: stripeRow } = await supabase
+    .from('swedpersiska_settings')
+    .select('value')
+    .eq('key', 'stripe_settings')
+    .maybeSingle();
+  const mode = stripeRow?.value?.mode === 'live' ? 'live' : 'test';
+  const secretKey = String(process.env.STRIPE_SECRET_KEY || '').trim();
+  return { mode, secretKey };
+}
+
+async function createStripeCheckoutSession({ secretKey, amountOre, productName, successUrl, cancelUrl, customerEmail, metadata = {} }) {
+  const params = new URLSearchParams();
+  params.set('mode', 'payment');
+  params.set('success_url', successUrl);
+  params.set('cancel_url', cancelUrl);
+  if (customerEmail) params.set('customer_email', customerEmail);
+  params.set('line_items[0][price_data][currency]', 'sek');
+  params.set('line_items[0][price_data][unit_amount]', String(amountOre));
+  params.set('line_items[0][price_data][product_data][name]', productName);
+  params.set('line_items[0][quantity]', '1');
+  for (const [k, v] of Object.entries(metadata)) {
+    params.set(`metadata[${k}]`, String(v || ''));
+  }
+
+  const resp = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data?.url) {
+    throw new Error(data?.error?.message || 'خطا در ایجاد نشست پرداخت Stripe');
+  }
+  return data;
+}
+
+async function retrieveStripeCheckoutSession(secretKey, sessionId) {
+  const resp = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+    headers: { Authorization: `Bearer ${secretKey}` },
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data?.id) {
+    throw new Error(data?.error?.message || 'نشست پرداخت Stripe یافت نشد.');
+  }
+  return data;
+}
+
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://swedpersiska.vercel.app,https://farsinord.vercel.app,https://farsinord-admin.vercel.app')
   .split(',')
   .map((o) => o.trim())
@@ -393,15 +508,16 @@ export default async function handler(req, res) {
       }
 
       if (action === 'submit_website_order') {
-        const name = String(body.name || '').trim();
-        const phone = String(body.phone || '').trim();
-        const companyNumber = String(body.companyNumber || '').trim();
-        const email = String(body.email || '').trim();
+        const validated = validateWebsiteOrderFields(body);
+        if (!validated.ok) {
+          return res.status(400).json({ ok: false, error: validated.error });
+        }
 
-        if (!name || !phone || !companyNumber || !email) {
-          return res.status(400).json({
+        const { mode: stripeMode } = await getStripeConfig();
+        if (stripeMode === 'live') {
+          return res.status(403).json({
             ok: false,
-            error: 'لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را کامل وارد کنید.',
+            error: 'در حالت واقعی، ثبت سفارش فقط پس از تایید پرداخت در درگاه رسمی Stripe انجام می‌شود.',
           });
         }
 
@@ -413,7 +529,7 @@ export default async function handler(req, res) {
         const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
 
         const orderId = `WEB-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-        const manageCode = String(crypto.randomInt(10000000, 100000000));
+        const manageCode = generateUniqueManageCode(prev);
         const createdAt = new Date().toISOString();
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -422,13 +538,115 @@ export default async function handler(req, res) {
           manageCode,
           workerName: `sub_${orderId.toLowerCase()}`,
           dbId: '',
-          name: name.slice(0, 120),
-          phone: phone.slice(0, 40),
-          companyNumber: companyNumber.slice(0, 60),
-          email: email.slice(0, 120),
+          name: validated.name,
+          phone: validated.phone,
+          companyNumber: validated.companyNumber,
+          email: validated.email,
+          websiteUrl: '',
           panelUrl: '',
           storefrontApiUrl: '',
+          adminNotes: '',
           status: 'pending_setup',
+          paymentStatus: 'test_paid',
+          setupPrice: 1500,
+          monthlyPrice: 260,
+          expiresAt,
+          createdAt,
+        };
+
+        await supabase.from('swedpersiska_settings').upsert({
+          key: 'seller_deployments',
+          value: [newOrder, ...prev].slice(0, 500),
+          updated_at: createdAt,
+        });
+
+        return res.status(200).json({ ok: true, order: newOrder });
+      }
+
+      if (action === 'create_website_checkout') {
+        const validated = validateWebsiteOrderFields(body);
+        if (!validated.ok) {
+          return res.status(400).json({ ok: false, error: validated.error });
+        }
+
+        const { secretKey } = await getStripeConfig();
+        if (!secretKey) {
+          return res.status(503).json({
+            ok: false,
+            error: 'کلید امنیتی درگاه Stripe روی سرور تنظیم نشده است. لطفاً با پشتیبانی تماس بگیرید.',
+          });
+        }
+
+        const originHeader = String(req.headers.origin || 'https://swedpersiska.vercel.app').replace(/\/$/, '');
+        const session = await createStripeCheckoutSession({
+          secretKey,
+          amountOre: 150000, // 1,500 SEK
+          productName: `راه‌اندازی وب‌سایت اختصاصی (${validated.name})`,
+          successUrl: `${originHeader}/?page=website-builder&stripe_session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${originHeader}/?page=website-builder&cancelled=1`,
+          customerEmail: validated.email,
+          metadata: {
+            type: 'website_builder_setup',
+            name: validated.name,
+            phone: validated.phone,
+            companyNumber: validated.companyNumber,
+            email: validated.email,
+          },
+        });
+
+        return res.status(200).json({ ok: true, checkoutUrl: session.url, sessionId: session.id });
+      }
+
+      if (action === 'verify_website_checkout') {
+        const sessionId = String(body.sessionId || '').trim();
+        if (!sessionId || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+          return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
+        }
+
+        const { secretKey } = await getStripeConfig();
+        if (!secretKey) {
+          return res.status(503).json({ ok: false, error: 'درگاه Stripe پیکربندی نشده است.' });
+        }
+
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
+
+        // Idempotency: return existing order if this session was already redeemed
+        const existingOrder = prev.find((item) => item?.stripeSessionId === sessionId);
+        if (existingOrder) {
+          return res.status(200).json({ ok: true, order: existingOrder });
+        }
+
+        const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
+        if (session.payment_status !== 'paid' || session.metadata?.type !== 'website_builder_setup') {
+          return res.status(402).json({ ok: false, error: 'پرداخت هنوز تایید نشده است.' });
+        }
+
+        const orderId = `WEB-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        const manageCode = generateUniqueManageCode(prev);
+        const createdAt = new Date().toISOString();
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const newOrder = {
+          storeId: orderId,
+          manageCode,
+          workerName: `sub_${orderId.toLowerCase()}`,
+          dbId: '',
+          name: String(session.metadata?.name || 'وب‌سایت جدید').slice(0, 120),
+          phone: String(session.metadata?.phone || '').slice(0, 40),
+          companyNumber: String(session.metadata?.companyNumber || '').slice(0, 60),
+          email: String(session.metadata?.email || session.customer_email || '').slice(0, 120),
+          websiteUrl: '',
+          panelUrl: '',
+          storefrontApiUrl: '',
+          adminNotes: '',
+          status: 'pending_setup',
+          paymentStatus: 'paid',
+          stripeSessionId: session.id,
           setupPrice: 1500,
           monthlyPrice: 260,
           expiresAt,
@@ -445,6 +663,13 @@ export default async function handler(req, res) {
       }
 
       if (action === 'manage_website_subscription') {
+        if (!checkSubRateLimit(req)) {
+          return res.status(429).json({
+            ok: false,
+            error: 'تعداد درخواست‌های شما زیاد است. لطفاً چند دقیقه دیگر دوباره تلاش کنید.',
+          });
+        }
+
         const cleanCode = String(body.manageCode || '').replace(/\D/g, '').trim();
         const subAction = String(body.subAction || 'lookup').trim();
         if (cleanCode.length !== 8) {
@@ -464,13 +689,54 @@ export default async function handler(req, res) {
 
         const current = list[idx];
         if (subAction === 'renew') {
+          const { mode: stripeMode, secretKey } = await getStripeConfig();
+          if (stripeMode === 'live') {
+            if (secretKey) {
+              const originHeader = String(req.headers.origin || 'https://swedpersiska.vercel.app').replace(/\/$/, '');
+              const session = await createStripeCheckoutSession({
+                secretKey,
+                amountOre: 26000, // 260 SEK
+                productName: `تمدید ماهانه اشتراک وب‌سایت (${current.name})`,
+                successUrl: `${originHeader}/?page=website-builder&renew_session_id={CHECKOUT_SESSION_ID}`,
+                cancelUrl: `${originHeader}/?page=website-builder&cancelled=1`,
+                customerEmail: current.email || '',
+                metadata: {
+                  type: 'website_builder_renew',
+                  manageCode: cleanCode,
+                },
+              });
+              return res.status(200).json({
+                ok: true,
+                requiresStripeCheckout: true,
+                checkoutUrl: session.url,
+                subscription: sanitizePublicSubscription(current),
+              });
+            }
+            const updated = {
+              ...current,
+              renewRequestedAt: new Date().toISOString(),
+            };
+            const nextList = list.map((x, i) => (i === idx ? updated : x));
+            await supabase.from('swedpersiska_settings').upsert({
+              key: 'seller_deployments',
+              value: nextList,
+              updated_at: new Date().toISOString(),
+            });
+            return res.status(200).json({
+              ok: true,
+              subscription: sanitizePublicSubscription(updated),
+              message: 'درخواست تمدید ثبت شد؛ پس از پرداخت فاکتور ۲۶۰ کرون و تایید پشتیبانی، اشتراک شما فعال می‌شود.',
+            });
+          }
+
           const baseTime = current.expiresAt && new Date(current.expiresAt).getTime() > Date.now()
             ? new Date(current.expiresAt).getTime()
             : Date.now();
           const updated = {
             ...current,
-            status: current.status === 'cancelled' ? 'pending_setup' : current.status,
+            status: current.status === 'cancelled' ? 'active' : current.status,
             expiresAt: new Date(baseTime + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            renewRequestedAt: '',
           };
           const nextList = list.map((x, i) => (i === idx ? updated : x));
           await supabase.from('swedpersiska_settings').upsert({
@@ -478,21 +744,78 @@ export default async function handler(req, res) {
             value: nextList,
             updated_at: new Date().toISOString(),
           });
-          return res.status(200).json({ ok: true, subscription: updated });
+          return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(updated) });
         }
 
         if (subAction === 'cancel') {
-          const updated = { ...current, status: 'cancelled' };
+          const updated = {
+            ...current,
+            status: 'cancelled',
+            cancelledAt: new Date().toISOString(),
+          };
           const nextList = list.map((x, i) => (i === idx ? updated : x));
           await supabase.from('swedpersiska_settings').upsert({
             key: 'seller_deployments',
             value: nextList,
             updated_at: new Date().toISOString(),
           });
-          return res.status(200).json({ ok: true, subscription: updated });
+          return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(updated) });
         }
 
-        return res.status(200).json({ ok: true, subscription: current });
+        return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(current) });
+      }
+
+      if (action === 'verify_website_renew') {
+        const sessionId = String(body.sessionId || '').trim();
+        if (!sessionId || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+          return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
+        }
+
+        const { secretKey } = await getStripeConfig();
+        if (!secretKey) {
+          return res.status(503).json({ ok: false, error: 'درگاه Stripe پیکربندی نشده است.' });
+        }
+
+        const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
+        if (session.payment_status !== 'paid' || session.metadata?.type !== 'website_builder_renew') {
+          return res.status(402).json({ ok: false, error: 'پرداخت تمدید هنوز تایید نشده است.' });
+        }
+
+        const cleanCode = String(session.metadata?.manageCode || '').replace(/\D/g, '').trim();
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const list = Array.isArray(existingRow?.value) ? existingRow.value : [];
+        const idx = list.findIndex((item) => String(item.manageCode || '') === cleanCode);
+        if (idx === -1) {
+          return res.status(404).json({ ok: false, error: 'اشتراک مرتبط یافت نشد.' });
+        }
+
+        const current = list[idx];
+        if (current.lastRenewSessionId === session.id) {
+          return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(current) });
+        }
+
+        const baseTime = current.expiresAt && new Date(current.expiresAt).getTime() > Date.now()
+          ? new Date(current.expiresAt).getTime()
+          : Date.now();
+        const updated = {
+          ...current,
+          status: current.status === 'cancelled' ? 'active' : current.status,
+          expiresAt: new Date(baseTime + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          lastRenewSessionId: session.id,
+          renewRequestedAt: '',
+        };
+        const nextList = list.map((x, i) => (i === idx ? updated : x));
+        await supabase.from('swedpersiska_settings').upsert({
+          key: 'seller_deployments',
+          value: nextList,
+          updated_at: new Date().toISOString(),
+        });
+
+        return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(updated) });
       }
 
       if (action === 'deploy_seller_website') {
@@ -700,108 +1023,6 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
 
-      if (action === 'submit_website_order') {
-        const name = String(body.name || '').trim();
-        const phone = String(body.phone || '').trim();
-        const companyNumber = String(body.companyNumber || '').trim();
-        const email = String(body.email || '').trim();
-
-        if (!name || !phone || !companyNumber || !email) {
-          return res.status(400).json({
-            ok: false,
-            error: 'لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را کامل وارد کنید.',
-          });
-        }
-
-        const { data: existingRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'seller_deployments')
-          .maybeSingle();
-        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
-
-        const orderId = `WEB-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-        const manageCode = String(crypto.randomInt(10000000, 100000000));
-        const createdAt = new Date().toISOString();
-        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-        const newOrder = {
-          storeId: orderId,
-          manageCode,
-          workerName: `sub_${orderId.toLowerCase()}`,
-          dbId: '',
-          name: name.slice(0, 120),
-          phone: phone.slice(0, 40),
-          companyNumber: companyNumber.slice(0, 60),
-          email: email.slice(0, 120),
-          panelUrl: '',
-          storefrontApiUrl: '',
-          status: 'pending_setup',
-          setupPrice: 1500,
-          monthlyPrice: 260,
-          expiresAt,
-          createdAt,
-        };
-
-        await supabase.from('swedpersiska_settings').upsert({
-          key: 'seller_deployments',
-          value: [newOrder, ...prev].slice(0, 500),
-          updated_at: createdAt,
-        });
-
-        return res.status(200).json({ ok: true, order: newOrder });
-      }
-
-      if (action === 'manage_website_subscription') {
-        const cleanCode = String(body.manageCode || '').replace(/\D/g, '').trim();
-        const subAction = String(body.subAction || 'lookup').trim();
-        if (cleanCode.length !== 8) {
-          return res.status(400).json({ ok: false, error: 'لطفاً کد مدیریت ۸ رقمی معتبر وارد کنید.' });
-        }
-
-        const { data: existingRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'seller_deployments')
-          .maybeSingle();
-        const list = Array.isArray(existingRow?.value) ? existingRow.value : [];
-        const idx = list.findIndex((item) => String(item.manageCode || '') === cleanCode);
-        if (idx === -1) {
-          return res.status(404).json({ ok: false, error: 'اشتراکی با این کد ۸ رقمی یافت نشد.' });
-        }
-
-        const current = list[idx];
-        if (subAction === 'renew') {
-          const baseTime = current.expiresAt && new Date(current.expiresAt).getTime() > Date.now()
-            ? new Date(current.expiresAt).getTime()
-            : Date.now();
-          const updated = {
-            ...current,
-            status: current.status === 'cancelled' ? 'pending_setup' : current.status,
-            expiresAt: new Date(baseTime + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          };
-          const nextList = list.map((x, i) => (i === idx ? updated : x));
-          await supabase.from('swedpersiska_settings').upsert({
-            key: 'seller_deployments',
-            value: nextList,
-            updated_at: new Date().toISOString(),
-          });
-          return res.status(200).json({ ok: true, subscription: updated });
-        }
-
-        if (subAction === 'cancel') {
-          const updated = { ...current, status: 'cancelled' };
-          const nextList = list.map((x, i) => (i === idx ? updated : x));
-          await supabase.from('swedpersiska_settings').upsert({
-            key: 'seller_deployments',
-            value: nextList,
-            updated_at: new Date().toISOString(),
-          });
-          return res.status(200).json({ ok: true, subscription: updated });
-        }
-
-        return res.status(200).json({ ok: true, subscription: current });
-      }
 
       if (action === 'deploy_seller_website') {
         const name = String(body.name || '').trim();

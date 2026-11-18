@@ -80,6 +80,80 @@ export default function WebsiteBuilderPage({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step, pageMode]);
 
+  // Verify Stripe Checkout return (setup or monthly renewal)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const setupSessionId = params.get('stripe_session_id');
+    const renewSessionId = params.get('renew_session_id');
+    const isCancelled = params.get('cancelled') === '1';
+
+    if (!setupSessionId && !renewSessionId && !isCancelled) return;
+
+    const cleanUrl = () => {
+      try {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.delete('stripe_session_id');
+        nextUrl.searchParams.delete('renew_session_id');
+        nextUrl.searchParams.delete('cancelled');
+        window.history.replaceState({}, '', nextUrl.toString());
+      } catch {}
+    };
+
+    if (isCancelled) {
+      setErrorMsg('پرداخت لغو شد. در صورت تمایل می‌توانید دوباره اقدام کنید.');
+      cleanUrl();
+      return;
+    }
+
+    if (setupSessionId) {
+      setSubmitting(true);
+      fetch('/api/public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify_website_checkout', sessionId: setupSessionId }),
+      })
+        .then((r) => r.json())
+        .then((json) => {
+          if (json?.ok && json.order) {
+            setSubmittedOrder(json.order);
+          } else {
+            setErrorMsg(json?.error || 'تایید پرداخت Stripe با خطا مواجه شد.');
+          }
+        })
+        .catch(() => setErrorMsg('خطا در تایید پرداخت Stripe.'))
+        .finally(() => {
+          setSubmitting(false);
+          cleanUrl();
+        });
+      return;
+    }
+
+    if (renewSessionId) {
+      setPageMode('manage');
+      setManageLoading(true);
+      fetch('/api/public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify_website_renew', sessionId: renewSessionId }),
+      })
+        .then((r) => r.json())
+        .then((json) => {
+          if (json?.ok && json.subscription) {
+            setManagedSub(json.subscription);
+            setManageMsg('پرداخت تایید شد و اشتراک شما برای ۳۰ روز دیگر تمدید گردید.');
+          } else {
+            setErrorMsg(json?.error || 'تایید پرداخت تمدید با خطا مواجه شد.');
+          }
+        })
+        .catch(() => setErrorMsg('خطا در تایید پرداخت تمدید.'))
+        .finally(() => {
+          setManageLoading(false);
+          cleanUrl();
+        });
+    }
+  }, []);
+
   const copyManageCode = async (code) => {
     try {
       await navigator.clipboard.writeText(code);
@@ -101,27 +175,33 @@ export default function WebsiteBuilderPage({
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    if (!cardHolder.trim() || !cardNumber.trim() || !cardExpiry.trim() || !cardCvc.trim()) {
+
+    if (isTestMode && (!cardHolder.trim() || !cardNumber.trim() || !cardExpiry.trim() || !cardCvc.trim())) {
       setErrorMsg('لطفاً مشخصات کارت بانکی را کامل وارد کنید.');
       return;
     }
 
     setSubmitting(true);
     try {
+      const payload = {
+        action: isTestMode ? 'submit_website_order' : 'create_website_checkout',
+        name: storeName.trim(),
+        phone: phone.trim(),
+        companyNumber: companyNumber.trim(),
+        email: email.trim(),
+      };
       const res = await fetch('/api/public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'submit_website_order',
-          name: storeName.trim(),
-          phone: phone.trim(),
-          companyNumber: companyNumber.trim(),
-          email: email.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!json?.ok) {
         setErrorMsg(json?.error || 'مشکلی پیش آمد. لطفاً دوباره امتحان کنید.');
+        return;
+      }
+      if (!isTestMode && json.checkoutUrl) {
+        window.location.href = json.checkoutUrl;
         return;
       }
       setSubmittedOrder(json.order);
@@ -159,9 +239,18 @@ export default function WebsiteBuilderPage({
         setManagedSub(null);
         return;
       }
+      if (json.requiresStripeCheckout && json.checkoutUrl) {
+        window.location.href = json.checkoutUrl;
+        return;
+      }
       setManagedSub(json.subscription);
-      if (subAction === 'renew') setManageMsg('اشتراک شما برای ۳۰ روز دیگر تمدید شد.');
-      if (subAction === 'cancel') setManageMsg('اشتراک شما لغو شد.');
+      if (json.message) {
+        setManageMsg(json.message);
+      } else if (subAction === 'renew') {
+        setManageMsg('اشتراک شما برای ۳۰ روز دیگر تمدید شد.');
+      } else if (subAction === 'cancel') {
+        setManageMsg('اشتراک شما لغو شد.');
+      }
     } catch {
       setErrorMsg('خطا در ارتباط با سرور.');
     } finally {
@@ -278,6 +367,33 @@ export default function WebsiteBuilderPage({
                       <span className="text-[#6E6E73]">تاریخ پایان دوره:</span>
                       <strong>{managedSub.expiresAt ? new Date(managedSub.expiresAt).toLocaleDateString('fa-IR') : '-'}</strong>
                     </div>
+
+                    {(managedSub.websiteUrl || managedSub.panelUrl) && (
+                      <div className="pt-2 flex flex-wrap gap-2">
+                        {managedSub.websiteUrl && (
+                          <a
+                            href={managedSub.websiteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-9 px-3.5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-semibold inline-flex items-center gap-1.5"
+                          >
+                            <span>مشاهده وب‌سایت</span>
+                            <ExternalLink size={12} className="text-[#0066CC]" />
+                          </a>
+                        )}
+                        {managedSub.panelUrl && (
+                          <a
+                            href={managedSub.panelUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-9 px-3.5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-semibold inline-flex items-center gap-1.5"
+                          >
+                            <span>ورود به پنل فروش</span>
+                            <ExternalLink size={12} className="text-[#0066CC]" />
+                          </a>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex gap-2 pt-3">
                       <button
@@ -557,49 +673,61 @@ export default function WebsiteBuilderPage({
                       )}
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F]">
-                        <CreditCard size={15} className="text-[#0066CC]" />
-                        <span>مشخصات کارت بانکی</span>
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        value={cardHolder}
-                        onChange={(e) => setCardHolder(e.target.value)}
-                        placeholder="نام دارنده کارت (مثلاً: Ali Rezaei)"
-                        className="w-full h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs focus:bg-white focus:border-[#0066CC] focus:outline-none"
-                      />
-                      <input
-                        type="text"
-                        required
-                        dir="ltr"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        placeholder="4242 4242 4242 4242"
-                        className="w-full h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
-                      />
-                      <div className="grid grid-cols-2 gap-3">
+                    {isTestMode ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F]">
+                          <CreditCard size={15} className="text-[#0066CC]" />
+                          <span>مشخصات کارت بانکی (حالت تست)</span>
+                        </div>
                         <input
                           type="text"
                           required
-                          dir="ltr"
-                          value={cardExpiry}
-                          onChange={(e) => setCardExpiry(e.target.value)}
-                          placeholder="MM/YY"
-                          className="h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                          value={cardHolder}
+                          onChange={(e) => setCardHolder(e.target.value)}
+                          placeholder="نام دارنده کارت (مثلاً: Ali Rezaei)"
+                          className="w-full h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs focus:bg-white focus:border-[#0066CC] focus:outline-none"
                         />
                         <input
                           type="text"
                           required
                           dir="ltr"
-                          value={cardCvc}
-                          onChange={(e) => setCardCvc(e.target.value)}
-                          placeholder="CVC"
-                          className="h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                          value={cardNumber}
+                          onChange={(e) => setCardNumber(e.target.value)}
+                          placeholder="4242 4242 4242 4242"
+                          className="w-full h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
                         />
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            required
+                            dir="ltr"
+                            value={cardExpiry}
+                            onChange={(e) => setCardExpiry(e.target.value)}
+                            placeholder="MM/YY"
+                            className="h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            required
+                            dir="ltr"
+                            value={cardCvc}
+                            onChange={(e) => setCardCvc(e.target.value)}
+                            placeholder="CVC"
+                            className="h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="p-4 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-1.5 text-xs text-[#515154]">
+                        <div className="flex items-center gap-1.5 font-bold text-[#1D1D1F]">
+                          <Lock size={14} className="text-emerald-600 shrink-0" />
+                          <span>پرداخت امن با درگاه رسمی Stripe</span>
+                        </div>
+                        <p className="leading-relaxed">
+                          با کلیک روی دکمه زیر، به صفحه پرداخت امن Stripe (گواهی SSL/TLS) هدایت می‌شوید و پس از تکمیل پرداخت، کد ۸ رقمی اشتراک شما بلافاصله صادر می‌شود.
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-3 pt-2">
                       <button
