@@ -140,6 +140,14 @@ export default function App() {
   });
   const [siteName, setSiteName] = useState('لینک شو');
   const [logoUrl, setLogoUrl] = useState('');
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: 'https://instagram.com',
+    telegram: 'https://t.me',
+    whatsapp: '',
+    youtube: '',
+    linkedin: '',
+    email: ''
+  });
   const [turnstileSettings, setTurnstileSettings] = useState({ enabled: true, mode: 'test', siteKey: '' });
   const [analyticsSettings, setAnalyticsSettings] = useState({ enabled: false, measurementId: '' });
   const [seoSettings, setSeoSettings] = useState({
@@ -184,6 +192,14 @@ export default function App() {
           const isLegacyName = !rawName || /سوئد\s*پرشیا|سوید\s*پرشیا|پرشیا\s*سو|فارسی\s*نور|swedpersiska|farsi\s*nord|faris\s*nord/i.test(rawName);
           setSiteName(isLegacyName ? 'لینک شو' : rawName);
           if (branding.logoUrl && isSafeHttpUrl(branding.logoUrl)) setLogoUrl(branding.logoUrl);
+          setSocialLinks({
+            instagram: branding.socialInstagram ?? 'https://instagram.com',
+            telegram: branding.socialTelegram || branding.supportTelegram || 'https://t.me',
+            whatsapp: branding.socialWhatsapp || branding.supportPhone || '',
+            youtube: branding.socialYoutube || '',
+            linkedin: branding.socialLinkedin || '',
+            email: branding.supportEmail || ''
+          });
           if (branding.faviconUrl && isSafeHttpUrl(branding.faviconUrl)) {
             let link = document.querySelector("link[rel~='icon']");
             if (!link) {
@@ -1073,13 +1089,10 @@ export default function App() {
       <Footer
         siteName={siteName}
         logoUrl={logoUrl}
+        socialLinks={socialLinks}
         selectedCountryObj={currentCountryObj}
         onOpenCountryModal={handleOpenCountryModal}
         onSelectCategory={handleCategoryChange}
-        onSelectCity={(cityId) => {
-          setSelectedCity(cityId);
-          window.scrollTo({ top: 380, behavior: 'smooth' });
-        }}
         onOpenPostAd={() => handleOpenPostAd('bostad')}
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
