@@ -423,6 +423,41 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
 
+      if (action === 'register_seller_deployment') {
+        const dep = body.deployment;
+        if (!dep || !dep.workerName || !dep.panelUrl) {
+          return res.status(400).json({ ok: false, error: 'Missing deployment metadata' });
+        }
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
+        const nextList = [
+          {
+            storeId: String(dep.storeId || ''),
+            name: String(dep.name || '').slice(0, 120),
+            type: dep.type === 'restaurant' ? 'restaurant' : 'webshop',
+            currency: String(dep.currency || 'SEK').slice(0, 10),
+            panelUrl: String(dep.panelUrl || '').slice(0, 300),
+            storefrontApiUrl: String(dep.storefrontApiUrl || '').slice(0, 400),
+            workerName: String(dep.workerName || '').slice(0, 100),
+            dbId: String(dep.dbId || '').slice(0, 100),
+            monthlyPrice: Number(dep.monthlyPrice) || 240,
+            createdAt: dep.createdAt || new Date().toISOString(),
+          },
+          ...prev.filter((x) => x.workerName !== dep.workerName),
+        ].slice(0, 500);
+
+        await supabase.from('swedpersiska_settings').upsert({
+          key: 'seller_deployments',
+          value: nextList,
+          updated_at: new Date().toISOString(),
+        });
+        return res.status(200).json({ ok: true });
+      }
+
       if (action === 'increment_view') {
         const { id, current_views } = body;
         if (id) {
@@ -494,6 +529,41 @@ export default async function handler(req, res) {
           });
 
         if (error) throw error;
+        return res.status(200).json({ ok: true });
+      }
+
+      if (action === 'register_seller_deployment') {
+        const dep = body.deployment;
+        if (!dep || !dep.workerName || !dep.panelUrl) {
+          return res.status(400).json({ ok: false, error: 'Missing deployment metadata' });
+        }
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
+        const nextList = [
+          {
+            storeId: String(dep.storeId || ''),
+            name: String(dep.name || '').slice(0, 120),
+            type: dep.type === 'restaurant' ? 'restaurant' : 'webshop',
+            currency: String(dep.currency || 'SEK').slice(0, 10),
+            panelUrl: String(dep.panelUrl || '').slice(0, 300),
+            storefrontApiUrl: String(dep.storefrontApiUrl || '').slice(0, 400),
+            workerName: String(dep.workerName || '').slice(0, 100),
+            dbId: String(dep.dbId || '').slice(0, 100),
+            monthlyPrice: Number(dep.monthlyPrice) || 240,
+            createdAt: dep.createdAt || new Date().toISOString(),
+          },
+          ...prev.filter((x) => x.workerName !== dep.workerName),
+        ].slice(0, 500);
+
+        await supabase.from('swedpersiska_settings').upsert({
+          key: 'seller_deployments',
+          value: nextList,
+          updated_at: new Date().toISOString(),
+        });
         return res.status(200).json({ ok: true });
       }
 

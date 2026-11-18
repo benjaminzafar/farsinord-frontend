@@ -34,8 +34,7 @@ export default function WebsiteBuilderModal({
   const [cardCvc, setCardCvc] = useState('');
   const [payLoading, setPayLoading] = useState(false);
 
-  // Cloudflare Deploy Form
-  const [cfToken, setCfToken] = useState('');
+  // Store Deploy Form (uses owner's server-side Cloudflare account for security & billing control)
   const [storeName, setStoreName] = useState('');
   const [storeType, setStoreType] = useState('restaurant');
   const [currency, setCurrency] = useState('SEK');
@@ -89,8 +88,8 @@ export default function WebsiteBuilderModal({
   const handleDeploySubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    if (!cfToken.trim() || !storeName.trim()) {
-      setErrorMsg('لطفاً توکن کلودفلر و نام فروشگاه را وارد کنید.');
+    if (!storeName.trim()) {
+      setErrorMsg('لطفاً نام فروشگاه یا رستوران را وارد کنید.');
       return;
     }
     setDeploying(true);
@@ -99,7 +98,6 @@ export default function WebsiteBuilderModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cfToken: cfToken.trim(),
           name: storeName.trim(),
           type: storeType,
           currency,
@@ -109,13 +107,37 @@ export default function WebsiteBuilderModal({
       });
       const json = await res.json();
       if (!json?.ok) {
-        setErrorMsg(json?.error || 'خطا در نصب خودکار روی کلودفلر');
+        setErrorMsg(json?.error || 'خطا در ساخت خودکار پنل فروش');
         return;
       }
+
+      // Log deployment to admin registry so unpaid stores can be terminated by admin
+      try {
+        await fetch('/api/public', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'register_seller_deployment',
+            deployment: {
+              storeId: json.storeId,
+              name: json.name || storeName.trim(),
+              type: json.type || storeType,
+              currency: json.currency || currency,
+              panelUrl: json.panelUrl,
+              storefrontApiUrl: json.storefrontApiUrl,
+              workerName: json.workerName,
+              dbId: json.dbId,
+              monthlyPrice: MONTHLY_PRICE,
+              createdAt: json.createdAt || new Date().toISOString(),
+            },
+          }),
+        });
+      } catch {}
+
       setDeployResult(json);
       setStep('done');
     } catch {
-      setErrorMsg('خطا در اتصال به سرویس نصب کلودفلر. لطفاً دوباره تلاش کنید.');
+      setErrorMsg('خطا در اتصال به سرویس ساخت پنل فروش. لطفاً دوباره تلاش کنید.');
     } finally {
       setDeploying(false);
     }
@@ -270,39 +292,12 @@ export default function WebsiteBuilderModal({
             </form>
           )}
 
-          {/* STEP 2: 1-CLICK CLOUDFLARE DEPLOY */}
+          {/* STEP 2: 1-CLICK DEPLOY (NO CLOUDFLARE LOGIN REQUIRED BY USER) */}
           {step === 'deploy' && (
             <form onSubmit={handleDeploySubmit} className="space-y-4">
               <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                <span>پرداخت ۲۴۰ کرون تایید شد! حالا پنل فروش را با ۱ کلیک روی کلودفلر خودتان نصب کنید.</span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white border border-[#E5E5EA] space-y-2.5">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className="text-xs font-black text-[#1D1D1F] flex items-center gap-1.5">
-                    <Cloud size={15} className="text-[#F38020]" />
-                    <span>توکن کلودفلر شما</span>
-                  </span>
-                  <a
-                    href="https://dash.cloudflare.com/profile/api-tokens"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0066CC] hover:underline"
-                  >
-                    <span>ورود به کلودفلر و دریافت توکن</span>
-                    <ExternalLink size={11} />
-                  </a>
-                </div>
-                <input
-                  type="password"
-                  required
-                  dir="ltr"
-                  value={cfToken}
-                  onChange={(e) => setCfToken(e.target.value)}
-                  placeholder="Cloudflare API Token (Workers Scripts:Edit + D1:Edit)"
-                  className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3 text-xs font-mono text-left"
-                />
+                <span>پرداخت ۲۴۰ کرون تایید شد! مشخصات فروشگاه خود را وارد کنید تا در چند ثانیه ساخته شود.</span>
               </div>
 
               <div className="space-y-3">
