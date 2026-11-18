@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'node:crypto';
+import {
+  detectDuplicates,
+  prepareIncomingAdFingerprint,
+} from './_lib/duplicateDetection.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://bezbnymjcnmazdonfzky.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlemJueW1qY25tYXpkb25memt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2OTM1NjksImV4cCI6MjExMDI2OTU2OX0.ylsHBAZ1zo1z_aKpHx7hgl-yZu2yt2puFNhR8jBm6S4';
@@ -7,7 +11,37 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const PUBLIC_AD_COLUMNS =
-  'id, reference_number, title, title_fa, category, country, city, area, price, price_type, description, contact_name, contact_phone, contact_whatsapp, contact_telegram, contact_email, contact_website, images, is_featured, status, views_count, created_at, updated_at';
+  'id, reference_number, title, title_fa, category, country, city, area, price, price_type, description, contact_name, contact_phone, contact_whatsapp, contact_telegram, contact_email, contact_website, images, is_featured, status, views_count, created_at, updated_at, last_boosted_at, last_meaningful_activity_at, sort_timestamp, next_free_boost_at, boost_count, duplicate_detection_status, cleanup_warning_sent_at, scheduled_deletion_at, deleted_at, promotion_expires_at';
+
+const PROHIBITED_PATTERNS = [
+  /\b(csam|cp|child\s*porn|underage\s*sex|pedo|pedophil|loli|shota)\b/i,
+  /(کودک\s*آزاری|بچه\s*بازی|سکس\s*کودک|پورن\s*کودک)/i,
+  /\b(barnpornografi|barnmisshandel|sex\s*med\s*barn)\b/i,
+  /\b(escort|call\s*girl|prostitut|brothel|happy\s*ending|sex\s*service|porn|xxx|onlyfans)\b/i,
+  /(سکس|پورن|روسپی|تن\s*فروشی|صیغه\s*ساعتی|ماساژ\s*جنسی|خدمات\s*جنسی|فیلم\s*سوپر|شهوانی|جنده)/i,
+  /\b(eskort|sexköp|sexuella\s*tjänster|erotisk\s*massage|porr)\b/i,
+];
+
+function checkProhibitedText({ title = '', description = '', area = '', contact_name = '' } = {}) {
+  const combined = [title, description, area, contact_name].filter(Boolean).join(' ');
+  for (const pattern of PROHIBITED_PATTERNS) {
+    if (pattern.test(combined)) {
+      return 'محتوای آگهی شامل کلمات غیرمجاز یا مغایر با قوانین ایمنی پلتفرم است و امکان ثبت آن وجود ندارد.';
+    }
+  }
+  return '';
+}
+
+function normalizePublicAd(ad) {
+  if (!ad) return ad;
+  const expMs = ad.promotion_expires_at ? Date.parse(ad.promotion_expires_at) : NaN;
+  const isActiveVip = Boolean(ad.is_featured && (!ad.promotion_expires_at || (!Number.isNaN(expMs) && expMs > Date.now())));
+  return {
+    ...ad,
+    is_featured: isActiveVip,
+    is_active_vip: isActiveVip,
+  };
+}
 
 function isSafeHttpUrl(url) {
   if (!url || typeof url !== 'string') return false;
@@ -117,13 +151,13 @@ async function getStripeConfig() {
   return { mode, secretKey };
 }
 
-async function createStripeCheckoutSession({ secretKey, amountOre, productName, successUrl, cancelUrl, customerEmail, metadata = {} }) {
+async function createStripeCheckoutSession({ secretKey, amountOre, currency = 'sek', productName, successUrl, cancelUrl, customerEmail, metadata = {} }) {
   const params = new URLSearchParams();
   params.set('mode', 'payment');
   params.set('success_url', successUrl);
   params.set('cancel_url', cancelUrl);
   if (customerEmail) params.set('customer_email', customerEmail);
-  params.set('line_items[0][price_data][currency]', 'sek');
+  params.set('line_items[0][price_data][currency]', String(currency || 'sek').toLowerCase());
   params.set('line_items[0][price_data][unit_amount]', String(amountOre));
   params.set('line_items[0][price_data][product_data][name]', productName);
   params.set('line_items[0][quantity]', '1');
@@ -157,7 +191,7 @@ async function retrieveStripeCheckoutSession(secretKey, sessionId) {
   return data;
 }
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://swedpersiska.vercel.app,https://farsinord.vercel.app,https://farsinord-admin.vercel.app')
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://www.linksho.eu,https://linksho.eu,https://swedpersiska.vercel.app,https://farsinord.vercel.app,https://farsinord-admin.vercel.app')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
@@ -188,7 +222,7 @@ export default async function handler(req, res) {
         const { data } = await supabase
           .from('swedpersiska_settings')
           .select('key, value')
-          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings', 'analytics_settings', 'podcast_settings']);
+          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings', 'analytics_settings', 'podcast_settings', 'ad_lifecycle_settings']);
 
         const settings = {};
         (data || []).forEach((item) => {
@@ -335,7 +369,7 @@ export default async function handler(req, res) {
       if (action === 'ad' && id) {
         const clean = String(id).trim();
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
-        let query = supabase.from('swedpersiska_ads').select(PUBLIC_AD_COLUMNS);
+        let query = supabase.from('swedpersiska_ads').select(PUBLIC_AD_COLUMNS).is('deleted_at', null);
         if (isUuid) {
           query = query.eq('id', clean);
         } else {
@@ -345,19 +379,32 @@ export default async function handler(req, res) {
         }
         const { data, error } = await query.maybeSingle();
         if (error) throw error;
-        return res.status(200).json({ ok: true, ad: data || null });
+        return res.status(200).json({ ok: true, ad: normalizePublicAd(data) || null });
       }
 
-      // Default GET: list active public ads (without pin_code)
+      // Default GET: list active non-deleted public ads sorted by active VIP first, then sort_timestamp (boost/publish time)
       const { data, error } = await supabase
         .from('swedpersiska_ads')
         .select(PUBLIC_AD_COLUMNS)
         .eq('status', 'active')
+        .is('deleted_at', null)
         .order('is_featured', { ascending: false })
-        .order('created_at', { ascending: false });
+        .order('sort_timestamp', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false });
 
       if (error) throw error;
-      return res.status(200).json({ ok: true, ads: data || [] });
+      const normalizedAds = (data || [])
+        .map(normalizePublicAd)
+        .sort((a, b) => {
+          if (Boolean(b.is_featured) !== Boolean(a.is_featured)) {
+            return b.is_featured ? 1 : -1;
+          }
+          const tA = Date.parse(a.sort_timestamp || a.created_at || 0) || 0;
+          const tB = Date.parse(b.sort_timestamp || b.created_at || 0) || 0;
+          return tB - tA;
+        });
+      return res.status(200).json({ ok: true, ads: normalizedAds });
     }
 
     if (req.method === 'POST') {
@@ -379,116 +426,331 @@ export default async function handler(req, res) {
           contact_whatsapp,
           contact_telegram,
           contact_email,
-          images
+          images,
+          image_hashes,
+          requestDuplicateReview,
+          turnstileToken,
         } = body;
 
-        if (!title || !description || !contact_name) {
+        const cleanTitle = String(title || '').trim().slice(0, 160);
+        const cleanDesc = String(description || '').trim().slice(0, 4000);
+        const cleanName = String(contact_name || '').trim().slice(0, 100);
+        const cleanArea = area ? String(area).trim().slice(0, 80) : null;
+        const cleanPhone = contact_phone ? String(contact_phone).trim().slice(0, 40) : null;
+        const cleanWa = contact_whatsapp ? String(contact_whatsapp).trim().slice(0, 40) : null;
+        const cleanTg = contact_telegram ? String(contact_telegram).trim().slice(0, 80) : null;
+        const cleanEmail = contact_email ? String(contact_email).trim().slice(0, 120) : null;
+        const cleanWebsite = body.contact_website && isSafeHttpUrl(body.contact_website) ? String(body.contact_website).trim().slice(0, 300) : null;
+
+        if (!cleanTitle || !cleanDesc || !cleanName) {
           return res.status(400).json({ ok: false, error: 'عنوان، توضیحات و نام تماس‌گیرنده الزامی است.' });
         }
 
+        if (!cleanPhone && !cleanWa && !cleanTg && !cleanEmail && !cleanWebsite) {
+          return res.status(400).json({ ok: false, error: 'حداقل یک راه تماس (تلفن، واتساپ، تلگرام، ایمیل یا وب‌سایت) الزامی است.' });
+        }
+
+        const modReason = checkProhibitedText({ title: cleanTitle, description: cleanDesc, area: cleanArea, contact_name: cleanName });
+        if (modReason) {
+          return res.status(400).json({ ok: false, error: modReason });
+        }
+
+        // Optional server-side Turnstile verification when secret key is configured
+        const turnstileSecret = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
+        if (turnstileSecret && turnstileToken && !String(turnstileToken).startsWith('test')) {
+          try {
+            const verifyBody = new URLSearchParams({ secret: turnstileSecret, response: String(turnstileToken) });
+            const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+              method: 'POST',
+              body: verifyBody,
+            });
+            const tsJson = await tsRes.json().catch(() => ({}));
+            if (!tsJson.success) {
+              return res.status(403).json({ ok: false, error: 'تایید امنیتی کپچا معتبر نیست. لطفاً مجدداً امتحان کنید.' });
+            }
+          } catch {}
+        }
+
+        const cleanCountry = /^[a-z0-9_-]{2,10}$/i.test(String(country || '')) ? String(country).toLowerCase() : 'se';
+        const cleanCategory = category || 'bostad';
+        const cleanCity = String(city || 'Stockholm').trim().slice(0, 80);
         const safeImages = Array.isArray(images) ? images.filter(isSafeHttpUrl) : [];
         const finalImages = safeImages.length > 0
           ? safeImages
           : ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80'];
+        const safeImgHashes = Array.isArray(image_hashes)
+          ? image_hashes.map((h) => String(h || '').trim().toLowerCase()).filter((h) => /^[a-f0-9]{16,128}$/.test(h)).slice(0, 10)
+          : [];
+
+        const incomingAd = {
+          title: cleanTitle,
+          description: cleanDesc,
+          category: cleanCategory,
+          country: cleanCountry,
+          city: cleanCity,
+          area: cleanArea,
+          price: price ? parseFloat(price) : null,
+          contact_phone: cleanPhone,
+          contact_whatsapp: cleanWa,
+          contact_telegram: cleanTg,
+          contact_email: cleanEmail,
+          contact_website: cleanWebsite,
+          images: finalImages,
+          image_hashes: safeImgHashes,
+        };
+
+        const prepared = prepareIncomingAdFingerprint(incomingAd);
+
+        const [{ data: lifecycleRow }, { data: candidatesRaw }] = await Promise.all([
+          supabase.from('swedpersiska_settings').select('value').eq('key', 'ad_lifecycle_settings').maybeSingle(),
+          supabase.rpc('get_duplicate_candidates', {
+            p_country: cleanCountry,
+            p_category: cleanCategory,
+            p_owner_hashes: prepared.contactHashes,
+            p_image_hashes: prepared.imageSignatures,
+            p_content_hash: prepared.contentHash,
+            p_exclude_ad_id: null,
+          }),
+        ]);
+
+        const lifecycleConfig = lifecycleRow?.value || {};
+        const candidates = Array.isArray(candidatesRaw) ? candidatesRaw : [];
+        const dupResult = detectDuplicates(incomingAd, candidates, lifecycleConfig);
+
+        if (dupResult.decision === 'block' && !requestDuplicateReview) {
+          return res.status(409).json({
+            ok: false,
+            code: 'DUPLICATE_AD',
+            error: 'آگهی مشابهی هم‌اکنون در سامانه فعال یا در انتظار تایید است. به جای ثبت آگهی تکراری، می‌توانید آگهی قبلی را ویرایش یا بوست رایگان کنید.',
+            duplicateMatch: dupResult.topMatch,
+            reasons: dupResult.reasons,
+          });
+        }
+
+        const dupStatus = dupResult.decision === 'block' && requestDuplicateReview
+          ? 'flagged_review'
+          : (dupResult.decision === 'suspected' ? 'suspected' : 'clean');
 
         const refNum = generateReferenceNumber();
         const finalPin = generatePinCode();
 
-        const { data, error } = await supabase
-          .from('swedpersiska_ads')
-          .insert([
-            {
-              reference_number: refNum,
-              pin_code: finalPin,
-              title: String(title).trim().slice(0, 160),
-              title_fa: String(title).trim().slice(0, 160),
-              category: category || 'bostad',
-              country: /^[a-z0-9_-]{2,10}$/i.test(String(country || '')) ? String(country).toLowerCase() : 'se',
-              city: String(city || 'Stockholm').trim().slice(0, 80),
-              area: area ? String(area).trim().slice(0, 80) : null,
-              price: price ? parseFloat(price) : null,
-              price_type: price_type || 'kr',
-              description: String(description).trim().slice(0, 4000),
-              contact_name: String(contact_name).trim().slice(0, 100),
-              contact_phone: contact_phone ? String(contact_phone).trim().slice(0, 40) : null,
-              contact_whatsapp: contact_whatsapp ? String(contact_whatsapp).trim().slice(0, 40) : null,
-              contact_telegram: contact_telegram ? String(contact_telegram).trim().slice(0, 80) : null,
-              contact_email: contact_email ? String(contact_email).trim().slice(0, 120) : null,
-              contact_website: body.contact_website && isSafeHttpUrl(body.contact_website) ? String(body.contact_website).trim().slice(0, 300) : null,
-              images: finalImages,
-              is_featured: false,
-              status: 'pending',
-              views_count: 1
-            }
-          ])
-          .select(PUBLIC_AD_COLUMNS)
-          .single();
+        const { data: createRes, error: createErr } = await supabase.rpc('create_ad_secure', {
+          p_payload: {
+            reference_number: refNum,
+            pin_code: finalPin,
+            title: cleanTitle,
+            title_fa: cleanTitle,
+            category: cleanCategory,
+            country: cleanCountry,
+            city: cleanCity,
+            area: cleanArea,
+            price: incomingAd.price,
+            price_type: price_type || 'kr',
+            description: cleanDesc,
+            contact_name: cleanName,
+            contact_phone: cleanPhone,
+            contact_whatsapp: cleanWa,
+            contact_telegram: cleanTg,
+            contact_email: cleanEmail,
+            contact_website: cleanWebsite,
+            images: finalImages,
+            request_duplicate_review: Boolean(requestDuplicateReview),
+            duplicate_detection_status: dupStatus,
+            duplicate_score: dupResult.score || null,
+            duplicate_of_ad_id: dupResult.topMatch?.id || null,
+            duplicate_reasons: dupResult.reasons || [],
+            duplicate_same_owner: Boolean(dupResult.sameOwner),
+            normalized_title: dupResult.normalizedTitle,
+            normalized_text: dupResult.normalizedText,
+            content_hash: dupResult.contentHash,
+            owner_fingerprint: dupResult.ownerFingerprint,
+            owner_contact_hashes: dupResult.ownerContactHashes,
+            image_hashes: dupResult.imageHashes,
+          },
+        });
 
-        if (error) throw error;
-        return res.status(200).json({ ok: true, ad: data, reference_number: refNum, pin_code: finalPin });
+        if (createErr) throw createErr;
+
+        if (!createRes?.ok) {
+          if (createRes?.error_code === 'DUPLICATE_AD') {
+            return res.status(409).json({
+              ok: false,
+              code: 'DUPLICATE_AD',
+              error: 'این آگهی هم‌زمان یا پیش‌تر ثبت شده است. لطفاً آگهی موجود را ویرایش یا بوست کنید.',
+              duplicateMatch: createRes.duplicate_match,
+              reasons: ['تطابق کامل محتوا در بررسی هم‌زمان'],
+            });
+          }
+          return res.status(400).json({ ok: false, error: createRes?.error || 'خطا در ثبت آگهی' });
+        }
+
+        return res.status(200).json({
+          ok: true,
+          ad: createRes.ad,
+          reference_number: refNum,
+          pin_code: finalPin,
+          duplicateReviewFlagged: dupStatus !== 'clean',
+        });
       }
 
       if (action === 'verify_pin') {
+        if (!checkSubRateLimit(req)) {
+          return res.status(429).json({ ok: false, error: 'تعداد تلاش‌های شما زیاد است. لطفاً چند دقیقه دیگر دوباره تلاش کنید.' });
+        }
         const cleanRef = String(body.reference_number || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
         const cleanPin = String(body.pin_code || '').trim();
         if (!cleanRef || !cleanPin) {
           return res.status(400).json({ ok: false, error: 'لطفا کد مرجع و پین را وارد کنید.' });
         }
 
-        const { data, error } = await supabase
-          .from('swedpersiska_ads')
-          .select(PUBLIC_AD_COLUMNS)
-          .eq('reference_number', cleanRef)
-          .eq('pin_code', cleanPin)
-          .maybeSingle();
-
-        if (error || !data) {
-          return res.status(401).json({ ok: false, error: 'شماره مرجع یا پین کد وارد شده صحیح نیست.' });
+        const { data, error } = await supabase.rpc('owner_verify_ad', {
+          p_reference_number: cleanRef,
+          p_pin_code: cleanPin,
+        });
+        if (error) throw error;
+        if (!data?.ok) {
+          return res.status(401).json({ ok: false, error: data?.error || 'شماره مرجع یا پین کد وارد شده صحیح نیست.' });
         }
-        return res.status(200).json({ ok: true, ad: data });
+        return res.status(200).json({
+          ok: true,
+          deleted: Boolean(data.deleted),
+          ad: data.ad,
+          notifications: data.notifications || [],
+        });
+      }
+
+      if (action === 'owner_list_ads') {
+        if (!checkSubRateLimit(req)) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است.' });
+        }
+        const creds = Array.isArray(body.credentials) ? body.credentials.slice(0, 30) : [];
+        const { data, error } = await supabase.rpc('owner_list_ads', { p_credentials: creds });
+        if (error) throw error;
+        return res.status(200).json({ ok: true, ads: data?.ads || [], count: data?.count || 0 });
+      }
+
+      if (action === 'boost_ad') {
+        if (!checkSubRateLimit(req)) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
+        const { id, pin_code } = body;
+        if (!id || !pin_code) {
+          return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین کد الزامی است.' });
+        }
+
+        const { data, error } = await supabase.rpc('boost_ad_free', {
+          p_ad_id: id,
+          p_pin_code: String(pin_code).trim(),
+        });
+        if (error) throw error;
+
+        if (!data?.ok) {
+          const code = data?.error_code;
+          const status = code === 'INVALID_CREDENTIALS' ? 401 : code === 'BOOST_COOLDOWN_ACTIVE' ? 429 : 403;
+          return res.status(status).json({
+            ok: false,
+            code,
+            error: data?.error || 'امکان بوست آگهی در حال حاضر وجود ندارد.',
+            next_free_boost_at: data?.next_free_boost_at || null,
+            last_boosted_at: data?.last_boosted_at || null,
+            cooldown_remaining_seconds: data?.cooldown_remaining_seconds || 0,
+          });
+        }
+
+        return res.status(200).json({
+          ok: true,
+          ad: data.ad,
+          is_vip_exempt: Boolean(data.is_vip_exempt),
+          message: data.message,
+        });
       }
 
       if (action === 'update_ad') {
-        const { id, pin_code, title, price, description, status, contact_phone } = body;
+        const { id, pin_code, title, price, area, description, status, contact_phone } = body;
         if (!id || !pin_code) {
           return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین الزامی است.' });
         }
 
-        const { data: existingAd } = await supabase
-          .from('swedpersiska_ads')
-          .select('status')
-          .eq('id', id)
-          .eq('pin_code', String(pin_code).trim())
-          .maybeSingle();
-
-        if (!existingAd) {
-          return res.status(401).json({ ok: false, error: 'عدم دسترسی یا پین نامعتبر.' });
+        const cleanTitle = String(title || '').trim().slice(0, 160);
+        const cleanDesc = String(description || '').trim().slice(0, 4000);
+        const modReason = checkProhibitedText({ title: cleanTitle, description: cleanDesc, area });
+        if (modReason) {
+          return res.status(400).json({ ok: false, error: modReason });
         }
 
-        // Prevent pending ads from self-promoting to active via update_ad
-        const nextStatus = existingAd.status === 'pending'
-          ? 'pending'
-          : (status === 'hidden' ? 'hidden' : 'active');
+        // Verify ownership first & prevent editing an ad into an exact duplicate of another ad
+        const { data: verified, error: verifyErr } = await supabase.rpc('owner_list_ads', {
+          p_credentials: [{ reference_number: body.reference_number || '', pin_code }],
+        });
+        if (verifyErr) throw verifyErr;
 
-        const { data, error } = await supabase
-          .from('swedpersiska_ads')
-          .update({
-            title: String(title || '').trim().slice(0, 160),
-            price: price ? parseFloat(price) : null,
-            description: String(description || '').trim().slice(0, 4000),
-            status: nextStatus,
-            contact_phone: contact_phone ? String(contact_phone).trim().slice(0, 40) : null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id)
-          .eq('pin_code', String(pin_code).trim())
-          .select(PUBLIC_AD_COLUMNS)
-          .single();
-
-        if (error || !data) {
-          return res.status(401).json({ ok: false, error: 'عدم دسترسی یا پین نامعتبر.' });
+        let targetMeta = Array.isArray(verified?.ads) ? verified.ads.find((x) => x.id === id) : null;
+        if (!targetMeta && cleanTitle && cleanDesc) {
+          // If reference_number wasn't passed, rely on owner_update_ad PIN check; run duplicate check with fallback meta
+          targetMeta = { country: body.country || 'se', category: body.category || 'bostad', city: body.city || 'Stockholm' };
         }
-        return res.status(200).json({ ok: true, ad: data });
+
+        const incomingUpdated = {
+          id,
+          title: cleanTitle || targetMeta?.title || '',
+          description: cleanDesc || targetMeta?.description || '',
+          category: targetMeta?.category || 'bostad',
+          country: targetMeta?.country || 'se',
+          city: targetMeta?.city || 'Stockholm',
+          area,
+          price,
+          contact_phone,
+        };
+        const prepared = prepareIncomingAdFingerprint(incomingUpdated);
+
+        if (cleanTitle && cleanDesc) {
+          const { data: candidatesRaw } = await supabase.rpc('get_duplicate_candidates', {
+            p_country: incomingUpdated.country,
+            p_category: incomingUpdated.category,
+            p_owner_hashes: prepared.contactHashes,
+            p_image_hashes: [],
+            p_content_hash: prepared.contentHash,
+            p_exclude_ad_id: id,
+          });
+          const dupCheck = detectDuplicates(incomingUpdated, Array.isArray(candidatesRaw) ? candidatesRaw : [], {});
+          if (dupCheck.decision === 'block' && dupCheck.score >= 0.85) {
+            return res.status(409).json({
+              ok: false,
+              code: 'DUPLICATE_AD',
+              error: 'تغییرات جدید با یک آگهی دیگر کاملاً تکراری است. لطفاً متن آگهی را منحصربه‌فرد نگه دارید.',
+              duplicateMatch: dupCheck.topMatch,
+            });
+          }
+        }
+
+        const { data, error } = await supabase.rpc('owner_update_ad', {
+          p_ad_id: id,
+          p_pin_code: String(pin_code).trim(),
+          p_updates: {
+            title: cleanTitle,
+            price: price !== undefined && price !== '' && price !== null ? parseFloat(price) : null,
+            area: area !== undefined ? area : undefined,
+            description: cleanDesc,
+            status,
+            contact_phone,
+            normalized_title: prepared.titleNorm,
+            normalized_text: prepared.normalizedText,
+            content_hash: prepared.contentHash,
+          },
+        });
+
+        if (error) throw error;
+        if (!data?.ok) {
+          return res.status(data?.error_code === 'INVALID_CREDENTIALS' ? 401 : 400).json({
+            ok: false,
+            error: data?.error || 'عدم دسترسی یا پین نامعتبر.',
+          });
+        }
+        return res.status(200).json({
+          ok: true,
+          ad: data.ad,
+          meaningful_activity_recorded: Boolean(data.meaningful_activity_recorded),
+        });
       }
 
       if (action === 'delete_ad') {
@@ -497,14 +759,16 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین الزامی است.' });
         }
 
-        const { error } = await supabase
-          .from('swedpersiska_ads')
-          .delete()
-          .eq('id', id)
-          .eq('pin_code', String(pin_code).trim());
-
+        const { data, error } = await supabase.rpc('owner_soft_delete_ad', {
+          p_ad_id: id,
+          p_pin_code: String(pin_code).trim(),
+        });
         if (error) throw error;
-        return res.status(200).json({ ok: true });
+        if (!data?.ok) {
+          const st = data?.error_code === 'INVALID_CREDENTIALS' ? 401 : data?.error_code === 'AD_PROTECTED' ? 409 : 400;
+          return res.status(st).json({ ok: false, error: data?.error || 'امکان حذف آگهی وجود ندارد.' });
+        }
+        return res.status(200).json({ ok: true, softDeleted: true });
       }
 
       if (action === 'submit_website_order') {
@@ -950,12 +1214,9 @@ export default async function handler(req, res) {
       }
 
       if (action === 'increment_view') {
-        const { id, current_views } = body;
+        const { id } = body;
         if (id) {
-          await supabase
-            .from('swedpersiska_ads')
-            .update({ views_count: (Number(current_views) || 0) + 1 })
-            .eq('id', id);
+          await supabase.rpc('increment_ad_view', { p_ad_id: id });
         }
         return res.status(200).json({ ok: true });
       }
@@ -964,194 +1225,135 @@ export default async function handler(req, res) {
         const { id, country } = body;
         if (!id) return res.status(400).json({ ok: false, error: 'Missing ad ID' });
 
-        const { data: stripeRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'stripe_settings')
-          .maybeSingle();
+        const targetCountry = country && /^[a-z0-9_-]{2,10}$/i.test(String(country))
+          ? String(country).toLowerCase()
+          : 'se';
+        const sessionToken = `test_vip_${crypto.randomUUID()}`;
 
-        if (stripeRow?.value?.mode === 'live') {
-          return res.status(403).json({ ok: false, error: 'ارتقای ویژه در حالت واقعی نیازمند تایید پرداخت است.' });
-        }
-
-        const updatePayload = { is_featured: true };
-        if (country && /^[a-z0-9_-]{2,10}$/i.test(String(country))) {
-          updatePayload.country = String(country).toLowerCase();
-        }
-
-        const { data, error } = await supabase
-          .from('swedpersiska_ads')
-          .update(updatePayload)
-          .eq('id', id)
-          .select(PUBLIC_AD_COLUMNS)
-          .single();
-
+        const { data, error } = await supabase.rpc('activate_ad_promotion_from_payment', {
+          p_ad_id: id,
+          p_target_country: targetCountry,
+          p_provider: 'stripe_test',
+          p_session_id: sessionToken,
+        });
         if (error) throw error;
-        return res.status(200).json({ ok: true, ad: data });
+        if (!data?.ok) {
+          const st = data?.error_code === 'LIVE_PAYMENT_REQUIRED' ? 403 : 400;
+          return res.status(st).json({ ok: false, code: data?.error_code, error: data?.error || 'خطا در ارتقای آگهی' });
+        }
+        return res.status(200).json({ ok: true, ad: data.ad, expires_at: data.expires_at });
+      }
+
+      if (action === 'create_vip_checkout') {
+        const { id, country } = body;
+        if (!id) return res.status(400).json({ ok: false, error: 'شناسه آگهی الزامی است.' });
+
+        const targetCountry = country && /^[a-z0-9_-]{2,10}$/i.test(String(country))
+          ? String(country).toLowerCase()
+          : 'se';
+
+        const [{ secretKey }, { data: stripeRow }, { data: adRow }] = await Promise.all([
+          getStripeConfig(),
+          supabase.from('swedpersiska_settings').select('value').eq('key', 'stripe_settings').maybeSingle(),
+          supabase.from('swedpersiska_ads').select('id, reference_number, title, title_fa, contact_email').eq('id', id).is('deleted_at', null).maybeSingle(),
+        ]);
+
+        if (!adRow) {
+          return res.status(404).json({ ok: false, error: 'آگهی یافت نشد.' });
+        }
+        if (!secretKey) {
+          return res.status(503).json({
+            ok: false,
+            error: 'کلید امنیتی درگاه Stripe روی سرور تنظیم نشده است.',
+          });
+        }
+
+        const stripeCfg = stripeRow?.value || {};
+        const durationDays = Math.max(1, Math.min(365, Number(stripeCfg.vipDurationDays) || 30));
+        const basePrice = Number(stripeCfg.vipPrice) || 99;
+        const countryCurrencyMap = { se: 'SEK', no: 'NOK', dk: 'DKK', fi: 'EUR', de: 'EUR', at: 'EUR', nl: 'EUR', fr: 'EUR' };
+        const resolvedCurrency = countryCurrencyMap[targetCountry] || stripeCfg.currency || 'SEK';
+        const finalPrice = resolvedCurrency === 'EUR' && stripeCfg.currency !== 'EUR' && basePrice >= 50
+          ? Math.max(9, Math.round(basePrice / 10))
+          : basePrice;
+
+        const originHeader = String(req.headers.origin || 'https://www.linksho.eu').replace(/\/$/, '');
+        const session = await createStripeCheckoutSession({
+          secretKey,
+          amountOre: Math.round(finalPrice * 100),
+          currency: resolvedCurrency.toLowerCase(),
+          productName: `ارتقای ویژه (VIP) آگهی ${adRow.reference_number} (${durationDays} روز)`,
+          successUrl: `${originHeader}/?vip_session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${originHeader}/?vip_cancelled=1`,
+          customerEmail: adRow.contact_email || undefined,
+          metadata: {
+            type: 'ad_vip_promotion',
+            adId: adRow.id,
+            targetCountry,
+            durationDays: String(durationDays),
+          },
+        });
+
+        try {
+          await supabase.rpc('create_pending_ad_payment', {
+            p_ad_id: adRow.id,
+            p_target_country: targetCountry,
+            p_session_id: session.id,
+            p_amount: finalPrice,
+            p_currency: resolvedCurrency,
+            p_duration_days: durationDays,
+          });
+        } catch {}
+
+        return res.status(200).json({ ok: true, checkoutUrl: session.url, sessionId: session.id });
+      }
+
+      if (action === 'verify_vip_checkout') {
+        const sessionId = String(body.sessionId || '').trim();
+        if (!sessionId || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+          return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
+        }
+        const { secretKey } = await getStripeConfig();
+        if (!secretKey) {
+          return res.status(503).json({ ok: false, error: 'درگاه Stripe پیکربندی نشده است.' });
+        }
+        const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
+        if (session.payment_status !== 'paid' || session.metadata?.type !== 'ad_vip_promotion') {
+          return res.status(402).json({ ok: false, error: 'پرداخت ارتقای ویژه هنوز تایید نشده است.' });
+        }
+        const adId = String(session.metadata?.adId || '').trim();
+        const targetCountry = String(session.metadata?.targetCountry || 'se').trim().toLowerCase();
+        const amountPaid = session.amount_total ? Number(session.amount_total) / 100 : null;
+        const paidCurrency = session.currency ? String(session.currency).toUpperCase() : null;
+
+        const { data, error } = await supabase.rpc('activate_ad_promotion_from_payment', {
+          p_ad_id: adId,
+          p_target_country: targetCountry,
+          p_provider: 'stripe_live',
+          p_session_id: session.id,
+          p_amount: amountPaid,
+          p_currency: paidCurrency,
+        });
+        if (error) throw error;
+        if (!data?.ok) {
+          return res.status(400).json({ ok: false, error: data?.error || 'خطا در فعال‌سازی آگهی ویژه' });
+        }
+        return res.status(200).json({ ok: true, ad: data.ad, expires_at: data.expires_at });
       }
 
       if (action === 'report_ad') {
-        const { id, reference_number, title, reason, details } = body;
+        const { id, reason, details } = body;
         if (!id || !reason) return res.status(400).json({ ok: false, error: 'Missing report fields' });
 
-        const { data: existingRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'ad_reports')
-          .maybeSingle();
-
-        const currentList = Array.isArray(existingRow?.value) ? existingRow.value : [];
-        const newReport = {
-          id: crypto.randomUUID(),
-          ad_id: String(id),
-          reference_number: String(reference_number || ''),
-          title: String(title || '').slice(0, 140),
-          reason: String(reason).slice(0, 80),
-          details: String(details || '').slice(0, 400),
-          created_at: new Date().toISOString(),
-        };
-
-        const { error } = await supabase
-          .from('swedpersiska_settings')
-          .upsert({
-            key: 'ad_reports',
-            value: [newReport, ...currentList].slice(0, 200),
-            updated_at: new Date().toISOString(),
-          });
-
+        const { data, error } = await supabase.rpc('report_ad_secure', {
+          p_ad_id: id,
+          p_reason: String(reason).slice(0, 80),
+          p_details: String(details || '').slice(0, 400),
+        });
         if (error) throw error;
-        return res.status(200).json({ ok: true });
-      }
-
-
-      if (action === 'deploy_seller_website') {
-        const name = String(body.name || '').trim();
-        const phone = String(body.phone || '').trim();
-        const companyNumber = String(body.companyNumber || '').trim();
-        const email = String(body.email || '').trim();
-
-        if (!name || !phone || !companyNumber || !email) {
-          return res.status(400).json({
-            ok: false,
-            error: 'لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را کامل وارد کنید.',
-          });
+        if (!data?.ok) {
+          return res.status(400).json({ ok: false, error: data?.error || 'خطا در ثبت گزارش' });
         }
-
-        const { data: cfRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'cloudflare_deploy_settings')
-          .maybeSingle();
-
-        const cfCfg = (cfRow && cfRow.value) || {};
-        const cfToken = String(cfCfg.apiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
-        const accountId = String(cfCfg.accountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
-        const deployEndpoint = String(
-          cfCfg.deployUrl || process.env.SELLER_DEPLOY_URL || 'https://linksho-seller.vercel.app/api/cloudflare/deploy'
-        ).trim();
-
-        if (!cfToken) {
-          return res.status(503).json({
-            ok: false,
-            error: 'توکن کلودفلر هنوز در پنل ادمین تنظیم نشده است.',
-          });
-        }
-
-        const deployRes = await fetch(deployEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cfToken,
-            accountId,
-            name,
-            phone,
-            companyNumber,
-            email,
-            type: 'webshop',
-            currency: 'SEK',
-            shippingFee: 0,
-          }),
-        });
-
-        const deployJson = await deployRes.json().catch(() => ({}));
-        if (!deployRes.ok || !deployJson?.ok) {
-          return res.status(deployRes.status || 500).json({
-            ok: false,
-            error: deployJson?.error || 'خطا در ساخت خودکار وب‌سایت روی کلودفلر.',
-          });
-        }
-
-        const { data: existingRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'seller_deployments')
-          .maybeSingle();
-        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
-        const nextList = [
-          {
-            storeId: String(deployJson.storeId || ''),
-            name: name.slice(0, 120),
-            phone: phone.slice(0, 40),
-            companyNumber: companyNumber.slice(0, 60),
-            email: email.slice(0, 120),
-            panelUrl: String(deployJson.panelUrl || '').slice(0, 300),
-            storefrontApiUrl: String(deployJson.storefrontApiUrl || '').slice(0, 400),
-            workerName: String(deployJson.workerName || '').slice(0, 100),
-            dbId: String(deployJson.dbId || '').slice(0, 100),
-            monthlyPrice: 260,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            createdAt: deployJson.createdAt || new Date().toISOString(),
-          },
-          ...prev.filter((x) => x.workerName !== deployJson.workerName),
-        ].slice(0, 500);
-
-        await supabase.from('swedpersiska_settings').upsert({
-          key: 'seller_deployments',
-          value: nextList,
-          updated_at: new Date().toISOString(),
-        });
-
-        return res.status(200).json({
-          ok: true,
-          panelUrl: deployJson.panelUrl,
-          storefrontApiUrl: deployJson.storefrontApiUrl,
-          pinCode: deployJson.pinCode,
-          storeId: deployJson.storeId,
-        });
-      }
-
-      if (action === 'register_seller_deployment') {
-        const dep = body.deployment;
-        if (!dep || !dep.workerName || !dep.panelUrl) {
-          return res.status(400).json({ ok: false, error: 'Missing deployment metadata' });
-        }
-        const { data: existingRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'seller_deployments')
-          .maybeSingle();
-        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
-        const nextList = [
-          {
-            storeId: String(dep.storeId || ''),
-            name: String(dep.name || '').slice(0, 120),
-            type: dep.type === 'restaurant' ? 'restaurant' : 'webshop',
-            currency: String(dep.currency || 'SEK').slice(0, 10),
-            panelUrl: String(dep.panelUrl || '').slice(0, 300),
-            storefrontApiUrl: String(dep.storefrontApiUrl || '').slice(0, 400),
-            workerName: String(dep.workerName || '').slice(0, 100),
-            dbId: String(dep.dbId || '').slice(0, 100),
-            monthlyPrice: Number(dep.monthlyPrice) || 240,
-            createdAt: dep.createdAt || new Date().toISOString(),
-          },
-          ...prev.filter((x) => x.workerName !== dep.workerName),
-        ].slice(0, 500);
-
-        await supabase.from('swedpersiska_settings').upsert({
-          key: 'seller_deployments',
-          value: nextList,
-          updated_at: new Date().toISOString(),
-        });
         return res.status(200).json({ ok: true });
       }
 

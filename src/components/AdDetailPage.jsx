@@ -45,6 +45,7 @@ export default function AdDetailPage({
   const [reportDetails, setReportDetails] = useState('');
   const [reportSending, setReportSending] = useState(false);
   const [reportSent, setReportSent] = useState(false);
+  const [renderNow] = useState(() => Date.now());
   const stageRef = useRef(null);
   const zoomImgRef = useRef(null);
   const zoomStateRef = useRef({ scale: 1, x: 0, y: 0 });
@@ -198,6 +199,12 @@ export default function AdDetailPage({
       })
     : '';
 
+  const isVipActive = Boolean(
+    ad.is_active_vip !== undefined
+      ? ad.is_active_vip
+      : (ad.is_featured && (!ad.promotion_expires_at || Date.parse(ad.promotion_expires_at) > renderNow))
+  );
+
   const shareAd = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
@@ -211,8 +218,15 @@ export default function AdDetailPage({
   const adCountryObj = COUNTRIES.find(c => c.id === adCountryCode) || COUNTRIES[0];
   const adCountryName = adCountryObj?.nameFa || 'سوئد';
   const sameCountryAds = allAds.filter(a => a.id !== ad.id && (a.country || 'se') === adCountryCode);
-  const vipAds = sameCountryAds.filter(a => a.is_featured);
-  const fallbackAds = sameCountryAds.filter(a => !a.is_featured);
+  const checkVip = (a) => Boolean(
+    a.is_active_vip !== undefined
+      ? a.is_active_vip
+      : (a.is_featured && (!a.promotion_expires_at || Date.parse(a.promotion_expires_at) > renderNow))
+  );
+  const vipAds = sameCountryAds.filter(checkVip);
+  const fallbackAds = sameCountryAds
+    .filter(a => !checkVip(a))
+    .sort((a, b) => (Date.parse(b.sort_timestamp || b.created_at || 0) || 0) - (Date.parse(a.sort_timestamp || a.created_at || 0) || 0));
   // Guarantee up to 4 VIP slots from the same country (featured ads first, then recent ads of that country)
   const displayVipAds = [...vipAds, ...fallbackAds].slice(0, 4);
 
@@ -291,7 +305,7 @@ export default function AdDetailPage({
                 </button>
 
                 {/* VIP / Featured Badge */}
-                {ad.is_featured && (
+                {isVipActive && (
                   <div className="absolute top-3 start-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0066CC] text-white text-xs font-bold backdrop-blur-xs">
                     <Crown size={13} className="text-white/90" />
                     <span>ویژه</span>
@@ -372,7 +386,10 @@ export default function AdDetailPage({
 
                   <span className="inline-flex items-center gap-1.5 leading-none">
                     <Clock size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
-                    <span className="leading-none">{dateStr}</span>
+                    <span className="leading-none">
+                      انتشار: {dateStr}
+                      {ad.last_boosted_at && ` • بروزشده`}
+                    </span>
                   </span>
 
                   <span className="inline-flex items-center gap-1.5 leading-none">
@@ -707,7 +724,7 @@ export default function AdDetailPage({
                 className="w-full h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold active:scale-[0.97] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Crown size={15} className="text-white/90" />
-                <span>{ad.is_featured ? `تمدید یا تغییر کشور ویژه (${adCountryName})` : `ارتقا و ویژه کردن در ${adCountryName}`}</span>
+                <span>{isVipActive ? `تمدید یا تغییر کشور ویژه (${adCountryName})` : `ارتقا و ویژه کردن در ${adCountryName}`}</span>
               </button>
             </div>
 

@@ -37,15 +37,16 @@ export default async function handler(req, res) {
   try {
     const { data: ads } = await supabase
       .from('swedpersiska_ads')
-      .select('id, reference_number, updated_at, created_at')
+      .select('id, reference_number, updated_at, sort_timestamp, created_at')
       .eq('status', 'active')
-      .order('created_at', { ascending: false })
+      .is('deleted_at', null)
+      .order('sort_timestamp', { ascending: false })
       .limit(1000);
 
     if (Array.isArray(ads)) {
       for (const ad of ads) {
         const slug = encodeURIComponent(ad.reference_number || ad.id);
-        const mod = (ad.updated_at || ad.created_at || todayIso).slice(0, 10);
+        const mod = (ad.updated_at || ad.sort_timestamp || ad.created_at || todayIso).slice(0, 10);
         urls.push({
           loc: `${baseUrl}/?ad=${slug}`,
           lastmod: mod,

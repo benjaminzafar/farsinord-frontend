@@ -81,10 +81,32 @@ export default function PaymentModal({
     setErrorMsg('');
   };
 
+  const isTestMode = stripeSettings?.mode !== 'live';
+
   // Process Stripe Payment & Promote Ad for Target Country
   const handleSubmitPayment = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (!isTestMode) {
+      if (!ad?.id) {
+        setErrorMsg('آگهی انتخابی معتبر نیست.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await publicApi.createVipCheckout(ad.id, targetCountry);
+        if (res?.checkoutUrl) {
+          window.location.href = res.checkoutUrl;
+          return;
+        }
+        throw new Error('لینک پرداخت Stripe دریافت نشد.');
+      } catch (err) {
+        setErrorMsg(err.message || 'خطا در اتصال به درگاه پرداخت Stripe');
+        setLoading(false);
+      }
+      return;
+    }
 
     if (!cardName.trim()) {
       setErrorMsg('لطفاً نام دارنده کارت را وارد فرمایید.');
@@ -112,7 +134,7 @@ export default function PaymentModal({
         const updatedAd = await publicApi.promoteAd(ad.id, targetCountry);
         setIsPaid(true);
         if (onSuccess) {
-          onSuccess(updatedAd || { ...ad, is_featured: true, country: targetCountry });
+          onSuccess(updatedAd || { ...ad, is_featured: true, is_active_vip: true, country: targetCountry });
         }
       } else {
         setIsPaid(true);
@@ -124,8 +146,6 @@ export default function PaymentModal({
       setLoading(false);
     }
   };
-
-  const isTestMode = stripeSettings?.mode !== 'live';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto font-vazir select-none" dir="rtl">
@@ -283,8 +303,10 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {/* Credit Card Form */}
+              {/* Credit Card Form (Test Mode) or Stripe Checkout Redirect (Live Mode) */}
               <form onSubmit={handleSubmitPayment} className="space-y-3">
+                {isTestMode ? (
+                  <>
                 <div>
                   <label className="block text-[11.5px] font-bold text-[#1D1D1F] mb-1">
                     نام دارنده کارت
@@ -350,6 +372,12 @@ export default function PaymentModal({
                     />
                   </div>
                 </div>
+                  </>
+                ) : (
+                  <div className="rounded-xl bg-[#F5F5F7] border border-[#E5E5EA] p-3 text-xs text-[#515154] leading-relaxed">
+                    برای پرداخت امن و واقعی، به صفحه رسمی Stripe Checkout منتقل خواهید شد و بلافاصله پس از تایید پرداخت، آگهی شما به مدت {durationDays} روز ویژه (VIP) می‌شود.
+                  </div>
+                )}
 
                 <button
                   type="submit"

@@ -20,6 +20,13 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
     day: 'numeric'
   });
 
+  const [renderNow] = React.useState(() => Date.now());
+  const isVipActive = Boolean(
+    ad.is_active_vip !== undefined
+      ? ad.is_active_vip
+      : (ad.is_featured && (!ad.promotion_expires_at || Date.parse(ad.promotion_expires_at) > renderNow))
+  );
+
   return (
     <article
       onClick={() => onSelect(ad)}
@@ -36,7 +43,7 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
         />
 
         {/* Featured pill (Apple Calibrated Blue "ویژه") */}
-        {ad.is_featured && (
+        {isVipActive && (
           <div className="absolute top-1.5 start-1.5 sm:top-2 sm:start-2 rounded-lg bg-[#0066CC] text-[#FBFBFC] px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-bold shadow-2xs">
             {lang === 'fa' ? 'ویژه' : 'Utvald'}
           </div>

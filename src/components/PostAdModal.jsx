@@ -13,13 +13,31 @@ import {
   UserCheck,
   Upload,
   Loader2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ShieldCheck,
+  Sparkles,
+  ExternalLink,
+  CopyCheck
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
-import { supabase, generateReferenceNumber, generatePinCode, isSafeHttpUrl } from '../lib/supabase';
+import { isSafeHttpUrl } from '../lib/supabase';
 import { publicApi } from '../lib/apiClient';
+import { saveAdCredential } from '../lib/myAdsStorage';
 import { checkProhibitedContent } from '../lib/moderation';
 import { COUNTRIES, CATEGORIES, t } from '../lib/translations';
+
+async function computeFileSha256(file) {
+  try {
+    if (typeof window === 'undefined' || !window.crypto?.subtle) return '';
+    const buf = await file.arrayBuffer();
+    const digest = await window.crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  } catch {
+    return '';
+  }
+}
 
 const MAX_PHOTOS = 4;
 const MAX_FILE_BYTES = 1048576; // 1 MB
@@ -67,7 +85,8 @@ export default function PostAdModal({
   selectedCountry = 'se',
   countries = COUNTRIES,
   onClose, 
-  onCreated 
+  onCreated,
+  onOpenManageExisting
 }) {
   const currentT = t.fa;
   const activeCountries = Array.isArray(countries) && countries.length > 0
@@ -78,6 +97,7 @@ export default function PostAdModal({
   const [step, setStep] = useState(1); // 1: Location & Category | 2: Details & Photos | 3: Contact & Publish
   const bodyScrollRef = useRef(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [successData, setSuccessData] = useState(null);
   const [copiedRef, setCopiedRef] = useState(false);
   const [copiedPin, setCopiedPin] = useState(false);
@@ -114,9 +134,9 @@ export default function PostAdModal({
   const [contactWebsite, setContactWebsite] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imagesList, setImagesList] = useState([]);
+  const [imageHashes, setImageHashes] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [showUrlFallback, setShowUrlFallback] = useState(false);
-  const [pinCode] = useState(generatePinCode);
 
   const currentCountryObj = activeCountries.find(c => c.id === adCountry) || activeCountries[0];
 
@@ -158,6 +178,7 @@ export default function PostAdModal({
     setUploadingPhotos(true);
     try {
       const uploadedUrls = [];
+      const uploadedHashes = [];
       for (const rawFile of filesToUpload) {
         if (!rawFile.type.startsWith('image/')) {
           throw new Error('فقط فایل‌های تصویری مجاز هستند.');
@@ -166,6 +187,7 @@ export default function PostAdModal({
         if (readyFile.size > MAX_FILE_BYTES) {
           throw new Error('حجم هر تصویر باید حداکثر ۱ مگابایت باشد.');
         }
+        const fileHash = await computeFileSha256(readyFile);
         const { uploadUrl, publicUrl } = await publicApi.presignUpload({
           fileName: readyFile.name,
           contentType: readyFile.type,
@@ -180,9 +202,13 @@ export default function PostAdModal({
           throw new Error('خطا در ارسال تصویر به فضای ابری');
         }
         uploadedUrls.push(publicUrl);
+        if (fileHash) uploadedHashes.push(fileHash);
       }
       if (uploadedUrls.length > 0) {
         setImagesList((prev) => [...prev, ...uploadedUrls].slice(0, MAX_PHOTOS));
+        if (uploadedHashes.length > 0) {
+          setImageHashes((prev) => [...prev, ...uploadedHashes].slice(0, MAX_PHOTOS));
+        }
       }
     } catch (err) {
       setErrorMsg(err.message || 'خطا در آپلود تصویر');
@@ -193,6 +219,7 @@ export default function PostAdModal({
 
   const removeImage = (index) => {
     setImagesList(imagesList.filter((_, i) => i !== index));
+    setImageHashes(imageHashes.filter((_, i) => i !== index));
   };
 
   const scrollBodyTop = () => {
@@ -230,9 +257,9 @@ export default function PostAdModal({
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const submitAd = async ({ requestDuplicateReview = false } = {}) => {
     setErrorMsg('');
+    if (!requestDuplicateReview) setDuplicateWarning(null);
 
     if (!title.trim() || !description.trim() || !contactName.trim()) {
       setErrorMsg('لطفاً عنوان، توضیحات و نام تماس‌گیرنده را وارد فرمایید.');
@@ -259,61 +286,69 @@ export default function PostAdModal({
     setLoading(true);
 
     try {
-      const refNum = generateReferenceNumber();
-      const finalPin = pinCode.trim() || generatePinCode();
-
       const allImages = imagesList.filter(isSafeHttpUrl);
       if (imageUrl.trim() && isSafeHttpUrl(imageUrl.trim())) {
         allImages.push(imageUrl.trim());
       }
 
-      const { data, error } = await supabase
-        .from('swedpersiska_ads')
-        .insert([
-          {
-            reference_number: refNum,
-            pin_code: finalPin,
-            title: title.trim(),
-            title_fa: title.trim(),
-            category,
-            country: adCountry,
-            city,
-            area: area.trim() || null,
-            price: price ? parseFloat(price) : null,
-            price_type: priceType,
-            description: description.trim(),
-            contact_name: contactName.trim(),
-            contact_phone: contactPhone.trim() || null,
-            contact_whatsapp: contactWhatsapp.trim() || null,
-            contact_telegram: contactTelegram.trim() || null,
-            contact_email: contactEmail.trim() || null,
-            contact_website: contactWebsite.trim() || null,
-            images: allImages.length > 0 ? allImages : ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80'],
-            is_featured: false,
-            status: 'pending',
-            views_count: 1
-          }
-        ])
-        .select()
-        .single();
+      const res = await publicApi.createAd({
+        title: title.trim(),
+        category,
+        country: adCountry,
+        city,
+        area: area.trim() || null,
+        price: price ? parseFloat(price) : null,
+        price_type: priceType,
+        description: description.trim(),
+        contact_name: contactName.trim(),
+        contact_phone: contactPhone.trim() || null,
+        contact_whatsapp: contactWhatsapp.trim() || null,
+        contact_telegram: contactTelegram.trim() || null,
+        contact_email: contactEmail.trim() || null,
+        contact_website: contactWebsite.trim() || null,
+        images: allImages,
+        image_hashes: imageHashes,
+        requestDuplicateReview,
+        turnstileToken,
+      });
 
-      if (error) throw error;
+      saveAdCredential({
+        reference_number: res.reference_number,
+        pin_code: res.pin_code,
+        title: title.trim(),
+      });
 
+      setDuplicateWarning(null);
       setSuccessData({
-        referenceNumber: refNum,
-        pinCode: finalPin,
-        ad: data
+        referenceNumber: res.reference_number,
+        pinCode: res.pin_code,
+        ad: res.ad,
+        duplicateReviewFlagged: Boolean(res.duplicateReviewFlagged),
       });
 
       if (onCreated) {
-        onCreated(data, wantVipPromotion);
+        onCreated(res.ad, wantVipPromotion);
       }
     } catch (err) {
       console.error('Error posting ad:', err);
-      setErrorMsg(err.message || 'خطا در ثبت آگهی. لطفاً دوباره تلاش فرمایید.');
+      if (err.code === 'DUPLICATE_AD' && err.duplicateMatch) {
+        setDuplicateWarning({
+          ...err.duplicateMatch,
+          reasons: err.reasons || [],
+          message: err.message,
+        });
+        scrollBodyTop();
+      } else {
+        setErrorMsg(err.message || 'خطا در ثبت آگهی. لطفاً دوباره تلاش فرمایید.');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await submitAd({ requestDuplicateReview: false });
   };
 
   const copyToClipboard = (text, type) => {
@@ -431,7 +466,9 @@ export default function PostAdModal({
                   آگهی شما ثبت شد و در انتظار تایید مدیر است
                 </h3>
                 <p className="text-xs text-slate-600 max-w-md mx-auto">
-                  پس از بررسی و تایید توسط مدیریت، آگهی شما در سایت منتشر خواهد شد.
+                  {successData.duplicateReviewFlagged
+                    ? 'درخواست بررسی مغایرت با آگهی مشابه ثبت شد و آگهی پس از تایید مدیر منتشر می‌شود.'
+                    : 'پس از بررسی و تایید توسط مدیریت، آگهی شما در سایت منتشر خواهد شد.'}
                 </p>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
                   {currentT.saveYourCredentials}
@@ -505,6 +542,90 @@ export default function PostAdModal({
                 <div className="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-800 font-semibold">
                   <AlertCircle size={15} className="shrink-0" />
                   <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {duplicateWarning && (
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 space-y-3 animate-in fade-in duration-150"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <CopyCheck size={18} className="text-amber-700 shrink-0 mt-0.5" />
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <h4 className="text-xs sm:text-[13px] font-black text-amber-950">
+                          آگهی مشابه یا تکراری شناسایی شد
+                        </h4>
+                        {duplicateWarning.score && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-950 text-[10.5px] font-extrabold tabular-nums">
+                            تشابه {Math.round(duplicateWarning.score * 100)}%
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11.5px] text-amber-900 leading-relaxed">
+                        {duplicateWarning.message}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-white border border-amber-200/80 p-3 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-xs font-extrabold text-[#1D1D1F] truncate">
+                        {duplicateWarning.title}
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-[#0066CC] bg-blue-50 px-2 py-0.5 rounded-md">
+                        <bdi>{duplicateWarning.reference_number}</bdi>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-[#6E6E73]">
+                      <span>{duplicateWarning.city}</span>
+                      <span>•</span>
+                      <span>{duplicateWarning.status === 'active' ? 'منتشر شده' : 'در انتظار تایید'}</span>
+                    </div>
+                    {Array.isArray(duplicateWarning.reasons) && duplicateWarning.reasons.length > 0 && (
+                      <ul className="pt-1 space-y-0.5 text-[11px] text-amber-900 list-disc list-inside">
+                        {duplicateWarning.reasons.map((r, idx) => (
+                          <li key={idx}>{r}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onOpenManageExisting) {
+                          onOpenManageExisting(duplicateWarning.reference_number);
+                        }
+                      }}
+                      className="flex-1 h-9 px-3 rounded-xl bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Sparkles size={13} />
+                      <span>ویرایش یا بوست رایگان آگهی قبلی</span>
+                    </button>
+                    {duplicateWarning.status === 'active' && (
+                      <a
+                        href={`/?ad=${encodeURIComponent(duplicateWarning.reference_number)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-9 px-3 rounded-xl bg-white border border-amber-300 hover:bg-amber-100/60 text-amber-950 text-xs font-bold flex items-center justify-center gap-1.5"
+                      >
+                        <ExternalLink size={13} />
+                        <span>مشاهده آگهی</span>
+                      </a>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => submitAd({ requestDuplicateReview: true })}
+                    className="w-full py-1.5 text-[11px] font-bold text-amber-900 hover:text-amber-950 underline cursor-pointer text-center"
+                  >
+                    این محصول یا آگهی کاملاً متفاوت است — ارسال جهت بررسی مدیر
+                  </button>
                 </div>
               )}
 
@@ -924,6 +1045,23 @@ export default function PostAdModal({
                   </span>
                 </div>
               </label>
+
+              {/* Task 3: Lifecycle, Anti-Duplicate & Free Boost Policy Explanation before submission */}
+              <div className="rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-lg bg-[#0066CC]/10 text-[#0066CC] flex items-center justify-center shrink-0">
+                    <ShieldCheck size={14} />
+                  </div>
+                  <span className="text-xs font-extrabold text-[#1D1D1F]">
+                    {currentT.adPolicyTitle}
+                  </span>
+                </div>
+                <ul className="space-y-1 text-[11px] text-[#515154] leading-relaxed list-disc list-inside pr-1">
+                  {currentT.adPolicyRules.map((rule, idx) => (
+                    <li key={idx}>{rule}</li>
+                  ))}
+                </ul>
+              </div>
 
               {/* Cloudflare Turnstile Anti-Bot Verification */}
               {turnstileSettings.enabled !== false && turnstileSettings.protectPostAd !== false && (

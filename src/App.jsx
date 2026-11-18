@@ -219,6 +219,13 @@ export default function App() {
       return false;
     }
   });
+  const [manageInitialRef, setManageInitialRef] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('ref') || '';
+    } catch {
+      return '';
+    }
+  });
   const [siteName, setSiteName] = useState('لینک شو');
   const [logoUrl, setLogoUrl] = useState('');
   const [socialLinks, setSocialLinks] = useState({
@@ -559,7 +566,7 @@ export default function App() {
     fetchAds();
   }, []);
 
-  // Immediate ad check on mount for direct link or browser refresh
+  // Immediate ad & live Stripe VIP checkout check on mount
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -568,6 +575,25 @@ export default function App() {
         publicApi.fetchAdByParam(adParam).then((data) => {
           if (data) setActiveAdDetail(data);
         });
+      }
+      const vipSessionId = params.get('vip_session_id');
+      if (vipSessionId) {
+        publicApi.verifyVipCheckout(vipSessionId)
+          .then((res) => {
+            if (res?.ad) {
+              fetchAds();
+              setToastMsg(`آگهی «${res.ad.title_fa || res.ad.title}» با موفقیت به ویژه (VIP) ارتقا یافت!`);
+              setTimeout(() => setToastMsg(''), 4000);
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            try {
+              const clean = new URL(window.location.href);
+              clean.searchParams.delete('vip_session_id');
+              window.history.replaceState({}, '', clean.toString());
+            } catch {}
+          });
       }
     } catch {}
   }, []);
@@ -582,6 +608,7 @@ export default function App() {
         const modal = params.get('modal');
         setPostAdOpen(modal === 'post');
         setManageAdOpen(modal === 'manage');
+        setManageInitialRef(modal === 'manage' ? (params.get('ref') || '') : '');
         setCountryModalOpen(modal === 'country');
         setPodcastOpen(params.get('page') === 'podcast');
         setWebsiteBuilderOpen(params.get('page') === 'website-builder');
@@ -640,21 +667,27 @@ export default function App() {
     } catch {}
   };
 
-  const handleOpenManageAd = () => {
+  const handleOpenManageAd = (initialRef = '') => {
+    const cleanRef = typeof initialRef === 'string' ? initialRef.trim().toUpperCase() : '';
+    setManageInitialRef(cleanRef);
     setManageAdOpen(true);
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('modal', 'manage');
-      window.history.pushState({ modal: 'manage' }, '', url.toString());
+      if (cleanRef) url.searchParams.set('ref', cleanRef);
+      else url.searchParams.delete('ref');
+      window.history.pushState({ modal: 'manage', ref: cleanRef }, '', url.toString());
     } catch {}
   };
 
   const handleCloseManageAd = () => {
     setManageAdOpen(false);
+    setManageInitialRef('');
     try {
       const url = new URL(window.location.href);
       if (url.searchParams.get('modal') === 'manage') {
         url.searchParams.delete('modal');
+        url.searchParams.delete('ref');
         window.history.replaceState({}, '', url.toString());
       }
     } catch {}
@@ -862,8 +895,15 @@ export default function App() {
     });
   }, [countryAds, selectedCategory, selectedCity, deferredSearchQuery]);
 
-  // Sort ads according to selected sort option
+  const [renderNow] = useState(() => Date.now());
+
+  // Sort ads according to selected sort option while preserving Paid VIP ranking & boost sort_timestamp
   const sortedAds = useMemo(() => {
+    const isVip = (a) => Boolean(
+      a?.is_active_vip !== undefined
+        ? a.is_active_vip
+        : (a?.is_featured && (!a.promotion_expires_at || Date.parse(a.promotion_expires_at) > renderNow))
+    );
     const copy = [...filteredAds];
     if (sortBy === 'most_viewed') {
       return copy.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
@@ -882,11 +922,26 @@ export default function App() {
         return pb - pa;
       });
     }
-    return copy;
-  }, [filteredAds, sortBy]);
+    return copy.sort((a, b) => {
+      const vA = isVip(a);
+      const vB = isVip(b);
+      if (vA !== vB) return vB ? 1 : -1;
+      const tA = Date.parse(a.sort_timestamp || a.created_at || 0) || 0;
+      const tB = Date.parse(b.sort_timestamp || b.created_at || 0) || 0;
+      return tB - tA;
+    });
+  }, [filteredAds, sortBy, renderNow]);
 
-  // Featured ads subset
-  const featuredAds = useMemo(() => filteredAds.filter(a => a.is_featured), [filteredAds]);
+  // Active Featured (VIP) ads subset
+  const featuredAds = useMemo(
+    () =>
+      filteredAds.filter((a) =>
+        a.is_active_vip !== undefined
+          ? Boolean(a.is_active_vip)
+          : Boolean(a.is_featured && (!a.promotion_expires_at || Date.parse(a.promotion_expires_at) > renderNow))
+      ),
+    [filteredAds, renderNow]
+  );
 
   return (
     <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-clip w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
@@ -1366,6 +1421,10 @@ export default function App() {
             selectedCountry={selectedCountry}
             countries={portalCountries}
             onClose={handleClosePostAd}
+            onOpenManageExisting={(refNum) => {
+              handleClosePostAd();
+              handleOpenManageAd(refNum);
+            }}
             onCreated={(newAd, wantVip) => {
               fetchAds();
               if (wantVip) {
@@ -1378,11 +1437,13 @@ export default function App() {
           />
         )}
 
-        {/* MODAL 3: Manage / Delete Ad with Ref & PIN */}
+        {/* MODAL 3: Manage / Boost / Delete Ad with Ref & PIN */}
         {manageAdOpen && (
           <ManageAdModal
             lang={lang}
+            initialRef={manageInitialRef}
             onClose={handleCloseManageAd}
+            onOpenPromote={handleOpenPayment}
             onDeleted={(deletedId) => {
               setAds(ads.filter(a => a.id !== deletedId));
               showToast(lang === 'fa' ? 'آگهی حذف شد.' : 'Annonsen har raderats.');
@@ -1390,6 +1451,11 @@ export default function App() {
             onUpdated={(updatedAd) => {
               setAds(ads.map(a => a.id === updatedAd.id ? updatedAd : a));
               showToast(lang === 'fa' ? 'آگهی به‌روزرسانی شد.' : 'Annonsen har uppdaterats.');
+            }}
+            onBoosted={(boostedAd) => {
+              setAds((prev) => prev.map((a) => (a.id === boostedAd.id ? boostedAd : a)));
+              fetchAds();
+              showToast('آگهی شما بوست شد و در صدر آگهی‌های جدید قرار گرفت!');
             }}
           />
         )}
