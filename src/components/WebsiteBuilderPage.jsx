@@ -14,6 +14,10 @@ import {
   Copy,
   Check,
   RefreshCw,
+  Globe,
+  Cpu,
+  HardDrive,
+  ExternalLink,
 } from 'lucide-react';
 
 const MONTHLY_PRICE = 260;
@@ -372,21 +376,69 @@ export default function WebsiteBuilderPage({
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-1">
-                  <span className="font-black text-[#1D1D1F] block">۲. اتصال مستقیم به آگهی‌های لینک شو</span>
-                  <p>
-                    پس از دریافت لینک API اختصاصی، می‌توانید آن را در آگهی‌های خود قرار دهید تا مشتریان مستقیماً از داخل آگهی خرید کنند.
+                <div className="p-3.5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-2">
+                  <span className="font-black text-[#1D1D1F] flex items-center gap-1.5">
+                    <Cpu size={14} className="text-[#0066CC]" />
+                    <span>۲. قدرت پردازش و فضای ابری (Cloud)</span>
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2 rounded-xl bg-white border border-[#E5E5EA] flex items-center gap-1.5">
+                      <HardDrive size={13} className="text-[#0066CC] shrink-0" />
+                      <span><strong>۵ گیگابایت</strong> دیتابیس ابری</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#E5E5EA] flex items-center gap-1.5">
+                      <Cpu size={13} className="text-[#0066CC] shrink-0" />
+                      <span><strong>۱۰۰,۰۰۰</strong> درخواست روزانه</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-[#6E6E73]">
+                    سرعت پاسخ‌گویی زیر ۵۰ میلی‌ثانیه روی شبکه توزیع‌شده ابری. در صورت مصرف یا ترافیک بالاتر، برای ارتقای توان پردازش و حافظه با <strong>تیم پشتیبانی تماس بگیرید</strong> (ارتقای منابع شامل هزینه بیشتر خواهد بود).
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-amber-50/75 border border-amber-200/80 space-y-1">
+                  <span className="font-black text-amber-950 flex items-center gap-1.5">
+                    <Globe size={14} className="text-amber-700" />
+                    <span>۳. دامنه (Domain) و ایمیل اختصاصی</span>
+                  </span>
+                  <p className="text-[11.5px] text-amber-900">
+                    دامنه و ایمیل اختصاصی <strong>شامل این اشتراک نیستند</strong>. شما می‌توانید دامنه دلخواه خود را از هر شرکتی خریداری کنید؛ پس از ساخت دیتابیس و وب‌سایت، <strong>تیم پشتیبانی هنگام تماس با شما نحوه اتصال و نصب دامنه را به‌طور کامل راهنمایی می‌کند</strong>.
                   </p>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200/80 space-y-1">
                   <span className="font-black text-[#0066CC] flex items-center gap-1.5">
                     <Clock size={14} />
-                    <span>۳. ساخت، دیپلوی و تحویل ظرف ۲۴ ساعت</span>
+                    <span>۴. ساخت، دیپلوی و تحویل ظرف ۲۴ ساعت</span>
                   </span>
                   <p className="text-[#1D1D1F]">
-                    تیم فنی ما وب‌سایت شما را ظرف ۲۴ ساعت راه‌اندازی و دیپلوی کرده و تمام اطلاعات ورود را به ایمیل شما ارسال می‌کند. همچنین یک کد ۸ رقمی برای مدیریت اشتراک دریافت می‌کنید.
+                    تیم فنی ما وب‌سایت شما را ظرف ۲۴ ساعت راه‌اندازی کرده و تمام اطلاعات ورود را به ایمیل شما ارسال می‌کند. همچنین یک کد ۸ رقمی برای مدیریت اشتراک دریافت می‌کنید.
                   </p>
+                </div>
+
+                {/* Live Demo Links for Frontend & Seller Panel */}
+                <div className="p-3.5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-2">
+                  <span className="font-black text-[#1D1D1F] block text-xs">مشاهده پیش‌نمایش زنده (دمو):</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <a
+                      href="https://swedpersiska.vercel.app"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-9 px-3 rounded-xl bg-white hover:bg-[#ECECEF] border border-[#D2D2D7] text-[#1D1D1F] text-[11px] font-bold inline-flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <span>دموی وب‌سایت (Frontend)</span>
+                      <ExternalLink size={12} />
+                    </a>
+                    <a
+                      href="https://linksho-seller.vercel.app"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-9 px-3 rounded-xl bg-[#0066CC] hover:bg-[#0055AA] text-white text-[11px] font-bold inline-flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <span>دموی پنل فروش</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  </div>
                 </div>
               </div>
 
