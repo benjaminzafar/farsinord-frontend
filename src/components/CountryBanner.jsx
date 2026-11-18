@@ -4,7 +4,7 @@ import { COUNTRIES } from '../lib/translations';
 import { getGdprConsent, saveGdprConsent } from '../lib/gdpr';
 import { GdprTabs, GdprTabBody } from './GdprContent';
 
-function detectBrowserCountry(validIds = ['se', 'no', 'dk', 'fi', 'de', 'at', 'nl', 'fr', 'ca']) {
+function detectBrowserCountry(validIds = ['se', 'no', 'dk', 'fi', 'de', 'at', 'nl', 'fr']) {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
     if (tz.includes('Oslo')) return 'no';
@@ -14,7 +14,6 @@ function detectBrowserCountry(validIds = ['se', 'no', 'dk', 'fi', 'de', 'at', 'n
     if (tz.includes('Vienna')) return 'at';
     if (tz.includes('Amsterdam')) return 'nl';
     if (tz.includes('Paris')) return 'fr';
-    if (tz.includes('Toronto') || tz.includes('Vancouver') || tz.includes('Montreal')) return 'ca';
     if (tz.includes('Stockholm')) return 'se';
     const langs = navigator.languages || [navigator.language || ''];
     if (langs.some(l => l.startsWith('nb') || l.startsWith('nn') || l.startsWith('no'))) return 'no';
@@ -23,7 +22,6 @@ function detectBrowserCountry(validIds = ['se', 'no', 'dk', 'fi', 'de', 'at', 'n
     if (langs.some(l => l.startsWith('de-AT'))) return 'at';
     if (langs.some(l => l.startsWith('de'))) return 'de';
     if (langs.some(l => l.startsWith('nl'))) return 'nl';
-    if (langs.some(l => l.startsWith('fr-CA') || l.startsWith('en-CA'))) return 'ca';
     if (langs.some(l => l.startsWith('fr'))) return 'fr';
   } catch {}
   return validIds[0] || 'se';

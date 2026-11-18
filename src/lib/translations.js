@@ -251,39 +251,6 @@ export const COUNTRIES = [
       { id: 'Angers', fa: 'آنژه' },
       { id: 'Cannes', fa: 'کن' },
     ]
-  },
-  {
-    id: 'ca',
-    nameFa: 'کانادا',
-    nameNative: 'کانادا',
-    flag: '🇨🇦',
-    currency: 'CAD',
-    currencyName: 'دلار کانادا',
-    heroImage: 'https://images.unsplash.com/photo-1517935706615-2717063c2225?auto=format&fit=crop&w=1600&q=80',
-    enabled: true,
-    isSystem: true,
-    cities: [
-      { id: 'all', fa: 'همه شهرها' },
-      { id: 'Toronto', fa: 'تورنتو' },
-      { id: 'Vancouver', fa: 'ونکوور' },
-      { id: 'Montreal', fa: 'مونترال' },
-      { id: 'Ottawa', fa: 'اتاوا' },
-      { id: 'Calgary', fa: 'کلگری' },
-      { id: 'Edmonton', fa: 'ادمونتون' },
-      { id: 'Richmond Hill', fa: 'ریچموند هیل' },
-      { id: 'North Vancouver', fa: 'نورث ونکوور' },
-      { id: 'West Vancouver', fa: 'وست ونکوور' },
-      { id: 'Markham', fa: 'مارکهام' },
-      { id: 'Vaughan', fa: 'وان' },
-      { id: 'Mississauga', fa: 'میسیساگا' },
-      { id: 'Coquitlam', fa: 'کوکیتلام' },
-      { id: 'Burnaby', fa: 'برنابی' },
-      { id: 'Winnipeg', fa: 'وینیپگ' },
-      { id: 'Quebec City', fa: 'کبک سیتی' },
-      { id: 'Hamilton', fa: 'همیلتون' },
-      { id: 'Halifax', fa: 'هالیفاکس' },
-      { id: 'Victoria', fa: 'ویکتوریا' },
-    ]
   }
 ];
 
