@@ -16,25 +16,30 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+const SETUP_PRICE = 1500;
 const MONTHLY_PRICE = 260;
-const MONTHLY_CURRENCY = 'SEK';
+const CURRENCY = 'SEK';
 
 const SIMPLE_FAQS = [
+  {
+    q: 'هزینه ۱۵۰۰ کرون و ۲۶۰ کرون دقیقاً برای چیست؟',
+    a: 'هزینه ساخت، راه‌اندازی کامل وب‌سایت، کمک به ساخت و اتصال ربات تلگرام و وصل کردن درگاه پرداخت Stripe یک‌بار ۱۵۰۰ کرون است. پس از آن، هزینه نگهداری و اشتراک ماهانه ۲۶۰ کرون است که هر ماه قبل از تمام شدن دوره، فاکتور ۲۶۰ کرون برایتان ارسال می‌شود.',
+  },
+  {
+    q: 'ربات تلگرام و سیستم پرداخت Stripe چطور وصل می‌شوند؟',
+    a: 'تیم ما به شما کمک می‌کند ربات تلگرام خودتان را بسازید و آن را به سایت وصل کنید تا سفارش‌های مشتریان فوری به تلگرام شما بیاید. همچنین سیستم پرداخت آنلاین Stripe را هم برایتان وصل می‌کنیم.',
+  },
   {
     q: 'آیا آدرس سایت (دامنه) و ایمیل هم با این پول است؟',
     a: 'نه، آدرس سایت (مثل .se یا .com) و ایمیل را خودتان از هر جایی که دوست دارید می‌خرید. اما اصلاً نگران نباشید! وقتی سایت آماده شد، تیم ما با شما تماس می‌گیرد و قدم‌به‌قدم کمکتان می‌کند آدرس سایت را وصل کنید.',
   },
   {
     q: 'چقدر طول می‌کشد سایت من آماده شود؟',
-    a: 'خیلی سریع! حداکثر تا ۲۴ ساعت بعد از ثبت سفارش، ما سایت و پنل فروش شما را آماده می‌کنیم و همه اطلاعات ورود را به ایمیلتان می‌فرستیم.',
+    a: 'حداکثر تا ۲۴ ساعت بعد از ثبت سفارش، ما سایت و پنل فروش شما را آماده می‌کنیم و همه اطلاعات ورود را به ایمیلتان می‌فرستیم.',
   },
   {
     q: 'سایت چقدر جا و سرعت دارد؟',
     a: '۵ گیگابایت فضای ابری دارد که برای هزاران محصول و عکس کافی است و خیلی سریع باز می‌شود (مناسب تا حدود ۱۰۰ هزار بازدید در روز). اگر فروشگاهتان خیلی شلوغ شد، کافی است به ما بگویید تا با هزینه بیشتر فضای آن را بزرگ‌تر کنیم.',
-  },
-  {
-    q: 'این ۲۶۰ کرون برای همیشه است یا ماهانه؟',
-    a: 'ماهانه است (هر ۳۰ روز یک بار). بعد از ثبت‌نام یک کد ۸ رقمی به شما می‌دهیم تا هر وقت خواستید با آن کد اشتراکتان را ببینید، تمدید کنید یا لغو نمایید.',
   },
 ];
 
@@ -332,7 +337,7 @@ export default function WebsiteBuilderPage({
             <span className="text-[#D2D2D7]">←</span>
             <span className={step === 2 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۲. مشخصات شما</span>
             <span className="text-[#D2D2D7]">←</span>
-            <span className={step === 3 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۳. پرداخت (۲۶۰ کرون)</span>
+            <span className={step === 3 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۳. پرداخت ({SETUP_PRICE} کرون)</span>
           </div>
 
           {errorMsg && (
@@ -350,11 +355,11 @@ export default function WebsiteBuilderPage({
                   می‌خواهید برای رستوران یا فروشگاهتان سایت فروش آنلاین داشته باشید؟
                 </h1>
                 <p className="text-xs sm:text-sm text-[#6E6E73] leading-relaxed">
-                  همه‌چیز خیلی ساده است! فقط <strong>ماهی {MONTHLY_PRICE} کرون</strong> می‌دهید و ما سایت کامل شما را می‌سازیم.
+                  شروع و ساخت کامل سایت <strong>{SETUP_PRICE} کرون</strong> است و از ماه بعد فقط <strong>ماهی {MONTHLY_PRICE} کرون</strong> پرداخت می‌کنید (هر ماه قبل از تمام شدن اشتراک، فاکتور ۲۶۰ کرون برایتان فرستاده می‌شود).
                 </p>
               </div>
 
-              {/* 3 Kid-Friendly Steps */}
+              {/* 4 Kid-Friendly Steps */}
               <div className="space-y-4 text-xs sm:text-[13px] text-[#515154]">
                 <div className="flex items-start gap-3">
                   <span className="h-7 w-7 rounded-full bg-blue-50 text-[#0066CC] font-black flex items-center justify-center shrink-0">۱</span>
@@ -367,8 +372,8 @@ export default function WebsiteBuilderPage({
                 <div className="flex items-start gap-3">
                   <span className="h-7 w-7 rounded-full bg-blue-50 text-[#0066CC] font-black flex items-center justify-center shrink-0">۲</span>
                   <div className="pt-0.5">
-                    <strong className="text-[#1D1D1F] block">تا ۲۴ ساعت سایت شما آماده می‌شود</strong>
-                    <span>ما سایت و پنل فروش را می‌سازیم و اطلاعاتش را به ایمیلتان می‌فرستیم.</span>
+                    <strong className="text-[#1D1D1F] block">ساخت سایت + ربات تلگرام + سیستم پرداخت Stripe</strong>
+                    <span>تا ۲۴ ساعت سایتتان آماده می‌شود، کمکتان می‌کنیم ربات تلگرام خودتان را بسازید و وصل کنید تا سفارش‌ها به تلگرامتان بیاید، و پرداخت آنلاین Stripe را هم وصل می‌کنیم.</span>
                   </div>
                 </div>
 
@@ -424,7 +429,7 @@ export default function WebsiteBuilderPage({
                 onClick={() => setStep(2)}
                 className="w-full h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-sm font-bold inline-flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(0,102,204,0.22)] cursor-pointer"
               >
-                <span>شروع ساخت سایت ({MONTHLY_PRICE} کرون در ماه)</span>
+                <span>شروع ساخت سایت (راه‌اندازی {SETUP_PRICE} کرون • ماهانه {MONTHLY_PRICE} کرون)</span>
                 <ArrowLeft size={16} />
               </button>
             </div>
@@ -503,7 +508,7 @@ export default function WebsiteBuilderPage({
                   type="submit"
                   className="flex-1 h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>مرحله بعد: پرداخت ۲۶۰ کرون</span>
+                  <span>مرحله بعد: پرداخت {SETUP_PRICE} کرون</span>
                   <ArrowLeft size={15} />
                 </button>
               </div>
@@ -515,8 +520,10 @@ export default function WebsiteBuilderPage({
             <form onSubmit={handleSubmitOrder} className="space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-black text-[#1D1D1F]">پرداخت اشتراک ماهانه</h2>
-                  <p className="text-xs text-[#6E6E73] mt-0.5">مبلغ: {MONTHLY_PRICE} {MONTHLY_CURRENCY} در ماه (تحویل تا ۲۴ ساعت)</p>
+                  <h2 className="text-lg font-black text-[#1D1D1F]">پرداخت پلان ساخت و شروع</h2>
+                  <p className="text-xs text-[#6E6E73] mt-0.5">
+                    مبلغ راه‌اندازی: {SETUP_PRICE} {CURRENCY} (ماهانه بعدی: {MONTHLY_PRICE} {CURRENCY} با ارسال فاکتور قبل از پایان دوره)
+                  </p>
                 </div>
                 {isTestMode && (
                   <button
@@ -592,7 +599,7 @@ export default function WebsiteBuilderPage({
                   className="flex-1 h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(0,102,204,0.22)] cursor-pointer disabled:opacity-60"
                 >
                   <Lock size={15} />
-                  <span>{submitting ? 'در حال ثبت...' : `پرداخت ${MONTHLY_PRICE} کرون و ثبت سفارش`}</span>
+                  <span>{submitting ? 'در حال ثبت...' : `پرداخت ${SETUP_PRICE} کرون و ثبت سفارش`}</span>
                 </button>
               </div>
             </form>

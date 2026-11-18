@@ -363,7 +363,7 @@ export default function Navbar({
                           </div>
                         </div>
                         <span className="px-2 py-0.5 rounded-full bg-[#0066CC] text-white text-[10px] font-bold">
-                          ۲۶۰ کرون/ماه
+                          شروع ۱۵۰۰ کرون
                         </span>
                       </button>
 
