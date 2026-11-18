@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /sitemap.xml
 Disallow: /api/
 
-Sitemap: https://swedpersiska.vercel.app/sitemap.xml
+Sitemap: https://www.linksho.eu/sitemap.xml
