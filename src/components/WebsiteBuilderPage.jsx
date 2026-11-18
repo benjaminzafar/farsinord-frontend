@@ -372,8 +372,8 @@ export default function WebsiteBuilderPage({
                 <div className="flex items-start gap-3">
                   <span className="h-7 w-7 rounded-full bg-blue-50 text-[#0066CC] font-black flex items-center justify-center shrink-0">۲</span>
                   <div className="pt-0.5">
-                    <strong className="text-[#1D1D1F] block">طراحی وب‌سایت، اتصال ربات تلگرام و درگاه پرداخت Stripe</strong>
-                    <span>وب‌سایت شما حداکثر ظرف ۲۴ ساعت آماده می‌شود. تیم ما در ساخت و اتصال ربات تلگرام برای دریافت آنی سفارش‌ها و راه‌اندازی سیستم پرداخت Stripe همراه شماست.</span>
+                    <strong className="text-[#1D1D1F] block">طراحی وب‌سایت با گواهی SSL، اتصال ربات تلگرام و درگاه Stripe</strong>
+                    <span>وب‌سایت شما حداکثر ظرف ۲۴ ساعت با گواهی امنیتی SSL (HTTPS) آماده می‌شود. تیم ما در ساخت و اتصال ربات تلگرام برای دریافت آنی سفارش‌ها و راه‌اندازی درگاه پرداخت با امنیت فوق‌العاده بالا توسط Stripe همراه شماست.</span>
                   </div>
                 </div>
 
@@ -386,11 +386,15 @@ export default function WebsiteBuilderPage({
                 </div>
               </div>
 
-              {/* Professional Cloud Specs & Ad Link Note */}
+              {/* Professional Cloud Specs, SSL & Ad Link Note */}
               <div className="pt-4 border-t border-[#F0F0F2] space-y-2 text-xs text-[#6E6E73]">
                 <p className="flex items-center gap-2">
                   <Sparkles size={14} className="text-[#0066CC] shrink-0" />
                   <span>زیرساخت ابری اختصاصی: <strong>۵ گیگابایت</strong> دیتابیس ابری و ظرفیت <strong>۱۰۰,۰۰۰ درخواست روزانه</strong> (قابل ارتقا با هماهنگی پشتیبانی و هزینه جداگانه).</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Lock size={14} className="text-emerald-600 shrink-0" />
+                  <span>مجهز به <strong>گواهی امنیتی SSL (HTTPS)</strong> و پردازش پرداخت با <strong>امنیت فوق‌العاده بالا توسط Stripe</strong>.</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <PhoneCall size={14} className="text-emerald-600 shrink-0" />
