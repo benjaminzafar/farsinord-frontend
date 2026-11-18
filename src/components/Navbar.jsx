@@ -350,7 +350,7 @@ export default function Navbar({
                       <button
                         type="button"
                         onClick={() => {
-                          setMoreMenuOpen(false);
+                          setMoreDropdownOpen(false);
                           onOpenPodcast?.();
                         }}
                         className="w-full flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/70 transition-colors text-right cursor-pointer"
