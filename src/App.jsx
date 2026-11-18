@@ -34,7 +34,7 @@ const AdDetailPage = lazy(() => import('./components/AdDetailPage'));
 const PaymentModal = lazy(() => import('./components/PaymentModal'));
 const PostAdModal = lazy(() => import('./components/PostAdModal'));
 const ManageAdModal = lazy(() => import('./components/ManageAdModal'));
-const PodcastFeedModal = lazy(() => import('./components/PodcastFeedModal'));
+const PodcastPage = lazy(() => import('./components/PodcastPage'));
 
 const CATEGORY_ICONS = {
   all: LayoutGrid,
@@ -131,8 +131,36 @@ export default function App() {
   // Modals & Pages
   const [gdprConsent, setGdprConsent] = useState(() => getGdprConsent());
   const [legalModalTab, setLegalModalTab] = useState(null);
-  const [podcastOpen, setPodcastOpen] = useState(false);
+  const [podcastOpen, setPodcastOpen] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('page') === 'podcast';
+    } catch {
+      return false;
+    }
+  });
   const [podcastSettings, setPodcastSettings] = useState(null);
+
+  const handleOpenPodcast = () => {
+    setActiveAdDetail(null);
+    setPodcastOpen(true);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('ad');
+      url.searchParams.set('page', 'podcast');
+      window.history.pushState({ page: 'podcast' }, '', url.toString());
+    } catch {}
+  };
+
+  const handleClosePodcast = () => {
+    setPodcastOpen(false);
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('page') === 'podcast') {
+        url.searchParams.delete('page');
+        window.history.pushState({}, '', url.toString());
+      }
+    } catch {}
+  };
   const [countryModalOpen, setCountryModalOpen] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -416,11 +444,12 @@ export default function App() {
       try {
         const params = new URLSearchParams(window.location.search);
 
-        // 1. Modals
+        // 1. Modals & Podcast Page
         const modal = params.get('modal');
         setPostAdOpen(modal === 'post');
         setManageAdOpen(modal === 'manage');
         setCountryModalOpen(modal === 'country');
+        setPodcastOpen(params.get('page') === 'podcast');
         if (modal !== 'pay') setPaymentAd(null);
 
         // 2. Ad Detail Page
@@ -538,6 +567,7 @@ export default function App() {
 
   const handleCategoryChange = (catId) => {
     if (activeAdDetail) handleBackToFeed();
+    if (podcastOpen) handleClosePodcast();
     setSelectedCategory(catId);
     try {
       const url = new URL(window.location.href);
@@ -754,7 +784,7 @@ export default function App() {
         selectedCategory={selectedCategory}
         onOpenCountryModal={handleOpenCountryModal}
         onOpenLegal={setLegalModalTab}
-        onOpenPodcast={() => setPodcastOpen(true)}
+        onOpenPodcast={handleOpenPodcast}
         selectedCountryObj={currentCountryObj}
       />
 
@@ -769,7 +799,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Full Page Ad View (Lazy-loaded for fast initial paint) OR Home Feed */}
+      {/* Full Page Ad View / Podcast Page OR Home Feed */}
       {activeAdDetail ? (
         <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-12 text-center text-xs text-slate-400">در حال بارگذاری جزئیات آگهی...</div>}>
           <AdDetailPage
@@ -783,6 +813,13 @@ export default function App() {
             onOpenPromote={(targetAd) => handleOpenPayment(targetAd)}
           />
       </Suspense>
+      ) : podcastOpen ? (
+        <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-12 text-center text-xs text-slate-400">در حال بارگذاری پادکست خبری...</div>}>
+          <PodcastPage
+            podcastSettings={podcastSettings}
+            onBack={handleClosePodcast}
+          />
+        </Suspense>
       ) : (
         <>
           {/* Hero Section - Always visible on Desktop; hidden on Mobile when filtering by category */}
@@ -1136,7 +1173,7 @@ export default function App() {
         onOpenPostAd={() => handleOpenPostAd('bostad')}
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
-        onOpenPodcast={() => setPodcastOpen(true)}
+        onOpenPodcast={handleOpenPodcast}
       />
 
       {/* Mobile Sticky Bottom Menu for Collections & Quick Actions */}
@@ -1148,7 +1185,7 @@ export default function App() {
         onOpenPostAd={() => handleOpenPostAd('bostad')}
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
-        onOpenPodcast={() => setPodcastOpen(true)}
+        onOpenPodcast={handleOpenPodcast}
       />
 
       <Suspense fallback={null}>
@@ -1218,15 +1255,6 @@ export default function App() {
             siteName={siteName}
             onClose={() => setLegalModalTab(null)}
             onConsentSaved={setGdprConsent}
-          />
-        )}
-
-        {/* MODAL 5: News Podcast & YouTube Feed */}
-        {podcastOpen && (
-          <PodcastFeedModal
-            isOpen={podcastOpen}
-            podcastSettings={podcastSettings}
-            onClose={() => setPodcastOpen(false)}
           />
         )}
       </Suspense>
