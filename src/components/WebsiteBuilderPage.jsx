@@ -10,6 +10,10 @@ import {
   ShieldCheck,
   Sparkles,
   AlertCircle,
+  KeyRound,
+  Copy,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
 
 const MONTHLY_PRICE = 260;
@@ -19,6 +23,8 @@ export default function WebsiteBuilderPage({
   stripeSettings = null,
   onBack,
 }) {
+  const [pageMode, setPageMode] = useState('order'); // 'order' | 'manage'
+
   const [storeName, setStoreName] = useState('');
   const [phone, setPhone] = useState('');
   const [companyNumber, setCompanyNumber] = useState('');
@@ -32,12 +38,27 @@ export default function WebsiteBuilderPage({
   const [submitting, setSubmitting] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  // Subscription Management by 8-Digit Code
+  const [manageCodeInput, setManageCodeInput] = useState('');
+  const [managedSub, setManagedSub] = useState(null);
+  const [manageLoading, setManageLoading] = useState(false);
+  const [manageMsg, setManageMsg] = useState('');
 
   const isTestMode = stripeSettings?.mode !== 'live';
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  const copyManageCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch {}
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,6 +100,42 @@ export default function WebsiteBuilderPage({
     }
   };
 
+  const handleManageAction = async (subAction = 'lookup', e = null) => {
+    if (e) e.preventDefault();
+    setErrorMsg('');
+    setManageMsg('');
+    const clean = manageCodeInput.replace(/\D/g, '').trim();
+    if (clean.length !== 8) {
+      setErrorMsg('لطفاً کد مدیریت ۸ رقمی را به‌صورت کامل وارد کنید.');
+      return;
+    }
+    setManageLoading(true);
+    try {
+      const res = await fetch('/api/public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'manage_website_subscription',
+          manageCode: clean,
+          subAction,
+        }),
+      });
+      const json = await res.json();
+      if (!json?.ok) {
+        setErrorMsg(json?.error || 'کد مدیریت یافت نشد.');
+        setManagedSub(null);
+        return;
+      }
+      setManagedSub(json.subscription);
+      if (subAction === 'renew') setManageMsg('اشتراک ماهانه شما به مدت ۳۰ روز تمدید شد.');
+      if (subAction === 'cancel') setManageMsg('اشتراک شما لغو شد.');
+    } catch {
+      setErrorMsg('خطا در ارتباط با سرور.');
+    } finally {
+      setManageLoading(false);
+    }
+  };
+
   return (
     <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 font-vazir min-h-[70vh]" dir="rtl">
       {/* Top Page Header */}
@@ -107,13 +164,128 @@ export default function WebsiteBuilderPage({
           </div>
         </div>
 
-        <span className="self-start sm:self-auto px-3 py-1.5 rounded-full bg-blue-50 text-[#0066CC] border border-blue-200/80 text-xs font-black shrink-0" dir="ltr">
-          {MONTHLY_PRICE} {MONTHLY_CURRENCY} / ماه
-        </span>
+        {/* Mode Switcher: New Subscription vs Manage with 8-Digit Code */}
+        <div className="inline-flex items-center p-1 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] self-start sm:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => { setPageMode('order'); setErrorMsg(''); }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+              pageMode === 'order' ? 'bg-white text-[#1D1D1F] shadow-xs' : 'text-[#6E6E73]'
+            }`}
+          >
+            ثبت سفارش جدید
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPageMode('manage'); setErrorMsg(''); }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+              pageMode === 'manage' ? 'bg-white text-[#1D1D1F] shadow-xs' : 'text-[#6E6E73]'
+            }`}
+          >
+            مدیریت اشتراک (کد ۸ رقمی)
+          </button>
+        </div>
       </div>
 
-      {submittedOrder ? (
-        /* 24-HOUR DELIVERY CONFIRMATION VIEW */
+      {pageMode === 'manage' ? (
+        /* MANAGE SUBSCRIPTION WITH 8-DIGIT CODE */
+        <div className="max-w-xl mx-auto rounded-3xl bg-white border border-[#E5E5EA] p-5 sm:p-7 space-y-5 shadow-[0_2px_12px_rgba(29,29,31,0.04)]">
+          <div className="space-y-1">
+            <h2 className="text-base font-black text-[#1D1D1F] flex items-center gap-2">
+              <KeyRound size={18} className="text-[#0066CC]" />
+              <span>مدیریت اشتراک وب‌سایت با کد ۸ رقمی</span>
+            </h2>
+            <p className="text-xs text-[#6E6E73]">
+              کد ۸ رقمی اختصاصی که هنگام ثبت اشتراک دریافت کرده‌اید را وارد کنید.
+            </p>
+          </div>
+
+          {errorMsg && (
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
+              <AlertCircle size={15} className="shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {manageMsg && (
+            <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 size={15} className="shrink-0" />
+              <span>{manageMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={(e) => handleManageAction('lookup', e)} className="flex gap-2">
+            <input
+              type="text"
+              dir="ltr"
+              maxLength={8}
+              value={manageCodeInput}
+              onChange={(e) => setManageCodeInput(e.target.value.replace(/\D/g, ''))}
+              placeholder="12345678"
+              className="flex-1 h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-4 text-sm font-mono text-center tracking-widest focus:bg-white focus:border-[#0066CC] focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={manageLoading}
+              className="h-11 px-5 rounded-2xl bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold cursor-pointer disabled:opacity-60"
+            >
+              {manageLoading ? 'در حال بررسی...' : 'مشاهده اشتراک'}
+            </button>
+          </form>
+
+          {managedSub && (
+            <div className="rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] p-4 space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[#6E6E73]">نام سایت:</span>
+                <strong className="text-[#1D1D1F]">{managedSub.name}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#6E6E73]">شماره ثبت شرکت:</span>
+                <strong className="font-mono">{managedSub.companyNumber}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#6E6E73]">وضعیت:</span>
+                <strong className={managedSub.status === 'cancelled' ? 'text-rose-600' : 'text-emerald-700'}>
+                  {managedSub.status === 'cancelled'
+                    ? 'لغو شده'
+                    : managedSub.status === 'pending_setup'
+                    ? 'در حال آماده‌سازی (تحویل تا ۲۴ ساعت)'
+                    : 'فعال'}
+                </strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#6E6E73]">تاریخ انقضای اشتراک:</span>
+                <strong className="text-[#1D1D1F]">
+                  {managedSub.expiresAt ? new Date(managedSub.expiresAt).toLocaleDateString('fa-IR') : '-'}
+                </strong>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-[#E5E5EA]">
+                <button
+                  type="button"
+                  disabled={manageLoading}
+                  onClick={() => handleManageAction('renew')}
+                  className="flex-1 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw size={13} />
+                  <span>تمدید ۳۰ روزه (۲۶۰ کرون)</span>
+                </button>
+                {managedSub.status !== 'cancelled' && (
+                  <button
+                    type="button"
+                    disabled={manageLoading}
+                    onClick={() => handleManageAction('cancel')}
+                    className="h-9 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold cursor-pointer"
+                  >
+                    لغو اشتراک
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : submittedOrder ? (
+        /* 24-HOUR DELIVERY CONFIRMATION VIEW WITH 8-DIGIT MANAGEMENT CODE */
         <div className="rounded-3xl bg-white border border-[#E5E5EA] p-6 sm:p-10 text-center space-y-5 shadow-[0_6px_28px_rgba(29,29,31,0.06)]">
           <div className="h-16 w-16 mx-auto rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
             <CheckCircle2 size={34} />
@@ -125,6 +297,30 @@ export default function WebsiteBuilderPage({
             </h2>
             <p className="text-xs sm:text-sm text-[#515154] leading-relaxed">
               ساخت، دیپلوی و راه‌اندازی کامل وب‌سایت و پنل فروش اختصاصی شما حداکثر ظرف <strong className="text-[#1D1D1F]">۲۴ ساعت آینده</strong> انجام می‌شود و پس از آماده‌سازی، تمامی جزئیات پنل و دسترسی‌ها به ایمیل <strong className="font-mono text-[#0066CC]" dir="ltr">{submittedOrder.email}</strong> ارسال خواهد شد.
+            </p>
+          </div>
+
+          {/* 8-Digit Strong Management Code Box */}
+          <div className="max-w-md mx-auto rounded-2xl bg-amber-50/80 border border-amber-200 p-4 space-y-2">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-black text-amber-950">
+              <KeyRound size={15} className="text-amber-700" />
+              <span>کد ۸ رقمی مدیریت اشتراک شما (حتماً ذخیره کنید)</span>
+            </div>
+            <div className="flex items-center justify-center gap-3">
+              <span className="font-mono text-2xl font-black tracking-widest text-amber-900 select-all" dir="ltr">
+                {submittedOrder.manageCode}
+              </span>
+              <button
+                type="button"
+                onClick={() => copyManageCode(submittedOrder.manageCode)}
+                className="h-8 px-3 rounded-lg bg-white border border-amber-300 text-xs font-bold text-amber-900 inline-flex items-center gap-1 cursor-pointer"
+              >
+                {copiedCode ? <Check size={13} /> : <Copy size={13} />}
+                <span>{copiedCode ? 'کپی شد' : 'کپی'}</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-amber-800">
+              از این کد در بخش «مدیریت اشتراک» برای مشاهده وضعیت، تمدید ماهانه یا لغو اشتراک استفاده کنید.
             </p>
           </div>
 
@@ -189,7 +385,7 @@ export default function WebsiteBuilderPage({
                     <span>۳. ساخت، دیپلوی و تحویل ظرف ۲۴ ساعت</span>
                   </span>
                   <p className="text-[#1D1D1F]">
-                    تیم فنی ما وب‌سایت و دیتابیس اختصاصی شما را ظرف ۲۴ ساعت راه‌اندازی و دیپلوی کرده و تمام اطلاعات ورود را به ایمیل شما ارسال می‌کند.
+                    تیم فنی ما وب‌سایت شما را ظرف ۲۴ ساعت راه‌اندازی و دیپلوی کرده و تمام اطلاعات ورود را به ایمیل شما ارسال می‌کند. همچنین یک کد ۸ رقمی برای مدیریت اشتراک دریافت می‌کنید.
                   </p>
                 </div>
               </div>

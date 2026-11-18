@@ -444,12 +444,14 @@ export default async function handler(req, res) {
         const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
 
         const orderId = `WEB-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        const manageCode = String(crypto.randomInt(10000000, 100000000));
         const createdAt = new Date().toISOString();
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
         const newOrder = {
           storeId: orderId,
-          workerName: `pending_${orderId.toLowerCase()}`,
+          manageCode,
+          workerName: `sub_${orderId.toLowerCase()}`,
           dbId: '',
           name: name.slice(0, 120),
           phone: phone.slice(0, 40),
@@ -470,6 +472,57 @@ export default async function handler(req, res) {
         });
 
         return res.status(200).json({ ok: true, order: newOrder });
+      }
+
+      if (action === 'manage_website_subscription') {
+        const cleanCode = String(body.manageCode || '').replace(/\D/g, '').trim();
+        const subAction = String(body.subAction || 'lookup').trim();
+        if (cleanCode.length !== 8) {
+          return res.status(400).json({ ok: false, error: 'لطفاً کد مدیریت ۸ رقمی معتبر وارد کنید.' });
+        }
+
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const list = Array.isArray(existingRow?.value) ? existingRow.value : [];
+        const idx = list.findIndex((item) => String(item.manageCode || '') === cleanCode);
+        if (idx === -1) {
+          return res.status(404).json({ ok: false, error: 'اشتراکی با این کد ۸ رقمی یافت نشد.' });
+        }
+
+        const current = list[idx];
+        if (subAction === 'renew') {
+          const baseTime = current.expiresAt && new Date(current.expiresAt).getTime() > Date.now()
+            ? new Date(current.expiresAt).getTime()
+            : Date.now();
+          const updated = {
+            ...current,
+            status: current.status === 'cancelled' ? 'pending_setup' : current.status,
+            expiresAt: new Date(baseTime + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          };
+          const nextList = list.map((x, i) => (i === idx ? updated : x));
+          await supabase.from('swedpersiska_settings').upsert({
+            key: 'seller_deployments',
+            value: nextList,
+            updated_at: new Date().toISOString(),
+          });
+          return res.status(200).json({ ok: true, subscription: updated });
+        }
+
+        if (subAction === 'cancel') {
+          const updated = { ...current, status: 'cancelled' };
+          const nextList = list.map((x, i) => (i === idx ? updated : x));
+          await supabase.from('swedpersiska_settings').upsert({
+            key: 'seller_deployments',
+            value: nextList,
+            updated_at: new Date().toISOString(),
+          });
+          return res.status(200).json({ ok: true, subscription: updated });
+        }
+
+        return res.status(200).json({ ok: true, subscription: current });
       }
 
       if (action === 'deploy_seller_website') {
@@ -698,12 +751,14 @@ export default async function handler(req, res) {
         const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
 
         const orderId = `WEB-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        const manageCode = String(crypto.randomInt(10000000, 100000000));
         const createdAt = new Date().toISOString();
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
         const newOrder = {
           storeId: orderId,
-          workerName: `pending_${orderId.toLowerCase()}`,
+          manageCode,
+          workerName: `sub_${orderId.toLowerCase()}`,
           dbId: '',
           name: name.slice(0, 120),
           phone: phone.slice(0, 40),
@@ -724,6 +779,57 @@ export default async function handler(req, res) {
         });
 
         return res.status(200).json({ ok: true, order: newOrder });
+      }
+
+      if (action === 'manage_website_subscription') {
+        const cleanCode = String(body.manageCode || '').replace(/\D/g, '').trim();
+        const subAction = String(body.subAction || 'lookup').trim();
+        if (cleanCode.length !== 8) {
+          return res.status(400).json({ ok: false, error: 'لطفاً کد مدیریت ۸ رقمی معتبر وارد کنید.' });
+        }
+
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const list = Array.isArray(existingRow?.value) ? existingRow.value : [];
+        const idx = list.findIndex((item) => String(item.manageCode || '') === cleanCode);
+        if (idx === -1) {
+          return res.status(404).json({ ok: false, error: 'اشتراکی با این کد ۸ رقمی یافت نشد.' });
+        }
+
+        const current = list[idx];
+        if (subAction === 'renew') {
+          const baseTime = current.expiresAt && new Date(current.expiresAt).getTime() > Date.now()
+            ? new Date(current.expiresAt).getTime()
+            : Date.now();
+          const updated = {
+            ...current,
+            status: current.status === 'cancelled' ? 'pending_setup' : current.status,
+            expiresAt: new Date(baseTime + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          };
+          const nextList = list.map((x, i) => (i === idx ? updated : x));
+          await supabase.from('swedpersiska_settings').upsert({
+            key: 'seller_deployments',
+            value: nextList,
+            updated_at: new Date().toISOString(),
+          });
+          return res.status(200).json({ ok: true, subscription: updated });
+        }
+
+        if (subAction === 'cancel') {
+          const updated = { ...current, status: 'cancelled' };
+          const nextList = list.map((x, i) => (i === idx ? updated : x));
+          await supabase.from('swedpersiska_settings').upsert({
+            key: 'seller_deployments',
+            value: nextList,
+            updated_at: new Date().toISOString(),
+          });
+          return res.status(200).json({ ok: true, subscription: updated });
+        }
+
+        return res.status(200).json({ ok: true, subscription: current });
       }
 
       if (action === 'deploy_seller_website') {
