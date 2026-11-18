@@ -1150,13 +1150,18 @@ export default function App() {
             price={stripeSettings?.vipPrice || 99}
             currency={stripeSettings?.currency || 'SEK'}
             stripeSettings={stripeSettings}
+            countries={portalCountries}
+            selectedCountry={selectedCountry}
             onClose={handleClosePayment}
             onSuccess={(promotedAd) => {
               fetchAds();
+              if (promotedAd?.country && promotedAd.country !== selectedCountry) {
+                setSelectedCountry(promotedAd.country);
+              }
               if (activeAdDetail && activeAdDetail.id === promotedAd.id) {
                 setActiveAdDetail(promotedAd);
               }
-              showToast(`آگهی "${promotedAd.title}" با موفقیت به رتبه ویژه (VIP) ارتقا یافت!`);
+              showToast(`آگهی «${promotedAd.title}» با موفقیت به رتبه ویژه (VIP) ارتقا یافت!`);
             }}
           />
         )}

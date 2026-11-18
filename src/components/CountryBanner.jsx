@@ -141,46 +141,46 @@ export default function CountryBanner({
       />
 
       {/* Single Modal Surface (switches views inline, zero stacked modals) */}
-      <div className="relative w-full max-w-[460px] max-h-[92vh] flex flex-col bg-[#FBFBFC] rounded-[28px] shadow-[0_24px_70px_rgba(29,29,31,0.22)] border border-[#E5E5EA] z-10 overflow-hidden">
+      <div className="relative w-full max-w-[440px] max-h-[88vh] flex flex-col bg-[#FBFBFC] rounded-[24px] shadow-[0_24px_70px_rgba(29,29,31,0.22)] border border-[#E5E5EA] z-10 overflow-hidden">
 
         {activeSubView === 'main' ? (
-          <div className="overflow-y-auto p-6 sm:p-7 space-y-5">
+          <div className="overflow-y-auto p-4 sm:p-5 space-y-3.5">
             {/* Close Button (shown after initial GDPR consent) */}
             {hasConsented && (
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="absolute top-5 start-5 h-8 w-8 rounded-full flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] active:scale-95 transition-all cursor-pointer"
+                className="absolute top-3.5 start-3.5 h-7 w-7 rounded-full flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] active:scale-95 transition-all cursor-pointer"
                 title="بستن پنجره"
               >
-                <X size={17} />
+                <X size={15} />
               </button>
             )}
 
-            {/* Header */}
-            <div className="text-center space-y-2.5">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-[#F5F5F7] text-[#6E6E73]">
-                <Globe size={22} strokeWidth={1.9} />
+            {/* Compact Header */}
+            <div className="text-center space-y-1.5">
+              <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
+                <Globe size={18} strokeWidth={1.9} />
               </div>
 
-              <div className="space-y-1">
-                <h2 className="text-[20px] sm:text-[22px] font-black text-[#1D1D1F] tracking-tight">
+              <div className="space-y-0.5">
+                <h2 className="text-[17px] sm:text-[19px] font-black text-[#1D1D1F] tracking-tight">
                   کشور خود را انتخاب کنید
                 </h2>
-                <p className="text-xs text-[#6E6E73]">
+                <p className="text-[11px] text-[#6E6E73]">
                   محل رشد کسب و کار فارسی‌زبانان
                 </p>
               </div>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] text-[11.5px] text-[#515154]">
-                <MapPin size={13} className="text-[#86868B] shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] text-[11px] text-[#515154]">
+                <MapPin size={12} className="text-[#86868B] shrink-0" />
                 <span>موقعیت شما:</span>
                 <strong className="font-bold text-[#1D1D1F]">{detectedObj.nameFa}</strong>
               </div>
             </div>
 
-            {/* Country Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {/* Compact Single-Line Country Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {activeCountries.map(country => {
                 const isSelected = activeChoice === country.id;
                 const isDetected = detectedCountryId === country.id;
@@ -190,35 +190,30 @@ export default function CountryBanner({
                     key={country.id}
                     type="button"
                     onClick={() => setActiveChoice(country.id)}
-                    className={`group relative flex items-center justify-between px-3.5 py-3 rounded-2xl border text-right transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer active:scale-[0.95] ${
+                    className={`group relative flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-xl border text-right transition-all duration-150 cursor-pointer active:scale-[0.96] ${
                       isSelected
-                        ? 'border-[#0066CC] bg-[#0066CC]/[0.06] shadow-[0_0_0_1px_#0066CC,0_4px_14px_rgba(0,102,204,0.12)]'
+                        ? 'border-[#0066CC] bg-[#0066CC]/[0.06] shadow-[0_0_0_1px_#0066CC]'
                         : 'border-[#E5E5EA] bg-[#FBFBFC] hover:bg-[#F5F5F7] hover:border-[#D2D2D7]'
                     }`}
                   >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[14px] font-bold truncate ${isSelected ? 'text-[#0066CC]' : 'text-[#1D1D1F]'}`}>
-                          {country.nameFa}
-                        </span>
-                        {isDetected && (
-                          <span
-                            className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0"
-                            title="موقعیت فعلی شما"
-                          />
-                        )}
-                      </div>
-                      <span className="text-[11px] text-[#6E6E73] font-medium block mt-0.5">
-                        {country.nameNative}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`text-[12.5px] font-bold leading-none truncate ${isSelected ? 'text-[#0066CC]' : 'text-[#1D1D1F]'}`}>
+                        {country.nameFa}
                       </span>
+                      {isDetected && (
+                        <span
+                          className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0"
+                          title="موقعیت فعلی شما"
+                        />
+                      )}
                     </div>
 
-                    <div className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] shrink-0 ${
+                    <div className={`flex h-4 w-4 items-center justify-center rounded-full border transition-all duration-150 shrink-0 ${
                       isSelected
-                        ? 'border-[#0066CC] bg-[#0066CC] text-white scale-105 shadow-[0_2px_6px_rgba(0,102,204,0.3)]'
-                        : 'border-[#D2D2D7] bg-[#FBFBFC] scale-95 group-hover:border-[#AEAEB2]'
+                        ? 'border-[#0066CC] bg-[#0066CC] text-white'
+                        : 'border-[#D2D2D7] bg-[#FBFBFC] group-hover:border-[#AEAEB2]'
                     }`}>
-                      {isSelected && <Check size={11.5} strokeWidth={3} />}
+                      {isSelected && <Check size={10} strokeWidth={3} />}
                     </div>
                   </button>
                 );
@@ -227,13 +222,13 @@ export default function CountryBanner({
 
             {/* EU GDPR & Cookies Card (shown only once before initial acceptance; always accessible in Footer) */}
             {!hasConsented && (
-            <div className={`rounded-2xl border p-4 space-y-3 transition-colors ${
+            <div className={`rounded-xl border p-3 space-y-2 transition-colors ${
               gdprError && !gdprChecked
                 ? 'border-red-400 bg-red-50/70'
                 : 'border-[#E5E5EA] bg-[#F5F5F7]'
             }`}>
               {/* Required GDPR Checkbox Row */}
-              <label className="flex items-start gap-3 cursor-pointer group">
+              <label className="flex items-start gap-2.5 cursor-pointer group">
                 <input
                   type="checkbox"
                   checked={gdprChecked}
@@ -245,7 +240,7 @@ export default function CountryBanner({
                 />
                 <span
                   aria-hidden="true"
-                  className={`mt-0.5 h-5 w-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                  className={`mt-0.5 h-4.5 w-4.5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
                     gdprChecked
                       ? 'bg-[#0066CC] border-[#0066CC] text-white shadow-2xs'
                       : gdprError
@@ -253,17 +248,17 @@ export default function CountryBanner({
                         : 'bg-[#FBFBFC] border-[#C7C7CC] group-hover:border-[#0066CC]'
                   }`}
                 >
-                  {gdprChecked && <Check size={13} strokeWidth={3} />}
+                  {gdprChecked && <Check size={11.5} strokeWidth={3} />}
                 </span>
-                <span className="text-[12px] leading-relaxed text-[#1D1D1F] font-semibold">
+                <span className="text-[11.5px] leading-snug text-[#1D1D1F] font-semibold">
                   قوانین حریم خصوصی (<span className="text-[#0066CC] font-bold">EU GDPR</span>) و کوکی‌های ضروری سایت را می‌پذیرم.
                   <span className="text-red-500 ms-1">*</span>
                 </span>
               </label>
 
               {/* Optional Analytics Toggle Row */}
-              <label className="flex items-center justify-between gap-3 pt-2.5 border-t border-[#E5E5EA] cursor-pointer">
-                <span className="text-[11.5px] text-[#515154] leading-snug">
+              <label className="flex items-center justify-between gap-2.5 pt-2 border-t border-[#E5E5EA] cursor-pointer">
+                <span className="text-[11px] text-[#515154] leading-snug">
                   کوکی‌های آمار و بهبود سایت (اختیاری)
                 </span>
                 <input
@@ -274,27 +269,27 @@ export default function CountryBanner({
                 />
                 <span
                   aria-hidden="true"
-                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                  className={`relative inline-flex h-4.5 w-8 shrink-0 items-center rounded-full transition-colors duration-200 ${
                     analyticsChecked ? 'bg-[#0066CC]' : 'bg-[#D2D2D7]'
                   }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-xs transform transition-transform duration-200 ${
-                      analyticsChecked ? '-translate-x-4.5' : '-translate-x-0.5'
+                    className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-xs transform transition-transform duration-200 ${
+                      analyticsChecked ? '-translate-x-4' : '-translate-x-0.5'
                     }`}
                   />
                 </span>
               </label>
 
               {gdprError && !gdprChecked && (
-                <p className="text-[11px] font-bold text-red-600 flex items-center gap-1.5 pt-0.5">
-                  <ShieldCheck size={13} className="shrink-0" />
+                <p className="text-[10.5px] font-bold text-red-600 flex items-center gap-1 pt-0.5">
+                  <ShieldCheck size={12} className="shrink-0" />
                   <span>برای ورود به سایت، ابتدا تایید قوانین EU GDPR را انتخاب کنید.</span>
                 </p>
               )}
 
               {/* Inline Navigation Links (switches inside this same modal) */}
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2 border-t border-[#E5E5EA] text-[11px] font-semibold text-[#0066CC]">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1.5 border-t border-[#E5E5EA] text-[10.5px] font-semibold text-[#0066CC]">
                 <button
                   type="button"
                   onClick={() => setActiveSubView('privacy')}
@@ -323,25 +318,25 @@ export default function CountryBanner({
             )}
 
             {/* Primary CTA */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <button
                 type="button"
                 onClick={() => handleConfirm(activeChoice)}
-                className={`w-full h-12 rounded-full text-white text-[13.5px] font-bold active:scale-[0.96] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center justify-center gap-2 cursor-pointer ${
+                className={`w-full h-10 rounded-full text-white text-[13px] font-bold active:scale-[0.97] transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
                   gdprChecked
-                    ? 'bg-[#0066CC] hover:bg-[#0055AA] shadow-[0_6px_18px_rgba(0,102,204,0.28)]'
+                    ? 'bg-[#0066CC] hover:bg-[#0055AA] shadow-[0_4px_14px_rgba(0,102,204,0.24)]'
                     : 'bg-[#0066CC]/55 hover:bg-[#0066CC]/70'
                 }`}
               >
                 <span>تایید و ورود به {chosenObj.nameFa}</span>
-                <ArrowLeft size={16} />
+                <ArrowLeft size={15} />
               </button>
 
               {hasConsented && (
                 <button
                   type="button"
                   onClick={handleDismiss}
-                  className="w-full h-8 rounded-full text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] transition-colors cursor-pointer"
+                  className="w-full h-7 rounded-full text-[11px] font-semibold text-[#6E6E73] hover:text-[#1D1D1F] transition-colors cursor-pointer"
                 >
                   بستن پنجره
                 </button>

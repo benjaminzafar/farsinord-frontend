@@ -296,7 +296,7 @@ export default async function handler(req, res) {
       }
 
       if (action === 'promote_ad') {
-        const { id } = body;
+        const { id, country } = body;
         if (!id) return res.status(400).json({ ok: false, error: 'Missing ad ID' });
 
         const { data: stripeRow } = await supabase
@@ -309,9 +309,14 @@ export default async function handler(req, res) {
           return res.status(403).json({ ok: false, error: 'ارتقای ویژه در حالت واقعی نیازمند تایید پرداخت است.' });
         }
 
+        const updatePayload = { is_featured: true };
+        if (country && /^[a-z0-9_-]{2,10}$/i.test(String(country))) {
+          updatePayload.country = String(country).toLowerCase();
+        }
+
         const { data, error } = await supabase
           .from('swedpersiska_ads')
-          .update({ is_featured: true })
+          .update(updatePayload)
           .eq('id', id)
           .select(PUBLIC_AD_COLUMNS)
           .single();

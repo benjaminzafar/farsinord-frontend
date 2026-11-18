@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
 import { publicApi } from '../lib/apiClient';
-import { CATEGORIES, t } from '../lib/translations';
+import { CATEGORIES, COUNTRIES, t } from '../lib/translations';
 
 export default function AdDetailPage({ 
   ad, 
@@ -206,11 +206,14 @@ export default function AdDetailPage({
     }
   };
 
-  // Find 4 VIP Promoted ads (or fallback to top featured/recent ads)
-  const otherAds = allAds.filter(a => a.id !== ad.id);
-  const vipAds = otherAds.filter(a => a.is_featured);
-  const fallbackAds = otherAds.filter(a => !a.is_featured);
-  // Guarantee exactly 4 VIP slots (using featured ads first, then other ads to fill)
+  // Find 4 VIP Promoted ads strictly within the same country
+  const adCountryCode = ad.country || 'se';
+  const adCountryObj = COUNTRIES.find(c => c.id === adCountryCode) || COUNTRIES[0];
+  const adCountryName = adCountryObj?.nameFa || 'سوئد';
+  const sameCountryAds = allAds.filter(a => a.id !== ad.id && (a.country || 'se') === adCountryCode);
+  const vipAds = sameCountryAds.filter(a => a.is_featured);
+  const fallbackAds = sameCountryAds.filter(a => !a.is_featured);
+  // Guarantee up to 4 VIP slots from the same country (featured ads first, then recent ads of that country)
   const displayVipAds = [...vipAds, ...fallbackAds].slice(0, 4);
 
   return (
@@ -618,13 +621,13 @@ export default function AdDetailPage({
                     <Crown size={15} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-extrabold text-[#1D1D1F]">آگهی‌های ویژه و برگزیده</h2>
-                    <p className="text-[10px] text-[#86868B] font-medium">۴ جایگاه اسپانسر شده (VIP)</p>
+                    <h2 className="text-sm font-extrabold text-[#1D1D1F]">آگهی‌های ویژه {adCountryName}</h2>
+                    <p className="text-[10px] text-[#86868B] font-medium">برگزیده‌های ویژه در {adCountryName}</p>
                   </div>
                 </div>
 
                 <span className="px-2 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
-                  اسپانسر
+                  VIP {adCountryName}
                 </span>
               </div>
 
@@ -689,13 +692,13 @@ export default function AdDetailPage({
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-[#1D1D1F]">آگهی شما اینجا دیده شود!</h3>
-                  <p className="text-[10px] text-[#86868B]">جذب ۳ برابری مشتریان و بازدیدکنندگان</p>
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F]">آگهی شما در صدر {adCountryName} دیده شود!</h3>
+                  <p className="text-[10px] text-[#86868B]">جذب ۳ برابری مشتریان و بازدیدکنندگان در {adCountryName}</p>
                 </div>
               </div>
 
               <p className="text-xs text-[#6E6E73] leading-relaxed">
-                با ارتقا به آگهی ویژه (VIP)، آگهی شما در بخش ویژه و بالای فهرست جستجوی تمام فارسی‌زبانان اسکاندیناوی نمایش داده می‌شود.
+                با ارتقا به آگهی ویژه (VIP)، آگهی شما در بخش ویژه و بالای فهرست جستجوی فارسی‌زبانان در سراسر {adCountryName} نمایش داده می‌شود.
               </p>
 
               <button
@@ -704,7 +707,7 @@ export default function AdDetailPage({
                 className="w-full h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold active:scale-[0.97] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Crown size={15} className="text-white/90" />
-                <span>ارتقا و ویژه کردن این آگهی</span>
+                <span>{ad.is_featured ? `تمدید یا تغییر کشور ویژه (${adCountryName})` : `ارتقا و ویژه کردن در ${adCountryName}`}</span>
               </button>
             </div>
 

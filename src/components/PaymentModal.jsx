@@ -6,18 +6,38 @@ import {
   Lock, 
   CheckCircle2, 
   Crown, 
-  AlertCircle
+  AlertCircle,
+  MapPin
 } from 'lucide-react';
-import { supabase, PUBLIC_AD_COLUMNS } from '../lib/supabase';
+import { publicApi } from '../lib/apiClient';
+import { COUNTRIES } from '../lib/translations';
+
+const COUNTRY_CURRENCY_CODE = {
+  se: 'SEK',
+  no: 'NOK',
+  dk: 'DKK',
+  fi: 'EUR',
+  de: 'EUR',
+  at: 'EUR',
+  nl: 'EUR',
+  fr: 'EUR',
+};
 
 export default function PaymentModal({ 
   ad, 
   price = 99, 
   currency = 'SEK', 
   stripeSettings = null,
+  countries = COUNTRIES,
+  selectedCountry = 'se',
   onClose, 
   onSuccess 
 }) {
+  const activeCountries = Array.isArray(countries) && countries.length > 0
+    ? countries.filter(c => c.enabled !== false)
+    : COUNTRIES;
+
+  const [targetCountry, setTargetCountry] = useState(() => ad?.country || selectedCountry || 'se');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
@@ -25,6 +45,15 @@ export default function PaymentModal({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isPaid, setIsPaid] = useState(false);
+
+  const targetCountryObj = activeCountries.find(c => c.id === targetCountry) || activeCountries[0] || COUNTRIES[0];
+  const resolvedCurrency = COUNTRY_CURRENCY_CODE[targetCountry] || currency || 'SEK';
+  const durationDays = Number(stripeSettings?.vipDurationDays) || 30;
+  const basePrice = Number(price) || 99;
+  const displayPrice =
+    resolvedCurrency === 'EUR' && currency !== 'EUR' && basePrice >= 50
+      ? Math.max(9, Math.round(basePrice / 10))
+      : basePrice;
 
   // Format Card Number (XXXX XXXX XXXX XXXX)
   const handleCardNumberChange = (e) => {
@@ -48,14 +77,19 @@ export default function PaymentModal({
     setCardNumber('4242 4242 4242 4242');
     setExpiry('12/28');
     setCvc('123');
-    setCardName('کاربر تست اسکاندیناوی');
+    setCardName('Ali Rezaei');
+    setErrorMsg('');
   };
 
-  // Process Stripe Payment
+  // Process Stripe Payment & Promote Ad for Target Country
   const handleSubmitPayment = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
+    if (!cardName.trim()) {
+      setErrorMsg('لطفاً نام دارنده کارت را وارد فرمایید.');
+      return;
+    }
     if (cardNumber.replace(/\s/g, '').length < 16) {
       setErrorMsg('شماره کارت ۱۶ رقمی معتبر وارد فرمایید.');
       return;
@@ -65,30 +99,20 @@ export default function PaymentModal({
       return;
     }
     if (cvc.length < 3) {
-      setErrorMsg('کد CVC معتبر وارد فرمایید.');
+      setErrorMsg('کد امنیتی (CVC) معتبر وارد فرمایید.');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Simulate Stripe Charge / Gateway Processing
-      await new Promise(resolve => setTimeout(resolve, 1400));
+      await new Promise(resolve => setTimeout(resolve, 900));
 
-      // Update Supabase Ad to is_featured = true
       if (ad && ad.id) {
-        const { data, error } = await supabase
-          .from('swedpersiska_ads')
-          .update({ is_featured: true })
-          .eq('id', ad.id)
-          .select(PUBLIC_AD_COLUMNS)
-          .single();
-
-        if (error) throw error;
-        
+        const updatedAd = await publicApi.promoteAd(ad.id, targetCountry);
         setIsPaid(true);
         if (onSuccess) {
-          onSuccess(data || { ...ad, is_featured: true });
+          onSuccess(updatedAd || { ...ad, is_featured: true, country: targetCountry });
         }
       } else {
         setIsPaid(true);
@@ -104,67 +128,76 @@ export default function PaymentModal({
   const isTestMode = stripeSettings?.mode !== 'live';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto font-vazir" dir="rtl">
-      {/* Blurred Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto font-vazir select-none" dir="rtl">
+      {/* Calm Dimmed Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-[#1D1D1F]/55 transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-10 animate-in zoom-in-95 duration-200">
+      {/* Clean Apple-Style Modal Card */}
+      <div className="relative w-full max-w-[440px] max-h-[90vh] flex flex-col bg-[#FBFBFC] rounded-[24px] shadow-[0_24px_70px_rgba(29,29,31,0.22)] border border-[#E5E5EA] overflow-hidden z-10 animate-in zoom-in-95 duration-200">
         
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center">
-              <Crown size={20} />
+        {/* Clean Light Header */}
+        <div className="px-5 pt-4 pb-3.5 border-b border-[#E5E5EA] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center shrink-0">
+              <Crown size={18} strokeWidth={2} />
             </div>
-            <div>
-              <h2 className="text-base font-black">درگاه پرداخت امن Stripe</h2>
-              <p className="text-xs text-slate-300">ارتقای آگهی به بسته ویژه (VIP)</p>
+            <div className="min-w-0">
+              <h2 className="text-[15px] font-black text-[#1D1D1F] tracking-tight truncate">
+                ارتقای آگهی به ویژه (VIP)
+              </h2>
+              <p className="text-[11px] text-[#6E6E73] truncate">
+                درگاه پرداخت امن Stripe • نمایش در صدر آگهی‌های کشور
+              </p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer"
+            className="h-7 w-7 rounded-full hover:bg-[#ECECEF] text-[#6E6E73] hover:text-[#1D1D1F] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            title="بستن"
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 space-y-5">
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto p-4 sm:p-5 space-y-3.5">
 
-          {/* Success Screen */}
           {isPaid ? (
-            <div className="text-center py-6 space-y-4 animate-in zoom-in-95">
-              <div className="h-16 w-16 rounded-full bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center mx-auto">
-                <CheckCircle2 size={36} />
+            <div className="text-center py-4 space-y-4 animate-in zoom-in-95">
+              <div className="h-14 w-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                <CheckCircle2 size={30} />
               </div>
 
               <div className="space-y-1">
-                <h3 className="text-xl font-black text-slate-950">پرداخت با موفقیت انجام شد!</h3>
-                <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-                  آگهی شما با موفقیت به رتبه <span className="font-bold text-blue-600">ویژه (VIP)</span> ارتقا یافت و هم‌اکنون در صدر تمام آگهی‌ها و سایدبار اختصاصی قرار گرفت.
+                <h3 className="text-lg font-black text-[#1D1D1F]">ارتقای ویژه با موفقیت انجام شد!</h3>
+                <p className="text-xs text-[#6E6E73] max-w-xs mx-auto leading-relaxed">
+                  آگهی شما به بسته <span className="font-bold text-[#0066CC]">ویژه (VIP)</span> در کشور{' '}
+                  <span className="font-bold text-[#1D1D1F]">{targetCountryObj.nameFa}</span> ارتقا یافت و در صدر آگهی‌ها قرار گرفت.
                 </p>
               </div>
 
-              <div className="bg-[#F5F5F7] rounded-2xl divide-y divide-[#E5E5EA] max-w-xs mx-auto text-xs text-right font-medium overflow-hidden">
+              <div className="bg-[#F5F5F7] rounded-2xl divide-y divide-[#E5E5EA] text-xs text-right font-medium overflow-hidden">
                 <div className="flex justify-between px-4 py-2.5 text-[#6E6E73]">
-                  <span>مبلغ پرداختی:</span>
-                  <span className="font-bold text-[#1D1D1F]">{price} {currency}</span>
+                  <span>کشور نمایش ویژه:</span>
+                  <span className="font-bold text-[#1D1D1F]">{targetCountryObj.nameFa}</span>
                 </div>
                 <div className="flex justify-between px-4 py-2.5 text-[#6E6E73]">
-                  <span>وضعیت:</span>
-                  <span className="font-bold text-emerald-600">فعال (VIP)</span>
+                  <span>مبلغ پرداختی:</span>
+                  <span className="font-bold text-[#1D1D1F]" dir="ltr">{displayPrice} {resolvedCurrency}</span>
+                </div>
+                <div className="flex justify-between px-4 py-2.5 text-[#6E6E73]">
+                  <span>مدت نمایش ویژه:</span>
+                  <span className="font-bold text-emerald-600">{durationDays} روز (فعال)</span>
                 </div>
                 {ad?.reference_number && (
                   <div className="flex justify-between px-4 py-2.5 text-[#6E6E73]">
-                    <span>کد مرجع:</span>
-                    <span className="font-mono font-bold text-[#1D1D1F]">{ad.reference_number}</span>
+                    <span>کد مرجع آگهی:</span>
+                    <span className="font-mono font-bold text-[#1D1D1F]" dir="ltr">{ad.reference_number}</span>
                   </div>
                 )}
               </div>
@@ -172,42 +205,70 @@ export default function PaymentModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                className="w-full h-10 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white font-bold text-xs transition-all cursor-pointer"
               >
-                مشاهده آگهی ویژه
+                مشاهده آگهی ویژه در {targetCountryObj.nameFa}
               </button>
             </div>
           ) : (
             <>
-              {/* Order Summary */}
-              <div className="bg-[#F5F5F7] rounded-2xl p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-blue-700 block">سفارش ارتقای آگهی:</span>
-                  <h4 className="text-xs font-black text-slate-900 line-clamp-1 max-w-[220px]">
-                    {ad?.title || 'آگهی جدید'}
+              {/* Compact Order Summary */}
+              <div className="bg-[#F5F5F7] rounded-2xl p-3.5 flex items-center justify-between gap-3">
+                <div className="min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#0066CC]">
+                    <MapPin size={12} className="shrink-0" />
+                    <span>ویژه در کشور {targetCountryObj.nameFa} ({durationDays} روز)</span>
+                  </div>
+                  <h4 className="text-xs font-extrabold text-[#1D1D1F] truncate">
+                    {ad?.title_fa || ad?.title || 'آگهی انتخابی شما'}
                   </h4>
-                  <span className="text-[10px] text-slate-500 block">مدت اعتبار: ۳۰ روز در صدر آگهی‌ها</span>
                 </div>
 
-                <div className="text-left shrink-0">
-                  <span className="text-2xl font-black text-blue-700 tabular-nums">
-                    {price}
+                <div className="text-left shrink-0 bg-[#FBFBFC] px-3 py-1.5 rounded-xl border border-[#E5E5EA]" dir="ltr">
+                  <span className="text-lg font-black text-[#0066CC] tabular-nums">
+                    {displayPrice}
                   </span>
-                  <span className="text-xs font-bold text-slate-600 ms-1">{currency}</span>
+                  <span className="text-[11px] font-bold text-[#6E6E73] ms-1">{resolvedCurrency}</span>
                 </div>
               </div>
 
-              {/* Stripe Test Mode Banner */}
+              {/* Country-Specific VIP Target Selector */}
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-[#6E6E73]">
+                  کشور هدف برای نمایش در بخش آگهی‌های ویژه (VIP):
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {activeCountries.map(c => {
+                    const isSelected = targetCountry === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setTargetCountry(c.id)}
+                        className={`py-1.5 px-2 rounded-xl text-[11.5px] font-bold border transition-all cursor-pointer truncate ${
+                          isSelected
+                            ? 'border-[#0066CC] bg-[#0066CC]/[0.08] text-[#0066CC]'
+                            : 'border-[#E5E5EA] bg-[#FBFBFC] text-[#1D1D1F] hover:bg-[#F5F5F7]'
+                        }`}
+                      >
+                        {c.nameFa}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Test Mode Quick Fill Bar */}
               {isTestMode && (
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#F5F5F7] border border-[#E5E5EA] text-[11px] text-[#515154]">
                   <div className="flex items-center gap-1.5">
-                    <AlertCircle size={14} className="text-[#86868B] shrink-0" />
-                    <span>حالت آزمایشی Stripe فعال است.</span>
+                    <AlertCircle size={13} className="text-[#86868B] shrink-0" />
+                    <span>حالت آزمایشی درگاه Stripe فعال است</span>
                   </div>
                   <button
                     type="button"
                     onClick={handleFillTestCard}
-                    className="text-[11px] font-bold text-blue-700 hover:underline cursor-pointer"
+                    className="font-bold text-[#0066CC] hover:underline cursor-pointer shrink-0"
                   >
                     تکمیل خودکار کارت تست
                   </button>
@@ -216,18 +277,16 @@ export default function PaymentModal({
 
               {/* Error Notice */}
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-                  <AlertCircle size={15} className="shrink-0" />
+                <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle size={14} className="shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               {/* Credit Card Form */}
-              <form onSubmit={handleSubmitPayment} className="space-y-3.5">
-                
-                {/* Cardholder Name */}
+              <form onSubmit={handleSubmitPayment} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[11.5px] font-bold text-[#1D1D1F] mb-1">
                     نام دارنده کارت
                   </label>
                   <input
@@ -235,15 +294,15 @@ export default function PaymentModal({
                     required
                     value={cardName}
                     onChange={(e) => setCardName(e.target.value)}
-                    placeholder="مثال: Ali Rezaei"
-                    className="w-full h-11 rounded-xl bg-slate-50 border border-slate-200 px-3.5 text-xs text-slate-900 focus:bg-white focus:border-blue-500 focus:outline-none transition-all"
+                    placeholder="Ali Rezaei"
+                    dir="ltr"
+                    className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#E5E5EA] px-3 text-xs text-[#1D1D1F] placeholder-[#86868B] focus:bg-[#FBFBFC] focus:border-[#0066CC] focus:outline-none transition-all text-left font-medium"
                   />
                 </div>
 
-                {/* Card Number */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    شماره کارت اعتباری (Credit / Debit Card)
+                  <label className="block text-[11.5px] font-bold text-[#1D1D1F] mb-1">
+                    شماره کارت بانکی (Visa / Mastercard)
                   </label>
                   <div className="relative">
                     <input
@@ -252,18 +311,17 @@ export default function PaymentModal({
                       value={cardNumber}
                       onChange={handleCardNumberChange}
                       placeholder="4242 •••• •••• 4242"
-                      className="w-full h-11 rounded-xl bg-slate-50 border border-slate-200 ps-10 pe-3.5 text-xs font-mono text-slate-900 tracking-wider focus:bg-white focus:border-blue-500 focus:outline-none transition-all text-left"
                       dir="ltr"
+                      className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#E5E5EA] ps-9 pe-3 text-xs font-mono text-[#1D1D1F] placeholder-[#86868B] tracking-wider focus:bg-[#FBFBFC] focus:border-[#0066CC] focus:outline-none transition-all text-left"
                     />
-                    <CreditCard size={18} className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <CreditCard size={15} className="absolute start-3 top-1/2 -translate-y-1/2 text-[#86868B] pointer-events-none" />
                   </div>
                 </div>
 
-                {/* Expiry & CVC */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      انقضا (MM/YY)
+                    <label className="block text-[11.5px] font-bold text-[#1D1D1F] mb-1">
+                      تاریخ انقضا (MM/YY)
                     </label>
                     <input
                       type="text"
@@ -271,13 +329,13 @@ export default function PaymentModal({
                       value={expiry}
                       onChange={handleExpiryChange}
                       placeholder="12/28"
-                      className="w-full h-11 rounded-xl bg-slate-50 border border-slate-200 px-3.5 text-xs font-mono text-slate-900 text-center focus:bg-white focus:border-blue-500 focus:outline-none transition-all"
                       dir="ltr"
+                      className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#E5E5EA] px-3 text-xs font-mono text-[#1D1D1F] placeholder-[#86868B] text-center focus:bg-[#FBFBFC] focus:border-[#0066CC] focus:outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-[11.5px] font-bold text-[#1D1D1F] mb-1">
                       کد امنیتی (CVC)
                     </label>
                     <input
@@ -287,34 +345,30 @@ export default function PaymentModal({
                       value={cvc}
                       onChange={(e) => setCvc(e.target.value.replace(/\D/g, ''))}
                       placeholder="123"
-                      className="w-full h-11 rounded-xl bg-slate-50 border border-slate-200 px-3.5 text-xs font-mono text-slate-900 text-center focus:bg-white focus:border-blue-500 focus:outline-none transition-all"
                       dir="ltr"
+                      className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#E5E5EA] px-3 text-xs font-mono text-[#1D1D1F] placeholder-[#86868B] text-center focus:bg-[#FBFBFC] focus:border-[#0066CC] focus:outline-none transition-all"
                     />
                   </div>
                 </div>
 
-                {/* Submit Payment Button */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full h-10 rounded-full bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-50 text-white font-bold text-xs shadow-[0_4px_14px_rgba(0,102,204,0.24)] active:scale-[0.97] transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
                 >
-                  <Lock size={15} />
+                  <Lock size={14} />
                   <span>
-                    {loading ? 'در حال اتصال به Stripe...' : `پرداخت امن ${price} ${currency} با Stripe`}
+                    {loading
+                      ? 'در حال پردازش پرداخت...'
+                      : `پرداخت امن ${displayPrice} ${resolvedCurrency} و ویژه کردن در ${targetCountryObj.nameFa}`}
                   </span>
                 </button>
-
               </form>
 
-              {/* Trust Badges */}
-              <div className="pt-2 flex items-center justify-center gap-4 text-[11px] text-slate-400">
-                <div className="flex items-center gap-1">
-                  <ShieldCheck size={14} className="text-[#86868B]" />
-                  <span>رمزنگاری ۲۵۶ بیتی SSL</span>
-                </div>
-                <span>•</span>
-                <span>پشتیبانی از Visa, Mastercard, Amex</span>
+              {/* Compact Security Footer */}
+              <div className="pt-1 flex items-center justify-center gap-2 text-[10.5px] text-[#86868B]">
+                <ShieldCheck size={13} className="text-[#86868B] shrink-0" />
+                <span>پرداخت رمزنگاری‌شده SSL • پشتیبانی از Visa و Mastercard</span>
               </div>
             </>
           )}

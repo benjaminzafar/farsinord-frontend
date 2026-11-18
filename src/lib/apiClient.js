@@ -131,6 +131,33 @@ export const publicApi = {
     return true;
   },
 
+  async promoteAd(id, country) {
+    try {
+      const res = await fetch(`${API_BASE}/api/public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'promote_ad', id, country })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.ok && json.ad) return json.ad;
+      }
+    } catch {}
+
+    const updatePayload = { is_featured: true };
+    if (country && /^[a-z0-9_-]{2,10}$/i.test(String(country))) {
+      updatePayload.country = String(country).toLowerCase();
+    }
+    const { data, error } = await supabase
+      .from('swedpersiska_ads')
+      .update(updatePayload)
+      .eq('id', id)
+      .select(PUBLIC_AD_COLUMNS)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   async presignUpload({ fileName, contentType, fileSize }) {
     const res = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',

@@ -516,7 +516,7 @@ export default function PostAdModal({
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   کشور محل آگهی *
                 </label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                <div className="grid grid-cols-4 gap-1.5">
                   {activeCountries.map(c => (
                     <button
                       key={c.id}
@@ -527,13 +527,13 @@ export default function PostAdModal({
                         setCity(firstCity);
                         setPriceType(c.currency);
                       }}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      className={`flex items-center justify-center py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                         adCountry === c.id
                           ? 'bg-blue-50 text-blue-700 border-blue-400 shadow-2xs font-extrabold'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                       }`}
                     >
-                      <span>{c.nameFa}</span>
+                      <span className="truncate">{c.nameFa}</span>
                     </button>
                   ))}
                 </div>
@@ -909,13 +909,19 @@ export default function PostAdModal({
                     className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                   <div>
-                    <span className="text-xs font-bold text-slate-900 block">ارتقا به آگهی ویژه (VIP)</span>
-                    <span className="text-[11px] text-slate-500">نمایش در بالای لیست و سایدبار اختصاصی</span>
+                    <span className="text-xs font-bold text-slate-900 block">
+                      ارتقا به آگهی ویژه (VIP) در {currentCountryObj.nameFa}
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      نمایش در بالای لیست و سایدبار ویژه کشور {currentCountryObj.nameFa}
+                    </span>
                   </div>
                 </div>
 
                 <div className="text-left shrink-0">
-                  <span className="text-sm font-extrabold text-blue-700">۹۹ کرون</span>
+                  <span className="text-sm font-extrabold text-blue-700">
+                    {currentCountryObj.currency === '€' ? '۹ یورو (€)' : '۹۹ کرون'}
+                  </span>
                 </div>
               </label>
 
@@ -953,7 +959,7 @@ export default function PostAdModal({
                   <span>
                     {loading 
                       ? 'در حال ثبت...' 
-                      : (wantVipPromotion ? 'ثبت و پرداخت (۹۹ کرون)' : 'انتشار رایگان آگهی')}
+                      : (wantVipPromotion ? `ثبت و پرداخت ویژه (${currentCountryObj.currency === '€' ? '۹ یورو' : '۹۹ کرون'})` : 'انتشار رایگان آگهی')}
                   </span>
                 </button>
               </div>
