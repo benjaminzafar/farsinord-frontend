@@ -47,6 +47,7 @@ export default function MobileBottomNav({
   onOpenManageAd,
   onOpenLegal,
   onOpenPodcast,
+  onOpenWebsiteBuilder,
 }) {
   const [collectionSheetOpen, setCollectionSheetOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -356,20 +357,27 @@ export default function MobileBottomNav({
             <div className="pt-2 space-y-2">
               <span className="block text-[11px] font-bold text-[#6E6E73] px-1">سرویس‌های آینده</span>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7]/70 border border-[#E5E5EA]">
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreSheetOpen(false);
+                  onOpenWebsiteBuilder?.();
+                }}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200/80 transition-colors cursor-pointer"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-[#ECECEF] text-[#515154] flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-xl bg-[#0066CC] text-white flex items-center justify-center">
                     <MonitorSmartphone size={18} />
                   </div>
                   <div className="text-right">
-                    <span className="block text-[13px] font-bold text-[#1D1D1F]">ساخت وب‌سایت</span>
-                    <span className="block text-[11px] text-[#6E6E73]">ساخت صفحه و سایت شخصی کسب‌وکار</span>
+                    <span className="block text-[13px] font-bold text-[#1D1D1F]">ساخت وب‌سایت و پنل فروش</span>
+                    <span className="block text-[11px] text-[#6E6E73]">نصب خودکار روی کلودفلر</span>
                   </div>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
-                  به‌زودی
+                <span className="px-2.5 py-0.5 rounded-full bg-[#0066CC] text-white text-[10px] font-bold">
+                  ۲۴۰ کرون/ماه
                 </span>
-              </div>
+              </button>
 
               <button
                 type="button"

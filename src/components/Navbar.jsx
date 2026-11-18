@@ -48,6 +48,7 @@ export default function Navbar({
   onOpenCountryModal,
   onOpenLegal,
   onOpenPodcast,
+  onOpenWebsiteBuilder,
   selectedCountryObj = null
 }) {
   const [adDropdownOpen, setAdDropdownOpen] = useState(false);
@@ -344,20 +345,27 @@ export default function Navbar({
                     <div className="pt-1.5 mt-1 border-t border-[#E5E5EA] space-y-1">
                       <span className="block px-2.5 pt-0.5 text-[10.5px] font-bold text-[#6E6E73]">سرویس‌های آینده</span>
 
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F5F7]/70">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMoreMenuOpen(false);
+                          onOpenWebsiteBuilder?.();
+                        }}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200/70 transition-colors text-right cursor-pointer"
+                      >
                         <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-lg bg-[#ECECEF] text-[#515154] flex items-center justify-center shrink-0">
+                          <div className="h-8 w-8 rounded-lg bg-[#0066CC] text-white flex items-center justify-center shrink-0">
                             <MonitorSmartphone size={15} />
                           </div>
                           <div>
-                            <span className="block text-xs font-bold text-[#1D1D1F]">ساخت وب‌سایت</span>
-                            <span className="block text-[10.5px] text-[#6E6E73]">ساخت صفحه و سایت شخصی</span>
+                            <span className="block text-xs font-bold text-[#1D1D1F]">ساخت وب‌سایت و پنل فروش</span>
+                            <span className="block text-[10.5px] text-[#6E6E73]">نصب خودکار روی کلودفلر</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
-                          به‌زودی
+                        <span className="px-2 py-0.5 rounded-full bg-[#0066CC] text-white text-[10px] font-bold">
+                          ۲۴۰ کرون/ماه
                         </span>
-                      </div>
+                      </button>
 
                       <button
                         type="button"

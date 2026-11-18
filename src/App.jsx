@@ -35,6 +35,7 @@ const PaymentModal = lazy(() => import('./components/PaymentModal'));
 const PostAdModal = lazy(() => import('./components/PostAdModal'));
 const ManageAdModal = lazy(() => import('./components/ManageAdModal'));
 const PodcastPage = lazy(() => import('./components/PodcastPage'));
+const WebsiteBuilderModal = lazy(() => import('./components/WebsiteBuilderModal'));
 
 const CATEGORY_ICONS = {
   all: LayoutGrid,
@@ -131,6 +132,7 @@ export default function App() {
   // Modals & Pages
   const [gdprConsent, setGdprConsent] = useState(() => getGdprConsent());
   const [legalModalTab, setLegalModalTab] = useState(null);
+  const [websiteBuilderOpen, setWebsiteBuilderOpen] = useState(false);
   const [podcastOpen, setPodcastOpen] = useState(() => {
     try {
       return new URLSearchParams(window.location.search).get('page') === 'podcast';
@@ -785,6 +787,7 @@ export default function App() {
         onOpenCountryModal={handleOpenCountryModal}
         onOpenLegal={setLegalModalTab}
         onOpenPodcast={handleOpenPodcast}
+        onOpenWebsiteBuilder={() => setWebsiteBuilderOpen(true)}
         selectedCountryObj={currentCountryObj}
       />
 
@@ -1174,6 +1177,7 @@ export default function App() {
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
         onOpenPodcast={handleOpenPodcast}
+        onOpenWebsiteBuilder={() => setWebsiteBuilderOpen(true)}
       />
 
       {/* Mobile Sticky Bottom Menu for Collections & Quick Actions */}
@@ -1186,6 +1190,7 @@ export default function App() {
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
         onOpenPodcast={handleOpenPodcast}
+        onOpenWebsiteBuilder={() => setWebsiteBuilderOpen(true)}
       />
 
       <Suspense fallback={null}>
@@ -1255,6 +1260,15 @@ export default function App() {
             siteName={siteName}
             onClose={() => setLegalModalTab(null)}
             onConsentSaved={setGdprConsent}
+          />
+        )}
+
+        {/* MODAL 5: Website & Seller Panel Builder (240 SEK/month -> 1-Click Cloudflare Deploy) */}
+        {websiteBuilderOpen && (
+          <WebsiteBuilderModal
+            isOpen={websiteBuilderOpen}
+            stripeSettings={stripeSettings}
+            onClose={() => setWebsiteBuilderOpen(false)}
           />
         )}
       </Suspense>
