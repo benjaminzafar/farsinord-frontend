@@ -213,11 +213,9 @@ export default function WebsiteBuilderPage({
         </div>
       </div>
 
-      {/* Main 12-Column Page Body (Matches AdDetailPage & PodcastPage) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 sm:pt-5 sm:pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          {/* Primary Content Column (8 cols on Desktop) */}
-          <main className="lg:col-span-8 space-y-6">
+      {/* Main Centered Page Body (Single Clean Flow, No Duplicate Sidebar) */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-6 sm:pt-5 sm:pb-8">
+        <main className="space-y-6">
             {pageMode === 'manage' ? (
               /* MANAGE SUBSCRIPTION */
               <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] border border-[#E5E5EA] p-5 sm:p-8 space-y-5">
@@ -373,6 +371,28 @@ export default function WebsiteBuilderPage({
                       </p>
                     </div>
 
+                    {/* Prominent Live Demo Buttons (Shown First) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <a
+                        href="https://swedpersiska.vercel.app"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-11 px-4 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-between transition-colors"
+                      >
+                        <span>مشاهده دمو وب‌سایت</span>
+                        <ExternalLink size={14} className="text-[#0066CC]" />
+                      </a>
+                      <a
+                        href="https://linksho-seller.vercel.app"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-11 px-4 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-between transition-colors"
+                      >
+                        <span>مشاهده دمو پنل فروش</span>
+                        <ExternalLink size={14} className="text-[#0066CC]" />
+                      </a>
+                    </div>
+
                     {/* 3 Professional Clear Steps */}
                     <div className="space-y-4 text-xs sm:text-[13px] text-[#515154]">
                       <div className="flex items-start gap-3">
@@ -400,8 +420,8 @@ export default function WebsiteBuilderPage({
                       </div>
                     </div>
 
-                    {/* Mobile Summary Specs (Visible on <lg where sidebar stacks below) */}
-                    <div className="lg:hidden pt-4 border-t border-[#E5E5EA] space-y-2 text-xs text-[#6E6E73]">
+                    {/* Cloud Specs, SSL & Ad Link Note */}
+                    <div className="pt-4 border-t border-[#E5E5EA] space-y-2 text-xs text-[#6E6E73]">
                       <p className="flex items-center gap-2">
                         <Sparkles size={14} className="text-[#0066CC] shrink-0" />
                         <span>زیرساخت ابری اختصاصی: <strong>۵ گیگابایت</strong> دیتابیس ابری، <strong>۹ گیگابایت (9 GB)</strong> فضای ذخیره تصاویر و عکس‌ها و ظرفیت <strong>۱۰۰,۰۰۰ درخواست روزانه</strong> (قابل ارتقا با هماهنگی پشتیبانی و هزینه جداگانه).</span>
@@ -425,7 +445,7 @@ export default function WebsiteBuilderPage({
                       onClick={() => setStep(2)}
                       className="w-full h-11 sm:h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
                     >
-                      <span>شروع ساخت سایت (راه‌اندازی {SETUP_PRICE} کرون • ماهانه {MONTHLY_PRICE} کرون)</span>
+                      <span>شروع ساخت وب‌سایت</span>
                       <ArrowLeft size={16} />
                     </button>
                   </div>
@@ -504,7 +524,7 @@ export default function WebsiteBuilderPage({
                         type="submit"
                         className="flex-1 h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 cursor-pointer transition-colors"
                       >
-                        <span>مرحله بعد: پرداخت {SETUP_PRICE} کرون</span>
+                        <span>ادامه به پرداخت</span>
                         <ArrowLeft size={15} />
                       </button>
                     </div>
@@ -595,7 +615,7 @@ export default function WebsiteBuilderPage({
                         className="flex-1 h-11 sm:h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60"
                       >
                         <Lock size={15} />
-                        <span>{submitting ? 'در حال ثبت...' : `پرداخت ${SETUP_PRICE} کرون و ثبت سفارش`}</span>
+                        <span>{submitting ? 'در حال ثبت...' : 'پرداخت و ثبت سفارش'}</span>
                       </button>
                     </div>
                   </form>
@@ -633,71 +653,6 @@ export default function WebsiteBuilderPage({
               </div>
             </section>
           </main>
-
-          {/* Sticky Summary & Specs Sidebar (4 cols on Desktop, matches AdDetailPage) */}
-          <aside className="lg:col-span-4 lg:sticky lg:top-20 space-y-5">
-            <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] border border-[#E5E5EA] p-5 sm:p-6 space-y-5">
-              {/* Pricing Summary */}
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-bold text-[#86868B]">تعرفه پکیج اختصاصی</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-[#0066CC] tabular-nums">
-                    {SETUP_PRICE.toLocaleString('en-US')} کرون
-                  </span>
-                  <span className="text-xs font-semibold text-[#6E6E73]">راه‌اندازی اولیه</span>
-                </div>
-                <p className="text-xs text-[#515154]">
-                  سپس <strong className="text-[#1D1D1F]">{MONTHLY_PRICE} کرون ماهانه</strong> (با ارسال فاکتور پیش از پایان دوره)
-                </p>
-              </div>
-
-              {/* Infrastructure & Security Specs */}
-              <div className="pt-4 border-t border-[#E5E5EA] space-y-2.5 text-xs text-[#515154]">
-                <p className="flex items-start gap-2">
-                  <Sparkles size={14} className="text-[#0066CC] shrink-0 mt-0.5" />
-                  <span><strong>۵ گیگابایت</strong> دیتابیس ابری، <strong>۹ گیگابایت (9 GB)</strong> فضای ذخیره تصاویر و عکس‌ها و <strong>۱۰۰,۰۰۰ درخواست روزانه</strong></span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <Lock size={14} className="text-emerald-600 shrink-0 mt-0.5" />
-                  <span>گواهی امنیتی <strong>SSL (HTTPS)</strong> و پردازش پرداخت با امنیت فوق‌العاده بالا توسط <strong>Stripe</strong></span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <PhoneCall size={14} className="text-emerald-600 shrink-0 mt-0.5" />
-                  <span>اتصال ربات تلگرام، راهنمایی اتصال دامنه و دریافت کد ۸ رقمی مدیریت اشتراک</span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <CheckCircle2 size={14} className="text-[#0066CC] shrink-0 mt-0.5" />
-                  <span>نمایش آدرس وب‌سایت شما در آگهی‌های لینک شو پس از تکمیل</span>
-                </p>
-              </div>
-
-              {/* Live Demo Links */}
-              <div className="pt-4 border-t border-[#E5E5EA] space-y-2.5">
-                <span className="text-[11px] font-bold text-[#86868B] block">مشاهده پیش‌نمایش زنده</span>
-                <div className="flex flex-col gap-2">
-                  <a
-                    href="https://swedpersiska.vercel.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-10 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-semibold inline-flex items-center justify-between transition-colors"
-                  >
-                    <span>دیدن نمونه سایت</span>
-                    <ExternalLink size={13} className="text-[#86868B]" />
-                  </a>
-                  <a
-                    href="https://linksho-seller.vercel.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-10 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-semibold inline-flex items-center justify-between transition-colors"
-                  >
-                    <span>دیدن نمونه پنل فروش</span>
-                    <ExternalLink size={13} className="text-[#86868B]" />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
       </div>
     </div>
   );
