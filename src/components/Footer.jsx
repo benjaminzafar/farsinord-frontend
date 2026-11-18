@@ -3,7 +3,6 @@ import {
   PlusCircle,
   KeyRound,
   Globe,
-  ChevronDown,
   Send,
   MessageCircle,
   Mail,
@@ -243,10 +242,22 @@ export default function Footer({
                   </button>
                 </li>
               )}
+              {onOpenCountryModal && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={onOpenCountryModal}
+                    className="flex items-center gap-1.5 hover:text-[#1D1D1F] transition-colors cursor-pointer"
+                  >
+                    <Globe size={13} className="text-[#86868B] shrink-0" />
+                    <span>تغییر کشور ({selectedCountryObj?.nameFa || 'انتخاب'})</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 
-          {/* Column 5 (2 cols): قوانین و حریم خصوصی (Moved from bottom bar into main columns) */}
+          {/* Column 5 (2 cols): قوانین و حریم خصوصی */}
           <div className="col-span-1 md:col-span-2 space-y-3">
             <h4 className="font-extrabold text-[#1D1D1F] text-xs">
               قوانین و حریم خصوصی
@@ -284,24 +295,9 @@ export default function Footer({
 
         </div>
 
-        {/* Clean Minimal Bottom Copyright Bar */}
-        <div className="border-t border-[#E5E5EA] pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#86868B]">
-          <div>
-            © {currentYear} {siteName} • تمامی حقوق محفوظ است.
-          </div>
-
-          {onOpenCountryModal && (
-            <button
-              type="button"
-              onClick={onOpenCountryModal}
-              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
-              title="تغییر موقعیت"
-            >
-              <Globe size={13.5} className="text-[#86868B]" />
-              <span>{selectedCountryObj?.nameFa || 'انتخاب موقعیت'}</span>
-              <ChevronDown size={12} className="text-[#86868B]" />
-            </button>
-          )}
+        {/* Clean Minimal Bottom Copyright Bar — Text Only */}
+        <div className="border-t border-[#E5E5EA] pt-5 text-center text-[11px] text-[#86868B]">
+          © {currentYear} {siteName} • تمامی حقوق محفوظ است.
         </div>
 
       </div>
