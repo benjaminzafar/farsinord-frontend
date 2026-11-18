@@ -419,10 +419,24 @@ export default function App() {
     setMeta('meta[name="description"]', 'name=description', pageDesc);
     setMeta('meta[name="keywords"]', 'name=keywords', activeSeo.keywords);
     setMeta('meta[property="og:site_name"]', 'property=og:site_name', siteName);
+    setMeta('meta[property="og:type"]', 'property=og:type', activeAdDetail ? 'article' : 'website');
+    setMeta('meta[property="og:url"]', 'property=og:url', window.location.href);
     setMeta('meta[property="og:title"]', 'property=og:title', activeSeo.ogTitle || pageTitle);
     setMeta('meta[property="og:description"]', 'property=og:description', activeSeo.ogDescription || pageDesc);
+    if (activeAdDetail?.images?.[0]) {
+      setMeta('meta[property="og:image"]', 'property=og:image', activeAdDetail.images[0]);
+      setMeta('meta[name="twitter:image"]', 'name=twitter:image', activeAdDetail.images[0]);
+    }
     setMeta('meta[name="twitter:title"]', 'name=twitter:title', activeSeo.ogTitle || pageTitle);
     setMeta('meta[name="twitter:description"]', 'name=twitter:description', activeSeo.ogDescription || pageDesc);
+
+    let canonicalEl = document.querySelector('link[rel="canonical"]');
+    if (!canonicalEl) {
+      canonicalEl = document.createElement('link');
+      canonicalEl.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalEl);
+    }
+    canonicalEl.setAttribute('href', window.location.href);
   }, [selectedCountry, seoSettings, activeAdDetail, siteName]);
 
   // Success Toast

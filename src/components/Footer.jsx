@@ -290,6 +290,16 @@ export default function Footer({
                   تنظیمات کوکی‌ها
                 </button>
               </li>
+              <li>
+                <a
+                  href="/sitemap.xml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[#1D1D1F] transition-colors inline-block"
+                >
+                  نقشه سایت (Sitemap)
+                </a>
+              </li>
             </ul>
           </div>
 
