@@ -18,7 +18,7 @@ import {
   X,
   MoreHorizontal,
   MonitorSmartphone,
-  Newspaper,
+  Headphones,
   ShieldCheck,
   Globe
 } from 'lucide-react';
@@ -47,6 +47,7 @@ export default function Navbar({
   selectedCategory = 'all',
   onOpenCountryModal,
   onOpenLegal,
+  onOpenPodcast,
   selectedCountryObj = null
 }) {
   const [adDropdownOpen, setAdDropdownOpen] = useState(false);
@@ -358,20 +359,27 @@ export default function Navbar({
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F5F7]/70">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMoreMenuOpen(false);
+                          onOpenPodcast?.();
+                        }}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/70 transition-colors text-right cursor-pointer"
+                      >
                         <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-lg bg-[#ECECEF] text-[#515154] flex items-center justify-center shrink-0">
-                            <Newspaper size={15} />
+                          <div className="h-8 w-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
+                            <Headphones size={15} />
                           </div>
                           <div>
-                            <span className="block text-xs font-bold text-[#1D1D1F]">اخبار و رویدادها</span>
-                            <span className="block text-[10.5px] text-[#6E6E73]">اخبار فارسی‌زبانان اسکاندیناوی</span>
+                            <span className="block text-xs font-bold text-[#1D1D1F]">پادکست خبری</span>
+                            <span className="block text-[10.5px] text-[#6E6E73]">فید خبری و ویدیوهای یوتیوب</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
-                          به‌زودی
+                        <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
+                          پخش
                         </span>
-                      </div>
+                      </button>
                     </div>
                   </div>
                 </div>

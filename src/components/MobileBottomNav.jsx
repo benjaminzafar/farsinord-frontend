@@ -18,7 +18,7 @@ import {
   Layers,
   Check,
   MoreHorizontal,
-  Newspaper,
+  Headphones,
   MonitorSmartphone,
   ShieldCheck
 } from 'lucide-react';
@@ -46,6 +46,7 @@ export default function MobileBottomNav({
   onOpenPostAd,
   onOpenManageAd,
   onOpenLegal,
+  onOpenPodcast,
 }) {
   const [collectionSheetOpen, setCollectionSheetOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -370,20 +371,27 @@ export default function MobileBottomNav({
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7]/70 border border-[#E5E5EA]">
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreSheetOpen(false);
+                  onOpenPodcast?.();
+                }}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/80 transition-colors cursor-pointer"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-[#ECECEF] text-[#515154] flex items-center justify-center">
-                    <Newspaper size={18} />
+                  <div className="h-9 w-9 rounded-xl bg-rose-600 text-white flex items-center justify-center">
+                    <Headphones size={18} />
                   </div>
                   <div className="text-right">
-                    <span className="block text-[13px] font-bold text-[#1D1D1F]">اخبار و رویدادها</span>
-                    <span className="block text-[11px] text-[#6E6E73]">تازه‌ترین خبرهای فارسی‌زبانان اسکاندیناوی</span>
+                    <span className="block text-[13px] font-bold text-[#1D1D1F]">پادکست خبری</span>
+                    <span className="block text-[11px] text-[#6E6E73]">فید خبری و ویدیوهای یوتیوب</span>
                   </div>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
-                  به‌زودی
+                <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
+                  پخش
                 </span>
-              </div>
+              </button>
             </div>
           </div>
         </div>

@@ -34,6 +34,7 @@ const AdDetailPage = lazy(() => import('./components/AdDetailPage'));
 const PaymentModal = lazy(() => import('./components/PaymentModal'));
 const PostAdModal = lazy(() => import('./components/PostAdModal'));
 const ManageAdModal = lazy(() => import('./components/ManageAdModal'));
+const PodcastFeedModal = lazy(() => import('./components/PodcastFeedModal'));
 
 const CATEGORY_ICONS = {
   all: LayoutGrid,
@@ -130,6 +131,8 @@ export default function App() {
   // Modals & Pages
   const [gdprConsent, setGdprConsent] = useState(() => getGdprConsent());
   const [legalModalTab, setLegalModalTab] = useState(null);
+  const [podcastOpen, setPodcastOpen] = useState(false);
+  const [podcastSettings, setPodcastSettings] = useState(null);
   const [countryModalOpen, setCountryModalOpen] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -283,6 +286,9 @@ export default function App() {
         }
         if (settings.analytics_settings) {
           setAnalyticsSettings(prev => ({ ...prev, ...settings.analytics_settings }));
+        }
+        if (settings.podcast_settings) {
+          setPodcastSettings(settings.podcast_settings);
         }
       }
     } catch {}
@@ -748,6 +754,7 @@ export default function App() {
         selectedCategory={selectedCategory}
         onOpenCountryModal={handleOpenCountryModal}
         onOpenLegal={setLegalModalTab}
+        onOpenPodcast={() => setPodcastOpen(true)}
         selectedCountryObj={currentCountryObj}
       />
 
@@ -1129,6 +1136,7 @@ export default function App() {
         onOpenPostAd={() => handleOpenPostAd('bostad')}
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
+        onOpenPodcast={() => setPodcastOpen(true)}
       />
 
       {/* Mobile Sticky Bottom Menu for Collections & Quick Actions */}
@@ -1140,6 +1148,7 @@ export default function App() {
         onOpenPostAd={() => handleOpenPostAd('bostad')}
         onOpenManageAd={handleOpenManageAd}
         onOpenLegal={setLegalModalTab}
+        onOpenPodcast={() => setPodcastOpen(true)}
       />
 
       <Suspense fallback={null}>
@@ -1209,6 +1218,15 @@ export default function App() {
             siteName={siteName}
             onClose={() => setLegalModalTab(null)}
             onConsentSaved={setGdprConsent}
+          />
+        )}
+
+        {/* MODAL 5: News Podcast & YouTube Feed */}
+        {podcastOpen && (
+          <PodcastFeedModal
+            isOpen={podcastOpen}
+            podcastSettings={podcastSettings}
+            onClose={() => setPodcastOpen(false)}
           />
         )}
       </Suspense>

@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         const { data } = await supabase
           .from('swedpersiska_settings')
           .select('key, value')
-          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings', 'analytics_settings']);
+          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings', 'analytics_settings', 'podcast_settings']);
 
         const settings = {};
         (data || []).forEach((item) => {
@@ -107,6 +107,114 @@ export default async function handler(req, res) {
         });
 
         return res.status(200).json({ ok: true, settings });
+      }
+
+      if (action === 'get_podcast_feed') {
+        const { data: podcastRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'podcast_settings')
+          .maybeSingle();
+
+        const podcast = (podcastRow && podcastRow.value) || {
+          enabled: true,
+          title: 'پادکست خبری لینک شو',
+          subtitle: 'تازه‌ترین گزارش‌ها و پادکست‌های خبری فارسی‌زبانان اروپا',
+          youtubeChannelUrl: '',
+          youtubeChannelId: '',
+          manualVideos: [],
+        };
+
+        const manualList = Array.isArray(podcast.manualVideos)
+          ? podcast.manualVideos.filter((v) => v && v.videoId).map((v) => ({
+              videoId: v.videoId,
+              title: v.title || 'پادکست خبری',
+              publishedAt: v.addedAt || '',
+              description: '',
+              thumbnail: `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
+              watchUrl: v.url || `https://www.youtube.com/watch?v=${v.videoId}`,
+              source: 'pinned',
+            }))
+          : [];
+
+        let channelId = String(podcast.youtubeChannelId || '').trim();
+        const chUrl = String(podcast.youtubeChannelUrl || '').trim();
+        if (!/^UC[\w-]{10,}$/.test(channelId) && chUrl) {
+          const directMatch = chUrl.match(/youtube\.com\/channel\/(UC[\w-]{10,})/i);
+          if (directMatch) {
+            channelId = directMatch[1];
+          } else if (/^https?:\/\/(www\.|m\.)?youtube\.com\//i.test(chUrl)) {
+            try {
+              const ctrl = new AbortController();
+              const timer = setTimeout(() => ctrl.abort(), 5000);
+              const htmlRes = await fetch(chUrl, {
+                signal: ctrl.signal,
+                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkShoBot/1.0)' },
+              });
+              clearTimeout(timer);
+              if (htmlRes.ok) {
+                const html = await htmlRes.text();
+                const idMatch =
+                  html.match(/"channelId":"(UC[\w-]{10,})"/) ||
+                  html.match(/"externalId":"(UC[\w-]{10,})"/) ||
+                  html.match(/<link[^>]+rel="canonical"[^>]+href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{10,})"/i);
+                if (idMatch) channelId = idMatch[1];
+              }
+            } catch {}
+          }
+        }
+
+        const rssEpisodes = [];
+        if (/^UC[\w-]{10,}$/.test(channelId)) {
+          try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 5000);
+            const feedRes = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`, {
+              signal: ctrl.signal,
+            });
+            clearTimeout(timer);
+            if (feedRes.ok) {
+              const xml = await feedRes.text();
+              const decodeXml = (str) =>
+                String(str || '')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&#39;/g, "'");
+              const entries = xml.match(/<entry>[\s\S]*?<\/entry>/g) || [];
+              entries.slice(0, 15).forEach((entry) => {
+                const vid = (entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/) || [])[1];
+                const title = decodeXml((entry.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '');
+                const published = (entry.match(/<published>([^<]+)<\/published>/) || [])[1] || '';
+                const desc = decodeXml((entry.match(/<media:description>([\s\S]*?)<\/media:description>/) || [])[1] || '');
+                if (vid) {
+                  rssEpisodes.push({
+                    videoId: vid,
+                    title: title || 'پادکست خبری',
+                    publishedAt: published,
+                    description: desc.slice(0, 400),
+                    thumbnail: `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`,
+                    watchUrl: `https://www.youtube.com/watch?v=${vid}`,
+                    source: 'youtube',
+                  });
+                }
+              });
+            }
+          } catch {}
+        }
+
+        // Merge pinned manual videos + live YouTube RSS episodes (deduped by videoId)
+        const seen = new Set();
+        const episodes = [];
+        [...manualList, ...rssEpisodes].forEach((ep) => {
+          if (!ep.videoId || seen.has(ep.videoId)) return;
+          seen.add(ep.videoId);
+          episodes.push(ep);
+        });
+
+        res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+        return res.status(200).json({ ok: true, settings: podcast, channelId, episodes });
       }
 
       if (action === 'ad' && id) {
