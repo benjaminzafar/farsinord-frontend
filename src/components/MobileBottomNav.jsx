@@ -375,7 +375,7 @@ export default function MobileBottomNav({
                   </div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#0066CC] text-white text-[10px] font-bold">
-                  ۲۴۰ کرون/ماه
+                  ۲۶۰ کرون/ماه
                 </span>
               </button>
 

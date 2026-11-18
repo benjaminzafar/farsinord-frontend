@@ -13,7 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-const MONTHLY_PRICE = 240;
+const MONTHLY_PRICE = 260;
 const MONTHLY_CURRENCY = 'SEK';
 
 export default function WebsiteBuilderModal({
@@ -132,7 +132,7 @@ export default function WebsiteBuilderModal({
                 ساخت وب‌سایت و پنل فروش اختصاصی
               </h2>
               <p className="text-[11px] text-[#6E6E73] truncate">
-                فروشگاه آنلاین و منوی رستوران • ۲۴۰ کرون ماهانه
+                فروشگاه آنلاین و منوی رستوران • اشتراک ماهانه ۲۶۰ کرون (تمدید هر ۳۰ روز)
               </p>
             </div>
           </div>
@@ -180,6 +180,7 @@ export default function WebsiteBuilderModal({
                   </span>
                 </div>
                 <ul className="text-[11.5px] text-[#515154] space-y-1">
+                  <li>• اشتراک ماهانه (اعتبار ۳۰ روزه — تمدید هر ماه، غیر دائمی)</li>
                   <li>• راه‌اندازی خودکار وب‌سایت و پنل فروش اختصاصی در چند ثانیه</li>
                   <li>• مدیریت محصولات، هزینه ارسال، سفارش‌ها و درگاه پرداخت Stripe</li>
                   <li>• اتصال مستقیم به آگهی‌های لینک شو با لینک API اختصاصی</li>
@@ -267,7 +268,7 @@ export default function WebsiteBuilderModal({
             <form onSubmit={handleDeploySubmit} className="space-y-4">
               <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                <span>پرداخت ۲۴۰ کرون تایید شد! مشخصات زیر را برای ساخت سایت وارد کنید.</span>
+                <span>پرداخت ۲۶۰ کرون (اشتراک ۳۰ روزه) تایید شد! مشخصات زیر را برای ساخت سایت وارد کنید.</span>
               </div>
 
               <div className="space-y-3">
