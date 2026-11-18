@@ -8,7 +8,6 @@ import {
   Clock,
   Mail,
   ShieldCheck,
-  Sparkles,
   AlertCircle,
   KeyRound,
   Copy,
@@ -18,6 +17,7 @@ import {
   Cpu,
   HardDrive,
   ExternalLink,
+  Zap,
 } from 'lucide-react';
 
 const MONTHLY_PRICE = 260;
@@ -142,48 +142,32 @@ export default function WebsiteBuilderPage({
 
   return (
     <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 font-vazir min-h-[70vh]" dir="rtl">
-      {/* Top Page Header */}
-      <div className="rounded-3xl bg-white border border-[#E5E5EA] p-4 sm:p-6 shadow-[0_2px_12px_rgba(29,29,31,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={onBack}
-            className="h-10 px-3.5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] text-[#1D1D1F] text-xs font-bold inline-flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
-          >
-            <ArrowRight size={15} />
-            <span>بازگشت</span>
-          </button>
+      {/* Top Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="h-10 px-4 rounded-full bg-white hover:bg-[#F5F5F7] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+        >
+          <ArrowRight size={15} />
+          <span>بازگشت به آگهی‌ها</span>
+        </button>
 
-          <div className="h-11 w-11 rounded-2xl bg-[#0066CC] text-white flex items-center justify-center shrink-0 shadow-[0_6px_16px_rgba(0,102,204,0.22)]">
-            <MonitorSmartphone size={20} />
-          </div>
-
-          <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-black text-[#1D1D1F] tracking-tight truncate">
-              ساخت وب‌سایت و پنل فروش اختصاصی
-            </h1>
-            <p className="text-xs text-[#6E6E73] mt-0.5 truncate">
-              فروشگاه آنلاین و منوی رستوران • اشتراک ماهانه ۲۶۰ کرون (تحویل تا ۲۴ ساعت)
-            </p>
-          </div>
-        </div>
-
-        {/* Mode Switcher: New Subscription vs Manage with 8-Digit Code */}
-        <div className="inline-flex items-center p-1 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] self-start sm:self-auto shrink-0">
+        <div className="inline-flex items-center p-1 rounded-2xl bg-white border border-[#E5E5EA] shadow-2xs">
           <button
             type="button"
             onClick={() => { setPageMode('order'); setErrorMsg(''); }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              pageMode === 'order' ? 'bg-white text-[#1D1D1F] shadow-xs' : 'text-[#6E6E73]'
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+              pageMode === 'order' ? 'bg-[#1D1D1F] text-white' : 'text-[#6E6E73] hover:text-[#1D1D1F]'
             }`}
           >
-            ثبت سفارش جدید
+            سفارش وب‌سایت جدید
           </button>
           <button
             type="button"
             onClick={() => { setPageMode('manage'); setErrorMsg(''); }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-              pageMode === 'manage' ? 'bg-white text-[#1D1D1F] shadow-xs' : 'text-[#6E6E73]'
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+              pageMode === 'manage' ? 'bg-[#1D1D1F] text-white' : 'text-[#6E6E73] hover:text-[#1D1D1F]'
             }`}
           >
             مدیریت اشتراک (کد ۸ رقمی)
@@ -193,14 +177,14 @@ export default function WebsiteBuilderPage({
 
       {pageMode === 'manage' ? (
         /* MANAGE SUBSCRIPTION WITH 8-DIGIT CODE */
-        <div className="max-w-xl mx-auto rounded-3xl bg-white border border-[#E5E5EA] p-5 sm:p-7 space-y-5 shadow-[0_2px_12px_rgba(29,29,31,0.04)]">
-          <div className="space-y-1">
-            <h2 className="text-base font-black text-[#1D1D1F] flex items-center gap-2">
-              <KeyRound size={18} className="text-[#0066CC]" />
-              <span>مدیریت اشتراک وب‌سایت با کد ۸ رقمی</span>
-            </h2>
+        <div className="max-w-lg mx-auto rounded-[28px] bg-white border border-[#E5E5EA] p-6 sm:p-8 space-y-5 shadow-[0_8px_30px_rgba(29,29,31,0.05)]">
+          <div className="text-center space-y-1.5">
+            <div className="h-12 w-12 mx-auto rounded-2xl bg-blue-50 text-[#0066CC] flex items-center justify-center">
+              <KeyRound size={22} />
+            </div>
+            <h2 className="text-lg font-black text-[#1D1D1F]">مدیریت اشتراک وب‌سایت</h2>
             <p className="text-xs text-[#6E6E73]">
-              کد ۸ رقمی اختصاصی که هنگام ثبت اشتراک دریافت کرده‌اید را وارد کنید.
+              کد ۸ رقمی که هنگام ثبت‌نام دریافت کرده‌اید را وارد کنید.
             </p>
           </div>
 
@@ -226,14 +210,14 @@ export default function WebsiteBuilderPage({
               value={manageCodeInput}
               onChange={(e) => setManageCodeInput(e.target.value.replace(/\D/g, ''))}
               placeholder="12345678"
-              className="flex-1 h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-4 text-sm font-mono text-center tracking-widest focus:bg-white focus:border-[#0066CC] focus:outline-none"
+              className="flex-1 h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-4 text-sm font-mono text-center tracking-[0.25em] focus:bg-white focus:border-[#0066CC] focus:outline-none"
             />
             <button
               type="submit"
               disabled={manageLoading}
-              className="h-11 px-5 rounded-2xl bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold cursor-pointer disabled:opacity-60"
+              className="h-11 px-5 rounded-2xl bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold cursor-pointer disabled:opacity-60 shrink-0"
             >
-              {manageLoading ? 'در حال بررسی...' : 'مشاهده اشتراک'}
+              {manageLoading ? 'بررسی...' : 'ورود'}
             </button>
           </form>
 
@@ -258,7 +242,7 @@ export default function WebsiteBuilderPage({
                 </strong>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[#6E6E73]">تاریخ انقضای اشتراک:</span>
+                <span className="text-[#6E6E73]">تاریخ انقضا:</span>
                 <strong className="text-[#1D1D1F]">
                   {managedSub.expiresAt ? new Date(managedSub.expiresAt).toLocaleDateString('fa-IR') : '-'}
                 </strong>
@@ -269,7 +253,7 @@ export default function WebsiteBuilderPage({
                   type="button"
                   disabled={manageLoading}
                   onClick={() => handleManageAction('renew')}
-                  className="flex-1 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <RefreshCw size={13} />
                   <span>تمدید ۳۰ روزه (۲۶۰ کرون)</span>
@@ -279,7 +263,7 @@ export default function WebsiteBuilderPage({
                     type="button"
                     disabled={manageLoading}
                     onClick={() => handleManageAction('cancel')}
-                    className="h-9 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold cursor-pointer"
+                    className="h-10 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold cursor-pointer"
                   >
                     لغو اشتراک
                   </button>
@@ -289,23 +273,22 @@ export default function WebsiteBuilderPage({
           )}
         </div>
       ) : submittedOrder ? (
-        /* 24-HOUR DELIVERY CONFIRMATION VIEW WITH 8-DIGIT MANAGEMENT CODE */
-        <div className="rounded-3xl bg-white border border-[#E5E5EA] p-6 sm:p-10 text-center space-y-5 shadow-[0_6px_28px_rgba(29,29,31,0.06)]">
+        /* 24-HOUR DELIVERY CONFIRMATION VIEW */
+        <div className="max-w-xl mx-auto rounded-[28px] bg-white border border-[#E5E5EA] p-6 sm:p-10 text-center space-y-6 shadow-[0_8px_30px_rgba(29,29,31,0.06)]">
           <div className="h-16 w-16 mx-auto rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
             <CheckCircle2 size={34} />
           </div>
 
-          <div className="space-y-2 max-w-xl mx-auto">
-            <h2 className="text-lg sm:text-2xl font-black text-[#1D1D1F]">
-              سفارش و اشتراک شما با موفقیت ثبت شد!
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-black text-[#1D1D1F]">
+              سفارش شما ثبت شد!
             </h2>
             <p className="text-xs sm:text-sm text-[#515154] leading-relaxed">
-              ساخت، دیپلوی و راه‌اندازی کامل وب‌سایت و پنل فروش اختصاصی شما حداکثر ظرف <strong className="text-[#1D1D1F]">۲۴ ساعت آینده</strong> انجام می‌شود و پس از آماده‌سازی، تمامی جزئیات پنل و دسترسی‌ها به ایمیل <strong className="font-mono text-[#0066CC]" dir="ltr">{submittedOrder.email}</strong> ارسال خواهد شد.
+              ساخت، دیپلوی و تحویل وب‌سایت و پنل فروش اختصاصی شما حداکثر ظرف <strong className="text-[#1D1D1F]">۲۴ ساعت آینده</strong> انجام می‌شود و تمامی جزئیات به ایمیل <strong className="font-mono text-[#0066CC]" dir="ltr">{submittedOrder.email}</strong> ارسال خواهد شد.
             </p>
           </div>
 
-          {/* 8-Digit Strong Management Code Box */}
-          <div className="max-w-md mx-auto rounded-2xl bg-amber-50/80 border border-amber-200 p-4 space-y-2">
+          <div className="rounded-2xl bg-amber-50/80 border border-amber-200 p-4 space-y-2">
             <div className="flex items-center justify-center gap-1.5 text-xs font-black text-amber-950">
               <KeyRound size={15} className="text-amber-700" />
               <span>کد ۸ رقمی مدیریت اشتراک شما (حتماً ذخیره کنید)</span>
@@ -323,291 +306,291 @@ export default function WebsiteBuilderPage({
                 <span>{copiedCode ? 'کپی شد' : 'کپی'}</span>
               </button>
             </div>
-            <p className="text-[11px] text-amber-800">
-              از این کد در بخش «مدیریت اشتراک» برای مشاهده وضعیت، تمدید ماهانه یا لغو اشتراک استفاده کنید.
-            </p>
           </div>
 
-          <div className="max-w-md mx-auto rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] p-4 text-right space-y-2 text-xs">
+          <div className="rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] p-4 text-right space-y-2 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[#6E6E73]">کد پیگیری سفارش:</span>
-              <strong className="font-mono text-[#1D1D1F]">{submittedOrder.storeId}</strong>
+              <span className="text-[#6E6E73]">کد پیگیری:</span>
+              <strong className="font-mono">{submittedOrder.storeId}</strong>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[#6E6E73]">نام سایت / فروشگاه:</span>
-              <strong className="text-[#1D1D1F]">{submittedOrder.name}</strong>
+              <span className="text-[#6E6E73]">نام سایت:</span>
+              <strong>{submittedOrder.name}</strong>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[#6E6E73]">شماره ثبت شرکت:</span>
-              <strong className="font-mono text-[#1D1D1F]">{submittedOrder.companyNumber}</strong>
+              <strong className="font-mono">{submittedOrder.companyNumber}</strong>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[#6E6E73]">زمان تحویل:</span>
-              <strong className="text-emerald-700 flex items-center gap-1">
-                <Clock size={13} />
-                <span>حداکثر ۲۴ ساعت (ارسال از طریق ایمیل)</span>
-              </strong>
+              <strong className="text-emerald-700">حداکثر ۲۴ ساعت (ارسال از طریق ایمیل)</strong>
             </div>
           </div>
 
           <button
             type="button"
             onClick={onBack}
-            className="h-11 px-7 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold cursor-pointer"
+            className="h-11 px-8 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold cursor-pointer"
           >
             بازگشت به صفحه اصلی
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* RIGHT COLUMN: HOW IT WORKS & SERVICE INFO */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="rounded-3xl bg-white border border-[#E5E5EA] p-5 sm:p-6 space-y-4 shadow-[0_2px_12px_rgba(29,29,31,0.04)]">
-              <div className="flex items-center gap-2">
-                <Sparkles size={17} className="text-[#0066CC]" />
-                <h2 className="text-sm sm:text-base font-black text-[#1D1D1F]">نحوه کار و امکانات وب‌سایت شما</h2>
+        <>
+          {/* CLEAN HERO BANNER WITH PRICE + DEMO LINKS */}
+          <div className="rounded-[28px] bg-white border border-[#E5E5EA] p-6 sm:p-8 shadow-[0_4px_20px_rgba(29,29,31,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#0066CC] text-[11px] font-bold">
+                <MonitorSmartphone size={14} />
+                <span>سرویس اختصاصی فروشگاه اینترنتی و منوی رستوران</span>
               </div>
+              <h1 className="text-xl sm:text-2xl font-black text-[#1D1D1F] tracking-tight">
+                وب‌سایت و پنل فروش اختصاصی خود را راه‌اندازی کنید
+              </h1>
+              <p className="text-xs sm:text-sm text-[#6E6E73] leading-relaxed">
+                مدیریت کامل محصولات، هزینه ارسال، سفارش‌ها و درگاه پرداخت با زیرساخت ابری پرسرعت و اتصال مستقیم به آگهی‌های لینک شو.
+              </p>
 
-              <div className="space-y-3 text-xs text-[#515154] leading-relaxed">
-                <div className="p-3.5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-1">
-                  <span className="font-black text-[#1D1D1F] block">۱. پنل فروش و وب‌سایت اختصاصی</span>
-                  <p>
-                    مناسب برای رستوران‌ها، کافه‌ها و فروشگاه‌های اینترنتی؛ شامل مدیریت محصولات، منوی غذا، تنظیم هزینه ارسال، دریافت سفارش و درگاه پرداخت Stripe.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-2">
-                  <span className="font-black text-[#1D1D1F] flex items-center gap-1.5">
-                    <Cpu size={14} className="text-[#0066CC]" />
-                    <span>۲. قدرت پردازش و فضای ابری (Cloud)</span>
-                  </span>
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="p-2 rounded-xl bg-white border border-[#E5E5EA] flex items-center gap-1.5">
-                      <HardDrive size={13} className="text-[#0066CC] shrink-0" />
-                      <span><strong>۵ گیگابایت</strong> دیتابیس ابری</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-white border border-[#E5E5EA] flex items-center gap-1.5">
-                      <Cpu size={13} className="text-[#0066CC] shrink-0" />
-                      <span><strong>۱۰۰,۰۰۰</strong> درخواست روزانه</span>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-[#6E6E73]">
-                    سرعت پاسخ‌گویی زیر ۵۰ میلی‌ثانیه روی شبکه توزیع‌شده ابری. در صورت مصرف یا ترافیک بالاتر، برای ارتقای توان پردازش و حافظه با <strong>تیم پشتیبانی تماس بگیرید</strong> (ارتقای منابع شامل هزینه بیشتر خواهد بود).
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-amber-50/75 border border-amber-200/80 space-y-1">
-                  <span className="font-black text-amber-950 flex items-center gap-1.5">
-                    <Globe size={14} className="text-amber-700" />
-                    <span>۳. دامنه (Domain) و ایمیل اختصاصی</span>
-                  </span>
-                  <p className="text-[11.5px] text-amber-900">
-                    دامنه و ایمیل اختصاصی <strong>شامل این اشتراک نیستند</strong>. شما می‌توانید دامنه دلخواه خود را از هر شرکتی خریداری کنید؛ پس از ساخت دیتابیس و وب‌سایت، <strong>تیم پشتیبانی هنگام تماس با شما نحوه اتصال و نصب دامنه را به‌طور کامل راهنمایی می‌کند</strong>.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200/80 space-y-1">
-                  <span className="font-black text-[#0066CC] flex items-center gap-1.5">
-                    <Clock size={14} />
-                    <span>۴. ساخت، دیپلوی و تحویل ظرف ۲۴ ساعت</span>
-                  </span>
-                  <p className="text-[#1D1D1F]">
-                    تیم فنی ما وب‌سایت شما را ظرف ۲۴ ساعت راه‌اندازی کرده و تمام اطلاعات ورود را به ایمیل شما ارسال می‌کند. همچنین یک کد ۸ رقمی برای مدیریت اشتراک دریافت می‌کنید.
-                  </p>
-                </div>
-
-                {/* Live Demo Links for Frontend & Seller Panel */}
-                <div className="p-3.5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-2">
-                  <span className="font-black text-[#1D1D1F] block text-xs">مشاهده پیش‌نمایش زنده (دمو):</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <a
-                      href="https://swedpersiska.vercel.app"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="h-9 px-3 rounded-xl bg-white hover:bg-[#ECECEF] border border-[#D2D2D7] text-[#1D1D1F] text-[11px] font-bold inline-flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <span>دموی وب‌سایت (Frontend)</span>
-                      <ExternalLink size={12} />
-                    </a>
-                    <a
-                      href="https://linksho-seller.vercel.app"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="h-9 px-3 rounded-xl bg-[#0066CC] hover:bg-[#0055AA] text-white text-[11px] font-bold inline-flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <span>دموی پنل فروش</span>
-                      <ExternalLink size={12} />
-                    </a>
-                  </div>
-                </div>
+              {/* Demo Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <a
+                  href="https://swedpersiska.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-9 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#D2D2D7] text-[#1D1D1F] text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <span>مشاهده دموی وب‌سایت (Frontend)</span>
+                  <ExternalLink size={12} />
+                </a>
+                <a
+                  href="https://linksho-seller.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-9 px-4 rounded-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#0066CC] text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <span>مشاهده دموی پنل فروش</span>
+                  <ExternalLink size={12} />
+                </a>
               </div>
+            </div>
 
-              <div className="pt-2 border-t border-[#F0F0F2] flex items-center justify-between text-xs">
-                <span className="text-[#6E6E73] flex items-center gap-1.5">
-                  <ShieldCheck size={14} className="text-emerald-600" />
-                  <span>اشتراک ماهانه (غیر دائمی)</span>
-                </span>
-                <strong className="text-sm font-black text-[#1D1D1F]" dir="ltr">
-                  {MONTHLY_PRICE} {MONTHLY_CURRENCY} / ماه
-                </strong>
+            {/* Price Pill Card */}
+            <div className="shrink-0 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] px-6 py-5 text-center space-y-1 min-w-[190px]">
+              <span className="text-[11px] font-bold text-[#6E6E73] block">اشتراک ماهانه (غیر دائمی)</span>
+              <div className="text-3xl font-black text-[#1D1D1F] tabular-nums" dir="ltr">
+                {MONTHLY_PRICE} <span className="text-sm font-bold text-[#6E6E73]">{MONTHLY_CURRENCY}</span>
               </div>
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                <Clock size={12} />
+                <span>تحویل حداکثر ۲۴ ساعت</span>
+              </span>
             </div>
           </div>
 
-          {/* LEFT COLUMN: USER INFO & SUBSCRIPTION FORM */}
-          <form
-            onSubmit={handleSubmit}
-            className="lg:col-span-7 rounded-3xl bg-white border border-[#E5E5EA] p-5 sm:p-6 space-y-5 shadow-[0_2px_12px_rgba(29,29,31,0.04)]"
-          >
-            <div className="border-b border-[#F0F0F2] pb-3">
-              <h2 className="text-sm sm:text-base font-black text-[#1D1D1F]">ثبت مشخصات و فعال‌سازی اشتراک</h2>
-              <p className="text-xs text-[#6E6E73] mt-0.5">
-                اطلاعات زیر را وارد کنید تا وب‌سایت شما آماده و به ایمیلتان ارسال شود.
-              </p>
-            </div>
-
-            {errorMsg && (
-              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
-                <AlertCircle size={15} className="shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {/* TWO-COLUMN CHECKOUT + SPECS */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* RIGHT: CLEAN ORDER & STRIPE PAYMENT FORM */}
+            <form
+              onSubmit={handleSubmit}
+              className="lg:col-span-7 rounded-[28px] bg-white border border-[#E5E5EA] p-6 sm:p-7 space-y-5 shadow-[0_4px_20px_rgba(29,29,31,0.04)]"
+            >
               <div>
-                <label className="block text-xs font-bold text-[#1D1D1F] mb-1">نام سایت / فروشگاه *</label>
+                <h2 className="text-base font-black text-[#1D1D1F]">۱. مشخصات سایت و کسب‌وکار</h2>
+                <p className="text-xs text-[#6E6E73] mt-0.5">اطلاعات دسترسی و پنل پس از ساخت به ایمیل شما ارسال می‌شود.</p>
+              </div>
+
+              {errorMsg && (
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle size={15} className="shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">نام سایت / فروشگاه *</label>
+                  <input
+                    type="text"
+                    required
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    placeholder="مثلاً: رستوران زعفران"
+                    className="w-full h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">شماره تماس *</label>
+                  <input
+                    type="tel"
+                    required
+                    dir="ltr"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+46 70 000 00 00"
+                    className="w-full h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">شماره ثبت شرکت (Org.nr) *</label>
+                  <input
+                    type="text"
+                    required
+                    dir="ltr"
+                    value={companyNumber}
+                    onChange={(e) => setCompanyNumber(e.target.value)}
+                    placeholder="559000-0000"
+                    className="w-full h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">ایمیل *</label>
+                  <input
+                    type="email"
+                    required
+                    dir="ltr"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="info@example.com"
+                    className="w-full h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[#F0F0F2] space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-[#1D1D1F] flex items-center gap-1.5">
+                    <CreditCard size={16} className="text-[#0066CC]" />
+                    <span>۲. پرداخت اشتراک ماهانه ({MONTHLY_PRICE} {MONTHLY_CURRENCY})</span>
+                  </h3>
+                  {isTestMode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCardHolder('Ali Rezaei');
+                        setCardNumber('4242 4242 4242 4242');
+                        setCardExpiry('12/28');
+                        setCardCvc('424');
+                      }}
+                      className="text-[11px] font-bold text-[#0066CC] cursor-pointer"
+                    >
+                      پر کردن کارت تست
+                    </button>
+                  )}
+                </div>
+
                 <input
                   type="text"
                   required
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  placeholder="مثلاً: رستوران زعفران"
-                  className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3 text-xs focus:bg-white focus:border-[#0066CC] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#1D1D1F] mb-1">شماره تماس *</label>
-                <input
-                  type="tel"
-                  required
-                  dir="ltr"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+46 70 000 00 00"
-                  className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#1D1D1F] mb-1">شماره ثبت شرکت (Org.nr) *</label>
-                <input
-                  type="text"
-                  required
-                  dir="ltr"
-                  value={companyNumber}
-                  onChange={(e) => setCompanyNumber(e.target.value)}
-                  placeholder="559000-0000"
-                  className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#1D1D1F] mb-1">ایمیل (جهت ارسال اطلاعات سایت) *</label>
-                <input
-                  type="email"
-                  required
-                  dir="ltr"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="info@example.com"
-                  className="w-full h-10 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Stripe Subscription Payment Box */}
-            <div className="rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] p-4 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-[#1D1D1F] flex items-center gap-1.5">
-                  <CreditCard size={15} className="text-[#0066CC]" />
-                  <span>پرداخت اشتراک ماهانه ({MONTHLY_PRICE} {MONTHLY_CURRENCY})</span>
-                </span>
-                {isTestMode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCardHolder('Ali Rezaei');
-                      setCardNumber('4242 4242 4242 4242');
-                      setCardExpiry('12/28');
-                      setCardCvc('424');
-                    }}
-                    className="text-[11px] font-bold text-[#0066CC] cursor-pointer"
-                  >
-                    پر کردن کارت تست
-                  </button>
-                )}
-              </div>
-
-              <input
-                type="text"
-                required
-                value={cardHolder}
-                onChange={(e) => setCardHolder(e.target.value)}
-                placeholder="نام دارنده کارت (مثلاً: Ali Rezaei)"
-                className="w-full h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs"
-              />
-              <input
-                type="text"
-                required
-                dir="ltr"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value)}
-                placeholder="4242 4242 4242 4242"
-                className="w-full h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs font-mono text-left"
-              />
-              <div className="grid grid-cols-2 gap-2.5">
-                <input
-                  type="text"
-                  required
-                  dir="ltr"
-                  value={cardExpiry}
-                  onChange={(e) => setCardExpiry(e.target.value)}
-                  placeholder="MM/YY"
-                  className="h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs font-mono text-left"
+                  value={cardHolder}
+                  onChange={(e) => setCardHolder(e.target.value)}
+                  placeholder="نام دارنده کارت (مثلاً: Ali Rezaei)"
+                  className="w-full h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs focus:bg-white focus:border-[#0066CC] focus:outline-none"
                 />
                 <input
                   type="text"
                   required
                   dir="ltr"
-                  value={cardCvc}
-                  onChange={(e) => setCardCvc(e.target.value)}
-                  placeholder="CVC"
-                  className="h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs font-mono text-left"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                  placeholder="4242 4242 4242 4242"
+                  className="w-full h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
                 />
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    required
+                    dir="ltr"
+                    value={cardExpiry}
+                    onChange={(e) => setCardExpiry(e.target.value)}
+                    placeholder="MM/YY"
+                    className="h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    required
+                    dir="ltr"
+                    value={cardCvc}
+                    onChange={(e) => setCardCvc(e.target.value)}
+                    placeholder="CVC"
+                    className="h-11 rounded-2xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs font-mono text-left focus:bg-white focus:border-[#0066CC] focus:outline-none"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-              <div className="flex items-center gap-1.5 text-[11px] text-[#6E6E73]">
-                <Mail size={13} className="text-[#0066CC] shrink-0" />
-                <span>تحویل حداکثر تا ۲۴ ساعت از طریق ایمیل</span>
-              </div>
               <button
                 type="submit"
                 disabled={submitting}
-                className="h-11 px-7 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-60"
+                className="w-full h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(0,102,204,0.25)] transition-all cursor-pointer disabled:opacity-60"
               >
-                <Lock size={14} />
+                <Lock size={15} />
                 <span>
                   {submitting
                     ? 'در حال ثبت سفارش...'
-                    : `پرداخت ${MONTHLY_PRICE} ${MONTHLY_CURRENCY} و ثبت سفارش`}
+                    : `پرداخت ${MONTHLY_PRICE} ${MONTHLY_CURRENCY} و ثبت سفارش ساخت سایت`}
                 </span>
               </button>
+            </form>
+
+            {/* LEFT: COMPACT SPECS, DOMAIN NOTICE & DELIVERY */}
+            <div className="lg:col-span-5 lg:sticky lg:top-20 space-y-4">
+              {/* Cloud Specs Card (No Cloudflare mention) */}
+              <div className="rounded-[28px] bg-white border border-[#E5E5EA] p-5 sm:p-6 space-y-3.5 shadow-[0_4px_20px_rgba(29,29,31,0.04)]">
+                <h3 className="text-sm font-black text-[#1D1D1F]">مشخصات فنی زیرساخت ابری</h3>
+
+                <div className="divide-y divide-[#F0F0F2] text-xs">
+                  <div className="py-2.5 flex items-center justify-between gap-2">
+                    <span className="text-[#6E6E73] inline-flex items-center gap-1.5">
+                      <HardDrive size={14} className="text-[#0066CC]" />
+                      <span>حافظه دیتابیس ابری</span>
+                    </span>
+                    <strong className="text-[#1D1D1F]">۵ گیگابایت اختصاصی</strong>
+                  </div>
+                  <div className="py-2.5 flex items-center justify-between gap-2">
+                    <span className="text-[#6E6E73] inline-flex items-center gap-1.5">
+                      <Cpu size={14} className="text-[#0066CC]" />
+                      <span>توان پردازش</span>
+                    </span>
+                    <strong className="text-[#1D1D1F]">۱۰۰,۰۰۰ درخواست / روز</strong>
+                  </div>
+                  <div className="py-2.5 flex items-center justify-between gap-2">
+                    <span className="text-[#6E6E73] inline-flex items-center gap-1.5">
+                      <Zap size={14} className="text-[#0066CC]" />
+                      <span>سرعت پاسخ‌گویی</span>
+                    </span>
+                    <strong className="text-[#1D1D1F]">زیر ۵۰ میلی‌ثانیه</strong>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-[#6E6E73] bg-[#F5F5F7] p-3 rounded-xl leading-relaxed">
+                  در صورت افزایش ترافیک یا مصرف بالا، برای <strong>ارتقای حافظه و توان پردازش</strong> با تیم پشتیبانی تماس بگیرید (ارتقا با هزینه بیشتر انجام می‌شود).
+                </p>
+              </div>
+
+              {/* Domain & Support Notice */}
+              <div className="rounded-[28px] bg-white border border-[#E5E5EA] p-5 sm:p-6 space-y-3 shadow-[0_4px_20px_rgba(29,29,31,0.04)]">
+                <h3 className="text-sm font-black text-[#1D1D1F] flex items-center gap-1.5">
+                  <Globe size={15} className="text-amber-600" />
+                  <span>دامنه (Domain) و ایمیل</span>
+                </h3>
+                <p className="text-xs text-[#515154] leading-relaxed">
+                  دامنه و ایمیل اختصاصی <strong>شامل این پکیج نیستند</strong>. شما می‌توانید دامنه را از هر شرکتی خریداری کنید و پس از ساخت دیتابیس و وب‌سایت، <strong>تیم پشتیبانی هنگام تماس نحوه اتصال دامنه را به شما آموزش می‌دهد</strong>.
+                </p>
+
+                <div className="pt-2 border-t border-[#F0F0F2] flex items-center gap-2 text-[11.5px] font-bold text-[#0066CC]">
+                  <Mail size={14} className="shrink-0" />
+                  <span>تحویل ۲۴ ساعته + ارسال کد ۸ رقمی مدیریت اشتراک</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-[#6E6E73]">
+                  <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                  <span>اشتراک ماهانه (تمدید هر ۳۰ روز — غیر دائمی)</span>
+                </div>
+              </div>
             </div>
-          </form>
-        </div>
+          </div>
+        </>
       )}
     </main>
   );
