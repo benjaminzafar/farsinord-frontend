@@ -423,6 +423,101 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
 
+      if (action === 'deploy_seller_website') {
+        const name = String(body.name || '').trim();
+        const phone = String(body.phone || '').trim();
+        const companyNumber = String(body.companyNumber || '').trim();
+        const email = String(body.email || '').trim();
+
+        if (!name || !phone || !companyNumber || !email) {
+          return res.status(400).json({
+            ok: false,
+            error: 'لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را کامل وارد کنید.',
+          });
+        }
+
+        const { data: cfRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'cloudflare_deploy_settings')
+          .maybeSingle();
+
+        const cfCfg = (cfRow && cfRow.value) || {};
+        const cfToken = String(cfCfg.apiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
+        const accountId = String(cfCfg.accountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+        const deployEndpoint = String(
+          cfCfg.deployUrl || process.env.SELLER_DEPLOY_URL || 'https://linksho-seller.vercel.app/api/cloudflare/deploy'
+        ).trim();
+
+        if (!cfToken) {
+          return res.status(503).json({
+            ok: false,
+            error: 'توکن کلودفلر هنوز در پنل ادمین تنظیم نشده است.',
+          });
+        }
+
+        const deployRes = await fetch(deployEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cfToken,
+            accountId,
+            name,
+            phone,
+            companyNumber,
+            email,
+            type: 'webshop',
+            currency: 'SEK',
+            shippingFee: 0,
+          }),
+        });
+
+        const deployJson = await deployRes.json().catch(() => ({}));
+        if (!deployRes.ok || !deployJson?.ok) {
+          return res.status(deployRes.status || 500).json({
+            ok: false,
+            error: deployJson?.error || 'خطا در ساخت خودکار وب‌سایت روی کلودفلر.',
+          });
+        }
+
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
+        const nextList = [
+          {
+            storeId: String(deployJson.storeId || ''),
+            name: name.slice(0, 120),
+            phone: phone.slice(0, 40),
+            companyNumber: companyNumber.slice(0, 60),
+            email: email.slice(0, 120),
+            panelUrl: String(deployJson.panelUrl || '').slice(0, 300),
+            storefrontApiUrl: String(deployJson.storefrontApiUrl || '').slice(0, 400),
+            workerName: String(deployJson.workerName || '').slice(0, 100),
+            dbId: String(deployJson.dbId || '').slice(0, 100),
+            monthlyPrice: 240,
+            createdAt: deployJson.createdAt || new Date().toISOString(),
+          },
+          ...prev.filter((x) => x.workerName !== deployJson.workerName),
+        ].slice(0, 500);
+
+        await supabase.from('swedpersiska_settings').upsert({
+          key: 'seller_deployments',
+          value: nextList,
+          updated_at: new Date().toISOString(),
+        });
+
+        return res.status(200).json({
+          ok: true,
+          panelUrl: deployJson.panelUrl,
+          storefrontApiUrl: deployJson.storefrontApiUrl,
+          pinCode: deployJson.pinCode,
+          storeId: deployJson.storeId,
+        });
+      }
+
       if (action === 'register_seller_deployment') {
         const dep = body.deployment;
         if (!dep || !dep.workerName || !dep.panelUrl) {
@@ -530,6 +625,101 @@ export default async function handler(req, res) {
 
         if (error) throw error;
         return res.status(200).json({ ok: true });
+      }
+
+      if (action === 'deploy_seller_website') {
+        const name = String(body.name || '').trim();
+        const phone = String(body.phone || '').trim();
+        const companyNumber = String(body.companyNumber || '').trim();
+        const email = String(body.email || '').trim();
+
+        if (!name || !phone || !companyNumber || !email) {
+          return res.status(400).json({
+            ok: false,
+            error: 'لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را کامل وارد کنید.',
+          });
+        }
+
+        const { data: cfRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'cloudflare_deploy_settings')
+          .maybeSingle();
+
+        const cfCfg = (cfRow && cfRow.value) || {};
+        const cfToken = String(cfCfg.apiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
+        const accountId = String(cfCfg.accountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+        const deployEndpoint = String(
+          cfCfg.deployUrl || process.env.SELLER_DEPLOY_URL || 'https://linksho-seller.vercel.app/api/cloudflare/deploy'
+        ).trim();
+
+        if (!cfToken) {
+          return res.status(503).json({
+            ok: false,
+            error: 'توکن کلودفلر هنوز در پنل ادمین تنظیم نشده است.',
+          });
+        }
+
+        const deployRes = await fetch(deployEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cfToken,
+            accountId,
+            name,
+            phone,
+            companyNumber,
+            email,
+            type: 'webshop',
+            currency: 'SEK',
+            shippingFee: 0,
+          }),
+        });
+
+        const deployJson = await deployRes.json().catch(() => ({}));
+        if (!deployRes.ok || !deployJson?.ok) {
+          return res.status(deployRes.status || 500).json({
+            ok: false,
+            error: deployJson?.error || 'خطا در ساخت خودکار وب‌سایت روی کلودفلر.',
+          });
+        }
+
+        const { data: existingRow } = await supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'seller_deployments')
+          .maybeSingle();
+        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
+        const nextList = [
+          {
+            storeId: String(deployJson.storeId || ''),
+            name: name.slice(0, 120),
+            phone: phone.slice(0, 40),
+            companyNumber: companyNumber.slice(0, 60),
+            email: email.slice(0, 120),
+            panelUrl: String(deployJson.panelUrl || '').slice(0, 300),
+            storefrontApiUrl: String(deployJson.storefrontApiUrl || '').slice(0, 400),
+            workerName: String(deployJson.workerName || '').slice(0, 100),
+            dbId: String(deployJson.dbId || '').slice(0, 100),
+            monthlyPrice: 240,
+            createdAt: deployJson.createdAt || new Date().toISOString(),
+          },
+          ...prev.filter((x) => x.workerName !== deployJson.workerName),
+        ].slice(0, 500);
+
+        await supabase.from('swedpersiska_settings').upsert({
+          key: 'seller_deployments',
+          value: nextList,
+          updated_at: new Date().toISOString(),
+        });
+
+        return res.status(200).json({
+          ok: true,
+          panelUrl: deployJson.panelUrl,
+          storefrontApiUrl: deployJson.storefrontApiUrl,
+          pinCode: deployJson.pinCode,
+          storeId: deployJson.storeId,
+        });
       }
 
       if (action === 'register_seller_deployment') {

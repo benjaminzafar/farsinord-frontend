@@ -9,17 +9,12 @@ import {
   ExternalLink,
   Copy,
   Check,
-  Utensils,
-  ShoppingBag,
   KeyRound,
   AlertCircle,
 } from 'lucide-react';
 
 const MONTHLY_PRICE = 240;
 const MONTHLY_CURRENCY = 'SEK';
-const SELLER_DEPLOY_ENDPOINT =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SELLER_DEPLOY_URL) ||
-  'https://linksho-seller.vercel.app/api/cloudflare/deploy';
 
 export default function WebsiteBuilderModal({
   isOpen,
@@ -33,12 +28,12 @@ export default function WebsiteBuilderModal({
   const [cardCvc, setCardCvc] = useState('');
   const [payLoading, setPayLoading] = useState(false);
 
-  // Store Deploy Form (uses owner's server-side Cloudflare account for security & billing control)
+  // User enters ONLY: Site Name, Phone, Company Reg Number, Email
   const [storeName, setStoreName] = useState('');
-  const [storeType, setStoreType] = useState('restaurant');
-  const [currency, setCurrency] = useState('SEK');
-  const [shippingFee, setShippingFee] = useState('49');
   const [phone, setPhone] = useState('');
+  const [companyNumber, setCompanyNumber] = useState('');
+  const [email, setEmail] = useState('');
+
   const [deploying, setDeploying] = useState(false);
   const [deployResult, setDeployResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -87,56 +82,32 @@ export default function WebsiteBuilderModal({
   const handleDeploySubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    if (!storeName.trim()) {
-      setErrorMsg('لطفاً نام فروشگاه یا رستوران را وارد کنید.');
+    if (!storeName.trim() || !phone.trim() || !companyNumber.trim() || !email.trim()) {
+      setErrorMsg('لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را وارد کنید.');
       return;
     }
     setDeploying(true);
     try {
-      const res = await fetch(SELLER_DEPLOY_ENDPOINT, {
+      const res = await fetch('/api/public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'deploy_seller_website',
           name: storeName.trim(),
-          type: storeType,
-          currency,
-          shippingFee: Number(shippingFee) || 0,
           phone: phone.trim(),
+          companyNumber: companyNumber.trim(),
+          email: email.trim(),
         }),
       });
       const json = await res.json();
       if (!json?.ok) {
-        setErrorMsg(json?.error || 'خطا در ساخت خودکار پنل فروش');
+        setErrorMsg(json?.error || 'خطا در ساخت خودکار وب‌سایت');
         return;
       }
-
-      // Log deployment to admin registry so unpaid stores can be terminated by admin
-      try {
-        await fetch('/api/public', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'register_seller_deployment',
-            deployment: {
-              storeId: json.storeId,
-              name: json.name || storeName.trim(),
-              type: json.type || storeType,
-              currency: json.currency || currency,
-              panelUrl: json.panelUrl,
-              storefrontApiUrl: json.storefrontApiUrl,
-              workerName: json.workerName,
-              dbId: json.dbId,
-              monthlyPrice: MONTHLY_PRICE,
-              createdAt: json.createdAt || new Date().toISOString(),
-            },
-          }),
-        });
-      } catch {}
-
       setDeployResult(json);
       setStep('done');
     } catch {
-      setErrorMsg('خطا در اتصال به سرویس ساخت پنل فروش. لطفاً دوباره تلاش کنید.');
+      setErrorMsg('خطا در اتصال به سرور. لطفاً دوباره تلاش کنید.');
     } finally {
       setDeploying(false);
     }
@@ -161,7 +132,7 @@ export default function WebsiteBuilderModal({
                 ساخت وب‌سایت و پنل فروش اختصاصی
               </h2>
               <p className="text-[11px] text-[#6E6E73] truncate">
-                فروشگاه آنلاین و منوی رستوران روی کلودفلر شما • ۲۴۰ کرون ماهانه
+                فروشگاه آنلاین و منوی رستوران • ۲۴۰ کرون ماهانه
               </p>
             </div>
           </div>
@@ -184,7 +155,7 @@ export default function WebsiteBuilderModal({
               ۱. اشتراک ماهانه
             </div>
             <div className={`py-1.5 text-center rounded-xl ${step === 'deploy' ? 'bg-white text-[#1D1D1F] shadow-xs' : 'text-[#6E6E73]'}`}>
-              ۲. نصب روی کلودفلر
+              ۲. مشخصات سایت
             </div>
             <div className={`py-1.5 text-center rounded-xl ${step === 'done' ? 'bg-emerald-600 text-white shadow-xs' : 'text-[#6E6E73]'}`}>
               ۳. آماده استفاده
@@ -209,9 +180,9 @@ export default function WebsiteBuilderModal({
                   </span>
                 </div>
                 <ul className="text-[11.5px] text-[#515154] space-y-1">
-                  <li>• نصب خودکار با ۱ کلیک روی کلودفلر شخصی شما (Worker + D1)</li>
-                  <li>• افزودن نامحدود محصول/منو، مدیریت سفارش‌ها و هزینه ارسال</li>
-                  <li>• اتصال مستقیم به آگهی‌های لینک شو با API + درگاه Stripe</li>
+                  <li>• راه‌اندازی خودکار وب‌سایت و پنل فروش اختصاصی در چند ثانیه</li>
+                  <li>• مدیریت محصولات، هزینه ارسال، سفارش‌ها و درگاه پرداخت Stripe</li>
+                  <li>• اتصال مستقیم به آگهی‌های لینک شو با لینک API اختصاصی</li>
                 </ul>
               </div>
 
@@ -285,84 +256,69 @@ export default function WebsiteBuilderModal({
                 <span>
                   {payLoading
                     ? 'در حال تایید پرداخت...'
-                    : `پرداخت ${MONTHLY_PRICE} ${MONTHLY_CURRENCY} و رفتن به مرحله نصب`}
+                    : `پرداخت ${MONTHLY_PRICE} ${MONTHLY_CURRENCY} و ادامه`}
                 </span>
               </button>
             </form>
           )}
 
-          {/* STEP 2: 1-CLICK DEPLOY (NO CLOUDFLARE LOGIN REQUIRED BY USER) */}
+          {/* STEP 2: ONLY SITE NAME, PHONE, COMPANY REG NUMBER & EMAIL */}
           {step === 'deploy' && (
             <form onSubmit={handleDeploySubmit} className="space-y-4">
               <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                <span>پرداخت ۲۴۰ کرون تایید شد! مشخصات فروشگاه خود را وارد کنید تا در چند ثانیه ساخته شود.</span>
+                <span>پرداخت ۲۴۰ کرون تایید شد! مشخصات زیر را برای ساخت سایت وارد کنید.</span>
               </div>
 
               <div className="space-y-3">
-                <input
-                  type="text"
-                  required
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  placeholder="نام رستوران یا فروشگاه شما *"
-                  className="w-full h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs"
-                />
-
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setStoreType('restaurant')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${
-                      storeType === 'restaurant'
-                        ? 'bg-blue-50 border-[#0066CC] text-[#0066CC]'
-                        : 'bg-white border-[#E5E5EA] text-[#6E6E73]'
-                    }`}
-                  >
-                    <Utensils size={14} />
-                    <span>رستوران / کافه</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStoreType('webshop')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${
-                      storeType === 'webshop'
-                        ? 'bg-blue-50 border-[#0066CC] text-[#0066CC]'
-                        : 'bg-white border-[#E5E5EA] text-[#6E6E73]'
-                    }`}
-                  >
-                    <ShoppingBag size={14} />
-                    <span>فروشگاه / وب‌شاپ</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    className="h-10 rounded-xl bg-white border border-[#D2D2D7] px-2 text-xs"
-                  >
-                    <option value="SEK">SEK</option>
-                    <option value="EUR">EUR</option>
-                    <option value="NOK">NOK</option>
-                    <option value="DKK">DKK</option>
-                  </select>
-                  <input
-                    type="number"
-                    min="0"
-                    dir="ltr"
-                    value={shippingFee}
-                    onChange={(e) => setShippingFee(e.target.value)}
-                    placeholder="هزینه ارسال"
-                    className="h-10 rounded-xl bg-white border border-[#D2D2D7] px-2.5 text-xs font-mono text-left"
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-[#1D1D1F] mb-1">نام سایت / فروشگاه *</label>
                   <input
                     type="text"
+                    required
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    placeholder="مثلاً: رستوران زعفران یا فروشگاه پارس"
+                    className="w-full h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs focus:border-[#0066CC] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1D1D1F] mb-1">شماره تماس *</label>
+                  <input
+                    type="tel"
+                    required
                     dir="ltr"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="تلفن"
-                    className="h-10 rounded-xl bg-white border border-[#D2D2D7] px-2.5 text-xs font-mono text-left"
+                    placeholder="+46 70 000 00 00"
+                    className="w-full h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs font-mono text-left focus:border-[#0066CC] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1D1D1F] mb-1">شماره ثبت شرکت (Org.nr) *</label>
+                  <input
+                    type="text"
+                    required
+                    dir="ltr"
+                    value={companyNumber}
+                    onChange={(e) => setCompanyNumber(e.target.value)}
+                    placeholder="559000-0000"
+                    className="w-full h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs font-mono text-left focus:border-[#0066CC] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1D1D1F] mb-1">ایمیل *</label>
+                  <input
+                    type="email"
+                    required
+                    dir="ltr"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="info@example.com"
+                    className="w-full h-10 rounded-xl bg-white border border-[#D2D2D7] px-3 text-xs font-mono text-left focus:border-[#0066CC] focus:outline-none"
                   />
                 </div>
               </div>
@@ -373,7 +329,7 @@ export default function WebsiteBuilderModal({
                 className="w-full h-11 rounded-full bg-gradient-to-l from-[#F38020] to-[#E05D00] text-white text-xs font-black flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 <Rocket size={15} />
-                <span>{deploying ? 'در حال نصب روی کلودفلر...' : 'نصب خودکار روی کلودفلر با ۱ کلیک'}</span>
+                <span>{deploying ? 'در حال ساخت وب‌سایت و پنل فروش...' : 'ساخت فوری وب‌سایت و پنل فروش'}</span>
               </button>
             </form>
           )}
@@ -383,7 +339,7 @@ export default function WebsiteBuilderModal({
             <div className="space-y-3.5">
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center gap-2.5 text-xs font-bold">
                 <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
-                <span>پنل فروش و دیتابیس اختصاصی شما روی کلودفلر آماده استفاده است!</span>
+                <span>وب‌سایت و پنل فروش اختصاصی شما ساخته شد و آماده استفاده است!</span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white border border-[#E5E5EA] space-y-2">
