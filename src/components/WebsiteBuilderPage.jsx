@@ -391,6 +391,10 @@ export default function WebsiteBuilderPage({
                   <PhoneCall size={14} className="text-emerald-600 shrink-0" />
                   <span>پشتیبانی کامل و راهنمایی اتصال دامنه بعد از آماده‌شدن سایت.</span>
                 </p>
+                <p className="flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-[#0066CC] shrink-0" />
+                  <span>بعد از کامل شدن وب‌سایت، می‌توانید آدرس سایت خود را داخل آگهی لینک شو نمایش دهید.</span>
+                </p>
               </div>
 
               {/* Demo Links */}
