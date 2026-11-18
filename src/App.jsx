@@ -142,6 +142,36 @@ export default function App() {
   const [logoUrl, setLogoUrl] = useState('');
   const [turnstileSettings, setTurnstileSettings] = useState({ enabled: true, mode: 'test', siteKey: '' });
   const [analyticsSettings, setAnalyticsSettings] = useState({ enabled: false, measurementId: '' });
+  const [seoSettings, setSeoSettings] = useState({
+    se: {
+      title: 'لینک شو سوئد | نیازمندی‌ها، مسکن، کاریابی و خدمات فارسی‌زبانان در سوئد',
+      description: 'لینک شو — مرجع نیازمندی‌ها و آگهی‌های رایگان فارسی‌زبانان در سوئد (استکهلم، گوتنبرگ، مالمو، اوپسالا). اجاره مسکن، رستوران، استخدام و خدمات تخصصی.',
+      keywords: 'لینک شو, نیازمندیهای سوئد, فارسی زبانان سوئد, اجاره خانه استکهلم, کار در سوئد, رستوران ایرانی گوتنبرگ',
+      heroHeading: 'نیازمندی‌های فارسی‌زبانان سوئد',
+      heroSubheading: 'مسکن، رستوران، خدمات و کاریابی در سراسر سوئد'
+    },
+    no: {
+      title: 'لینک شو نروژ | نیازمندی‌ها، مسکن، کاریابی و خدمات فارسی‌زبانان در نروژ',
+      description: 'لینک شو — مرجع نیازمندی‌ها و آگهی‌های رایگان فارسی‌زبانان در نروژ (اسلو، برگن، استاوانگر، تروندهایم). مسکن، کاریابی، رستوران و خدمات.',
+      keywords: 'لینک شو, نیازمندیهای نروژ, فارسی زبانان نروژ, اجاره خانه اسلو, کار در نروژ, خدمات ایرانی نروژ',
+      heroHeading: 'نیازمندی‌های فارسی‌زبانان نروژ',
+      heroSubheading: 'مسکن، رستوران، خدمات و کاریابی در سراسر نروژ'
+    },
+    dk: {
+      title: 'لینک شو دانمارک | نیازمندی‌ها، مسکن، کاریابی و خدمات فارسی‌زبانان در دانمارک',
+      description: 'لینک شو — مرجع نیازمندی‌ها و آگهی‌های رایگان فارسی‌زبانان در دانمارک (کپنهاگ، آرهوس، اودنسه، آلبورگ). مسکن، استخدام، رستوران و خدمات.',
+      keywords: 'لینک شو, نیازمندیهای دانمارک, فارسی زبانان دانمارک, مسکن کپنهاگ, کار در دانمارک, خدمات ایرانی کپنهاگ',
+      heroHeading: 'نیازمندی‌های فارسی‌زبانان دانمارک',
+      heroSubheading: 'مسکن، رستوران، خدمات و کاریابی در سراسر دانمارک'
+    },
+    fi: {
+      title: 'لینک شو فنلاند | نیازمندی‌ها، مسکن، کاریابی و خدمات فارسی‌زبانان در فنلاند',
+      description: 'لینک شو — مرجع نیازمندی‌ها و آگهی‌های رایگان فارسی‌زبانان در فنلاند (هلسینکی، اسپو، تامپره، تورکو). مسکن، کاریابی، رستوران و خدمات.',
+      keywords: 'لینک شو, نیازمندیهای فنلاند, فارسی زبانان فنلاند, مسکن هلسینکی, کار در فنلاند, خدمات ایرانی هلسینکی',
+      heroHeading: 'نیازمندی‌های فارسی‌زبانان فنلاند',
+      heroSubheading: 'مسکن، رستوران، خدمات و کاریابی در سراسر فنلاند'
+    }
+  });
 
   // Fetch Site Branding & Public Settings via Secure Public API
   const fetchSettings = async () => {
@@ -163,6 +193,30 @@ export default function App() {
             }
             link.href = branding.faviconUrl;
           }
+        }
+        if (settings.seo_settings && typeof settings.seo_settings === 'object') {
+          const sanitizeBrandText = (str) =>
+            typeof str === 'string'
+              ? str.replace(/سوئد\s*پرشیا|سوید\s*پرشیا|فارسی\s*نورد|فارسی‌نورد|SwedPersiska|Farsi\s*Nord|Faris\s*Nord/gi, 'لینک شو')
+              : str;
+          setSeoSettings(prev => {
+            const next = { ...prev };
+            ['se', 'no', 'dk', 'fi'].forEach((cid) => {
+              const incoming = settings.seo_settings[cid];
+              if (incoming && typeof incoming === 'object') {
+                next[cid] = {
+                  ...prev[cid],
+                  ...incoming,
+                  title: sanitizeBrandText(incoming.title) || prev[cid].title,
+                  description: sanitizeBrandText(incoming.description) || prev[cid].description,
+                  keywords: sanitizeBrandText(incoming.keywords) || prev[cid].keywords,
+                  heroHeading: sanitizeBrandText(incoming.heroHeading) || prev[cid].heroHeading,
+                  heroSubheading: sanitizeBrandText(incoming.heroSubheading) || prev[cid].heroSubheading,
+                };
+              }
+            });
+            return next;
+          });
         }
         const stripe = settings.stripe_settings;
         if (stripe) {
@@ -218,16 +272,40 @@ export default function App() {
     });
   }, [analyticsSettings.enabled, analyticsSettings.measurementId, gdprConsent?.analytics, selectedCountry, selectedCategory, activeAdDetail?.id]);
 
-  // Dynamic Country SEO Document Title
+  // Dynamic Country SEO (Document Title + Meta Description + Keywords + OpenGraph + Twitter)
   useEffect(() => {
-    const titles = {
-      se: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در سوئد | لینک شو',
-      no: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در نروژ | لینک شو',
-      dk: 'نیازمندی‌ها، مسکن و خدمات فارسی‌زبانان در دانمارک | لینک شو',
-      fi: 'نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان در فنلاند | لینک شو'
+    const activeSeo = seoSettings[selectedCountry] || seoSettings.se;
+    if (!activeSeo) return;
+
+    const pageTitle = activeAdDetail
+      ? `${activeAdDetail.title_fa || activeAdDetail.title} | ${siteName}`
+      : activeSeo.title;
+    const pageDesc = activeAdDetail
+      ? (activeAdDetail.description || '').slice(0, 155)
+      : activeSeo.description;
+
+    document.title = pageTitle;
+
+    const setMeta = (selector, attr, val) => {
+      if (!val) return;
+      let el = document.querySelector(selector);
+      if (!el) {
+        el = document.createElement('meta');
+        const [k, v] = attr.split('=');
+        el.setAttribute(k, v);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', val);
     };
-    document.title = titles[selectedCountry] || titles.se;
-  }, [selectedCountry]);
+
+    setMeta('meta[name="description"]', 'name=description', pageDesc);
+    setMeta('meta[name="keywords"]', 'name=keywords', activeSeo.keywords);
+    setMeta('meta[property="og:site_name"]', 'property=og:site_name', siteName);
+    setMeta('meta[property="og:title"]', 'property=og:title', activeSeo.ogTitle || pageTitle);
+    setMeta('meta[property="og:description"]', 'property=og:description', activeSeo.ogDescription || pageDesc);
+    setMeta('meta[name="twitter:title"]', 'name=twitter:title', activeSeo.ogTitle || pageTitle);
+    setMeta('meta[name="twitter:description"]', 'name=twitter:description', activeSeo.ogDescription || pageDesc);
+  }, [selectedCountry, seoSettings, activeAdDetail, siteName]);
 
   // Success Toast
   const [toastMsg, setToastMsg] = useState('');
@@ -537,20 +615,10 @@ export default function App() {
 
   const activeHero = HERO_BACKGROUNDS[selectedCountry] || HERO_BACKGROUNDS.se;
 
-  // Dynamic Hero Titles based on selected country (natural, concise Persian)
-  let heroHeading = 'نیازمندی‌های فارسی‌زبانان سوئد';
-  let heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر سوئد';
-
-  if (selectedCountry === 'no') {
-    heroHeading = 'نیازمندی‌های فارسی‌زبانان نروژ';
-    heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر نروژ';
-  } else if (selectedCountry === 'dk') {
-    heroHeading = 'نیازمندی‌های فارسی‌زبانان دانمارک';
-    heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر دانمارک';
-  } else if (selectedCountry === 'fi') {
-    heroHeading = 'نیازمندی‌های فارسی‌زبانان فنلاند';
-    heroSubheading = 'مسکن، رستوران، خدمات و کاریابی در سراسر فنلاند';
-  }
+  // Dynamic Hero Titles based on selected country & synced SEO settings
+  const activeCountrySeo = seoSettings[selectedCountry] || seoSettings.se;
+  const heroHeading = activeCountrySeo?.heroHeading || 'نیازمندی‌های فارسی‌زبانان سوئد';
+  const heroSubheading = activeCountrySeo?.heroSubheading || 'مسکن، رستوران، خدمات و کاریابی در سراسر سوئد';
 
   const [sortBy, setSortBy] = useState(null); // null | 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
 
