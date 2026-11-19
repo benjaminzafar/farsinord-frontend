@@ -127,6 +127,15 @@ html.dark body {
   background-color: #171920;
 }
 
+@media (min-width: 768px) {
+  .dark .md\:bg-\[\#FBFBFC\] {
+    background-color: #121317;
+  }
+  .dark .md\:border-\[\#E5E5EA\] {
+    border-color: rgba(255, 255, 255, 0.04);
+  }
+}
+
 .dark .bg-white\/90,
 .dark .bg-white\/80 {
   background-color: rgba(23, 25, 32, 0.94);

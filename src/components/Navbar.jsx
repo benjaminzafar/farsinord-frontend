@@ -95,7 +95,7 @@ export default function Navbar({
     : 'همه شهرها';
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 w-full pointer-events-none md:pointer-events-auto bg-transparent border-b border-transparent md:bg-[#FBFBFC] md:border-[#E5E5EA] select-none font-vazir transition-colors" dir="rtl">
+    <header className="fixed top-0 inset-x-0 z-40 w-full pointer-events-none md:pointer-events-auto bg-transparent border-b border-transparent md:bg-[#FBFBFC] md:border-[#E5E5EA] md:dark:bg-[#121317] md:dark:border-white/[0.04] select-none font-vazir transition-colors" dir="rtl">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         
         {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
@@ -219,7 +219,7 @@ export default function Navbar({
                   className="h-7 w-auto max-w-[120px] object-contain shrink-0"
                 />
               ) : brandingReady ? (
-                <span className="font-black text-lg text-[#1D1D1F] tracking-tight">{siteName}</span>
+                <span className="font-black text-lg text-[#1D1D1F] dark:text-white tracking-tight">{siteName}</span>
               ) : (
                 <span className="inline-block h-7 w-24 rounded-lg bg-[#ECECEF]/80 animate-pulse" aria-hidden="true" />
               )}
@@ -238,8 +238,8 @@ export default function Navbar({
                     }}
                     className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer ${
                       isCurr
-                        ? 'bg-slate-950 text-white shadow-2xs'
-                        : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+                        ? 'bg-slate-950 text-white shadow-2xs dark:bg-white dark:text-slate-950'
+                        : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 dark:text-[#A1A1A6] dark:hover:text-white dark:hover:bg-white/[0.06]'
                     }`}
                   >
                     {item.title}
@@ -252,14 +252,14 @@ export default function Navbar({
                 <button
                   type="button"
                   onClick={() => setCategoriesDropdownOpen(!categoriesDropdownOpen)}
-                  className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-medium leading-none text-slate-600 hover:text-slate-950 hover:bg-slate-100 transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-medium leading-none text-slate-600 hover:text-slate-950 hover:bg-slate-100 dark:text-[#A1A1A6] dark:hover:text-white dark:hover:bg-white/[0.06] transition-all cursor-pointer"
                 >
                   <span className="leading-none">سایر دسته‌ها</span>
                   <ChevronDown size={14} strokeWidth={2} className={`block shrink-0 transition-transform duration-200 ${categoriesDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {categoriesDropdownOpen && (
-                  <div className="absolute start-0 top-full mt-2 w-56 rounded-2xl bg-white border border-slate-200/90 shadow-[0_10px_35px_rgba(0,0,0,0.1)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
+                  <div className="absolute start-0 top-full mt-2 w-56 rounded-2xl bg-white dark:bg-[#171920] border border-slate-200/90 dark:border-white/[0.08] shadow-[0_10px_35px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
                     {CATEGORIES.filter(c => !mainNavItems.some(m => m.id === c.id) && c.id !== 'all').map(cat => {
                       const CatIcon = DROPDOWN_ICON_MAP[cat.icon] || Tag;
                       const isCurr = selectedCategory === cat.id;
@@ -273,12 +273,12 @@ export default function Navbar({
                           }}
                           className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold leading-none transition-colors text-right cursor-pointer ${
                             isCurr
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400'
+                              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:text-[#E5E5EA] dark:hover:bg-white/[0.06] dark:hover:text-white'
                           }`}
                         >
                           <span className="flex h-4 w-4 items-center justify-center shrink-0">
-                            <CatIcon size={14} strokeWidth={2} className={`block ${isCurr ? 'text-[#1D1D1F]' : 'text-slate-400'}`} />
+                            <CatIcon size={14} strokeWidth={2} className={`block ${isCurr ? 'text-[#1D1D1F] dark:text-blue-400' : 'text-slate-400 dark:text-[#6E6E73]'}`} />
                           </span>
                           <span className="leading-none">{cat.fa}</span>
                         </button>
@@ -299,33 +299,33 @@ export default function Navbar({
                 onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
                 className={`inline-flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-full border text-[13px] font-semibold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer active:scale-[0.94] ${
                   moreDropdownOpen
-                    ? 'bg-[#ECECEF] border-[#D2D2D7] text-[#1D1D1F]'
-                    : 'bg-[#F5F5F7] hover:bg-[#ECECEF] border-[#E5E5EA] text-[#1D1D1F]'
+                    ? 'bg-[#ECECEF] border-[#D2D2D7] text-[#1D1D1F] dark:bg-[#252833] dark:border-white/[0.12] dark:text-white'
+                    : 'bg-[#F5F5F7] hover:bg-[#ECECEF] border-[#E5E5EA] text-[#1D1D1F] dark:bg-[#171920] dark:hover:bg-white/[0.06] dark:border-white/[0.08] dark:text-[#E5E5EA]'
                 }`}
                 aria-expanded={moreDropdownOpen}
                 title="امکانات بیشتر"
               >
-                <MoreHorizontal size={15} strokeWidth={2} className="block text-[#515154] shrink-0" />
+                <MoreHorizontal size={15} strokeWidth={2} className="block text-[#515154] dark:text-[#A1A1A6] shrink-0" />
                 <span className="leading-none">بیشتر</span>
-                <ChevronDown size={14} strokeWidth={2} className={`block text-[#6E6E73] shrink-0 transition-transform duration-200 ${moreDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} strokeWidth={2} className={`block text-[#6E6E73] dark:text-[#A1A1A6] shrink-0 transition-transform duration-200 ${moreDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {moreDropdownOpen && (
-                <div className="absolute end-0 top-full mt-2 w-72 rounded-2xl bg-[#FBFBFC] border border-[#E5E5EA] shadow-[0_14px_40px_rgba(29,29,31,0.14)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
+                <div className="absolute end-0 top-full mt-2 w-72 rounded-2xl bg-[#FBFBFC] dark:bg-[#171920] border border-[#E5E5EA] dark:border-white/[0.08] shadow-[0_14px_40px_rgba(29,29,31,0.14)] dark:shadow-[0_14px_40px_rgba(0,0,0,0.5)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
                   <div className="space-y-1">
                     <button
                       type="button"
                       aria-pressed={theme === 'dark'}
                       onClick={() => onToggleTheme?.()}
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] text-[#0066CC] flex items-center justify-center shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] dark:bg-white/[0.06] text-[#0066CC] dark:text-[#388BFD] flex items-center justify-center shrink-0">
                           {theme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
                         </div>
                         <div>
                           <span className="block font-bold">حالت شب / روز</span>
-                          <span className="text-[10.5px] text-[#6E6E73]">
+                          <span className="text-[10.5px] text-[#6E6E73] dark:text-[#86868B]">
                             {theme === 'dark' ? 'حالت تاریک فعال است' : 'حالت روشن فعال است'}
                           </span>
                         </div>
@@ -350,20 +350,20 @@ export default function Navbar({
                         setMoreDropdownOpen(false);
                         onOpenCountryModal?.();
                       }}
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#A1A1A6] flex items-center justify-center shrink-0">
                           <Globe size={15} />
                         </div>
                         <div>
                           <span className="block font-bold">تغییر کشور</span>
-                          <span className="text-[10.5px] text-[#6E6E73]">
+                          <span className="text-[10.5px] text-[#6E6E73] dark:text-[#86868B]">
                             کشور فعلی: {selectedCountryObj?.nameFa || 'سوئد'}
                           </span>
                         </div>
                       </div>
-                      <ChevronLeft size={14} className="text-[#6E6E73]" />
+                      <ChevronLeft size={14} className="text-[#6E6E73] dark:text-[#86868B]" />
                     </button>
 
                     <button
@@ -372,22 +372,22 @@ export default function Navbar({
                         setMoreDropdownOpen(false);
                         onOpenLegal?.('privacy');
                       }}
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#A1A1A6] flex items-center justify-center shrink-0">
                           <ShieldCheck size={15} />
                         </div>
                         <div>
                           <span className="block font-bold">حریم خصوصی و کوکی‌ها</span>
-                          <span className="text-[10.5px] text-[#6E6E73]">تنظیمات GDPR و کوکی‌ها</span>
+                          <span className="text-[10.5px] text-[#6E6E73] dark:text-[#86868B]">تنظیمات GDPR و کوکی‌ها</span>
                         </div>
                       </div>
-                      <ChevronLeft size={14} className="text-[#6E6E73]" />
+                      <ChevronLeft size={14} className="text-[#6E6E73] dark:text-[#86868B]" />
                     </button>
 
-                    <div className="pt-1.5 mt-1 border-t border-[#E5E5EA] space-y-1">
-                      <span className="block px-2.5 pt-0.5 text-[10.5px] font-bold text-[#6E6E73]">سرویس‌های آینده</span>
+                    <div className="pt-1.5 mt-1 border-t border-[#E5E5EA] dark:border-white/[0.06] space-y-1">
+                      <span className="block px-2.5 pt-0.5 text-[10.5px] font-bold text-[#6E6E73] dark:text-[#86868B]">سرویس‌های آینده</span>
 
                       <button
                         type="button"
@@ -395,15 +395,15 @@ export default function Navbar({
                           setMoreDropdownOpen(false);
                           onOpenPodcast?.();
                         }}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/70 transition-colors text-right cursor-pointer"
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/70 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 dark:border-rose-800/40 transition-colors text-right cursor-pointer"
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="h-8 w-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
                             <Headphones size={15} />
                           </div>
                           <div>
-                            <span className="block text-xs font-bold text-[#1D1D1F]">پادکست خبری</span>
-                            <span className="block text-[10.5px] text-[#6E6E73]">فید خبری و ویدیوهای یوتیوب</span>
+                            <span className="block text-xs font-bold text-[#1D1D1F] dark:text-rose-100">پادکست خبری</span>
+                            <span className="block text-[10.5px] text-[#6E6E73] dark:text-rose-300/70">فید خبری و ویدیوهای یوتیوب</span>
                           </div>
                         </div>
                         <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
@@ -434,7 +434,7 @@ export default function Navbar({
 
               {/* Single Dropdown Menu with "ثبت آگهی" and "مدیریت آگهی" */}
               {adDropdownOpen && (
-                <div className="absolute end-0 top-full mt-2 w-64 rounded-2xl bg-white border border-slate-200 shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
+                <div className="absolute end-0 top-full mt-2 w-64 rounded-2xl bg-white dark:bg-[#171920] border border-slate-200 dark:border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.5)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
                   <div className="space-y-1">
                     
                     {/* Option 1: ثبت آگهی */}
@@ -444,18 +444,18 @@ export default function Navbar({
                         onOpenPostAd();
                         setAdDropdownOpen(false);
                       }}
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-slate-800 hover:bg-blue-50 hover:text-blue-900 transition-colors cursor-pointer group"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-slate-800 dark:text-[#F5F5F7] hover:bg-blue-50 hover:text-blue-900 dark:hover:bg-blue-600/15 dark:hover:text-blue-400 transition-colors cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5F5F7] text-[#6E6E73] group-hover:bg-[#EBEBF0] group-hover:text-[#1D1D1F] transition-colors">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#A1A1A6] group-hover:bg-[#EBEBF0] dark:group-hover:bg-white/[0.1] group-hover:text-[#1D1D1F] dark:group-hover:text-white transition-colors">
                           <Plus size={16} strokeWidth={2.5} />
                         </div>
                         <div>
-                          <span className="block font-bold text-slate-900">ثبت آگهی</span>
-                          <span className="text-[10.5px] text-slate-500 font-normal">درج رایگان آگهی</span>
+                          <span className="block font-bold text-slate-900 dark:text-white">ثبت آگهی</span>
+                          <span className="text-[10.5px] text-slate-500 dark:text-[#86868B] font-normal">درج رایگان آگهی</span>
                         </div>
                       </div>
-                      <ChevronLeft size={14} className="text-slate-400 group-hover:text-[#1D1D1F]" />
+                      <ChevronLeft size={14} className="text-slate-400 dark:text-[#6E6E73] group-hover:text-[#1D1D1F] dark:group-hover:text-white" />
                     </button>
 
                     {/* Option 2: مدیریت آگهی */}
@@ -465,18 +465,18 @@ export default function Navbar({
                         onOpenManageAd();
                         setAdDropdownOpen(false);
                       }}
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-slate-800 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer group"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-slate-800 dark:text-[#F5F5F7] hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-white/[0.06] dark:hover:text-white transition-colors cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5F5F7] text-[#6E6E73] group-hover:bg-[#EBEBF0] transition-colors">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#A1A1A6] group-hover:bg-[#EBEBF0] dark:group-hover:bg-white/[0.1] transition-colors">
                           <KeyRound size={15} />
                         </div>
                         <div>
-                          <span className="block font-bold text-slate-900">مدیریت آگهی</span>
-                          <span className="text-[10.5px] text-slate-500 font-normal">ویرایش یا حذف آگهی</span>
+                          <span className="block font-bold text-slate-900 dark:text-white">مدیریت آگهی</span>
+                          <span className="text-[10.5px] text-slate-500 dark:text-[#86868B] font-normal">ویرایش یا حذف آگهی</span>
                         </div>
                       </div>
-                      <ChevronLeft size={14} className="text-slate-400 group-hover:text-slate-600" />
+                      <ChevronLeft size={14} className="text-slate-400 dark:text-[#6E6E73] group-hover:text-slate-600 dark:group-hover:text-white" />
                     </button>
 
                   </div>
