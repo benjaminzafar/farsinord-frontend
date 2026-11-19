@@ -982,55 +982,19 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Apple-like sliding active category pill & touch-swipe navigation refs
-  const categoryStripRef = useRef(null);
+  // Category pill scroll & touch-swipe navigation refs
   const categoryPillRefs = useRef({});
   const sortMenuRef = useRef(null);
   const touchSwipeRef = useRef({ x: 0, y: 0 });
-  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, ready: false });
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   useEffect(() => {
     if (activeAdDetail || podcastOpen || websiteBuilderOpen) return;
     const el = categoryPillRefs.current[selectedCategory];
     if (!el) return;
-
-    let cancelled = false;
-    let rafId = 0;
-
-    const measurePill = () => {
-      if (cancelled) return;
-      const currentEl = categoryPillRefs.current[selectedCategory];
-      if (!currentEl) return;
-      setPillStyle({ left: currentEl.offsetLeft, width: currentEl.offsetWidth, ready: true });
-    };
-
-    const scheduleMeasure = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(measurePill);
-    };
-
-    scheduleMeasure();
     try {
       el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     } catch {}
-
-    let ro = null;
-    if (typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(scheduleMeasure);
-      if (categoryStripRef.current) ro.observe(categoryStripRef.current);
-      ro.observe(el);
-    }
-    if (typeof document !== 'undefined' && document.fonts?.ready) {
-      document.fonts.ready.then(scheduleMeasure).catch(() => {});
-    }
-    window.addEventListener('resize', scheduleMeasure);
-    return () => {
-      cancelled = true;
-      if (rafId) cancelAnimationFrame(rafId);
-      if (ro) ro.disconnect();
-      window.removeEventListener('resize', scheduleMeasure);
-    };
   }, [selectedCategory, activeAdDetail, podcastOpen, websiteBuilderOpen]);
 
   const handleFeedTouchStart = (e) => {
@@ -1205,7 +1169,7 @@ export default function App() {
   );
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-clip w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-clip w-full max-w-full pb-20 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
       {/* Geolocation Country Detection Pop-Up Modal */}
       <Suspense fallback={null}>
@@ -1286,11 +1250,11 @@ export default function App() {
       ) : (
         <>
           {/* Hero Section - Always visible on Desktop; hidden on Mobile when filtering by category */}
-          <section className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-1 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
-          <div className="relative min-h-[200px] sm:min-h-[300px] md:min-h-[350px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-14 md:py-16">
+          <section className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-5 pb-2 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
+          <div className="relative min-h-[200px] sm:min-h-[300px] md:min-h-[350px] rounded-[22px] sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-14 md:py-16">
             
             {/* Rounded Architectural Cityscape Backdrop */}
-            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#E5E5EA] bg-[#1D1D1F] pointer-events-none select-none">
+            <div className="absolute inset-0 z-0 rounded-[22px] sm:rounded-3xl overflow-hidden border border-[#E5E5EA] bg-[#1D1D1F] pointer-events-none select-none">
               <img
                 key={activeHero.image}
                 src={activeHero.image}
@@ -1412,24 +1376,10 @@ export default function App() {
           </div>
         </section>
 
-      {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-[#F5F5F7]/90 backdrop-blur-md py-2.5 sm:py-3">
+      {/* Horizontal Sticky Category Strip */}
+      <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-[#F1F3F6] py-2.5 dark:bg-[#14171F]/95 dark:border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
-        <div
-          ref={categoryStripRef}
-          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA]"
-        >
-          {pillStyle.ready && (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#0066CC] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
-              style={{
-                width: `${pillStyle.width}px`,
-                transform: `translate3d(${pillStyle.left}px, 0, 0)`,
-                left: 0,
-              }}
-            />
-          )}
+        <div className="flex items-center gap-2 w-max md:mx-auto">
           {CATEGORIES.map(cat => {
             const isActive = selectedCategory === cat.id;
             const CatIcon = CATEGORY_ICONS[cat.id] || Tag;
@@ -1439,14 +1389,14 @@ export default function App() {
                 ref={(el) => { if (el) categoryPillRefs.current[cat.id] = el; }}
                 type="button"
                 onClick={() => handleCategoryChange(cat.id)}
-                className={`relative z-10 h-8 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-full text-xs font-bold leading-none whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
+                className={`h-9 inline-flex items-center justify-center gap-2 rounded-full text-[13px] font-bold leading-none whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.95] select-none ${
                   isActive
-                    ? (pillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs')
-                    : 'text-[#515154] hover:text-[#1D1D1F]'
+                    ? 'bg-[#0066CC] text-white px-4 shadow-[0_2px_10px_rgba(0,102,204,0.22)]'
+                    : 'px-3 text-[#1D1D1F] hover:bg-[#F5F5F7]'
                 }`}
               >
                 <span className="flex h-4 w-4 items-center justify-center shrink-0">
-                  <CatIcon size={14} strokeWidth={2} className={`block transition-colors duration-200 ${isActive ? 'text-[#FBFBFC]' : 'text-[#86868B]'}`} />
+                  <CatIcon size={16} strokeWidth={isActive ? 2 : 1.85} className={`block transition-colors duration-200 ${isActive ? 'text-white' : 'text-[#6E6E73]'}`} />
                 </span>
                 <span className="leading-none">{cat.fa}</span>
               </button>

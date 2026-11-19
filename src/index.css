@@ -151,6 +151,7 @@ html.dark body {
   background-color: #1C202A;
 }
 
+:where(html.dark) .bg-white\/95,
 :where(html.dark) .bg-white\/90,
 :where(html.dark) .bg-white\/80 {
   background-color: rgba(28, 32, 42, 0.94);
@@ -186,6 +187,8 @@ html.dark body {
 }
 
 :where(html.dark) .border-\[\#E5E5EA\],
+:where(html.dark) .border-\[\#ECEFF4\],
+:where(html.dark) .border-\[\#F1F3F6\],
 :where(html.dark) .border-\[\#ECECEF\],
 :where(html.dark) .border-\[\#EFEFF4\],
 :where(html.dark) .border-\[\#F0F2F5\],
@@ -238,6 +241,7 @@ html.dark body {
   color: #949BA8;
 }
 
+:where(html.dark) .placeholder\:text-\[\#76767B\]::placeholder,
 :where(html.dark) .placeholder\:text-\[\#86868B\]::placeholder,
 :where(html.dark) .placeholder\:text-slate-400::placeholder {
   color: #8B93A3;
@@ -312,31 +316,4 @@ html.dark body {
 html.dark select option {
   background-color: #1C202A;
   color: #ECEEF4;
-}
-
-:root {
-  --site-outer-radius: 18px;
-  --viewport-frame-bg: #E9EDF3;
-  --viewport-frame-border: rgba(15, 23, 42, 0.05);
-}
-
-html.dark {
-  --viewport-frame-bg: #0A0C11;
-  --viewport-frame-border: rgba(255, 255, 255, 0.06);
-}
-
-#root {
-  min-height: 100dvh;
-  border-radius: var(--site-outer-radius);
-  overflow-x: clip;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  border-radius: var(--site-outer-radius);
-  pointer-events: none;
-  z-index: 45;
-  box-shadow: 0 0 0 28px var(--viewport-frame-bg), inset 0 0 0 1px var(--viewport-frame-border);
 }
