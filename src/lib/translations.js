@@ -391,7 +391,7 @@ export const t = {
     confirmDelete: 'آیا از حذف این آگهی مطمئن هستید؟',
     adDeletedSuccess: 'آگهی حذف شد.',
     adCreatedSuccess: 'آگهی شما ثبت شد',
-    saveYourCredentials: 'کد مدیریت ۸ رقمی خود را ذخیره کنید؛ برای ویرایش، بوست یا حذف آگهی به آن نیاز دارید.',
+    saveYourCredentials: 'کد آگهی و کد مدیریت را در جای امن نگه دارید؛ این کدها محرمانه هستند و در آگهی نمایش داده نمی‌شوند.',
     copyRef: 'کپی کد',
     copyPin: 'کپی کد مدیریت',
     close: 'بستن',

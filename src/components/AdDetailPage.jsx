@@ -460,7 +460,7 @@ export default function AdDetailPage({
                     {!showTurnstileGate ? (
                       <>
                         <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
-                          برای جلوگیری از اسپم، اطلاعات تماس پس از کلیک نمایش داده می‌شود.
+                          برای حفظ حریم خصوصی آگهی‌دهنده و جلوگیری از اسپم، راه‌های تماس پس از تایید امنیتی نمایش داده می‌شوند.
                         </p>
 
                         <button
@@ -481,7 +481,7 @@ export default function AdDetailPage({
                     ) : (
                       <div className="flex flex-col items-center justify-center space-y-2.5 py-1 animate-in fade-in duration-200">
                         <p className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                          تایید امنیتی جهت نمایش اطلاعات تماس
+                          تایید امنیتی برای نمایش راه‌های تماس
                         </p>
                         <CloudflareTurnstile
                           theme="auto"
@@ -500,25 +500,53 @@ export default function AdDetailPage({
                   <div className="w-full flex flex-col items-center justify-center space-y-3.5 animate-in fade-in duration-200">
                     <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
                       {/* Phone */}
-                      {ad.contact_phone && (
-                        <a
-                          href={`tel:${ad.contact_phone.replace(/[^0-9+]/g, '')}`}
-                          title="تماس تلفنی"
-                          className="h-10 px-4 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
-                        >
-                          <Phone size={15} />
-                          <bdi className="font-mono tracking-wide">{ad.contact_phone}</bdi>
-                        </a>
-                      )}
+                      {ad.contact_phone && (() => {
+                        const normalizedPhone = String(ad.contact_phone)
+                          .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+                          .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+                          .replace(/[^0-9+]/g, '');
+                        if (!normalizedPhone) return null;
+                        return (
+                          <a
+                            href={`tel:${normalizedPhone}`}
+                            title="تماس تلفنی"
+                            className="h-10 px-4 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
+                          >
+                            <Phone size={15} className="block shrink-0" />
+                            <bdi className="font-mono tracking-wide">{ad.contact_phone}</bdi>
+                          </a>
+                        );
+                      })()}
 
-                      {/* WhatsApp (supports both phone numbers & WhatsApp usernames) */}
+                      {/* WhatsApp (supports phone numbers with Persian/Arabic digits, 00 prefix, wa.me links & usernames) */}
                       {ad.contact_whatsapp && (() => {
-                        const rawWa = ad.contact_whatsapp.trim();
-                        const strippedUrl = rawWa.replace(/^https?:\/\/(?:www\.)?(?:wa\.me|api\.whatsapp\.com\/send\?phone=)\/?/i, '');
-                        const isUsername = /[a-zA-Z]/.test(strippedUrl) || strippedUrl.startsWith('@');
+                        const rawWa = String(ad.contact_whatsapp)
+                          .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+                          .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+                          .trim();
+                        const withoutDomain = rawWa
+                          .replace(/^(?:https?:\/\/)?(?:www\.)?(?:wa\.me|api\.whatsapp\.com\/send\?phone=)\/?/i, '')
+                          .split(/[?#]/)[0]
+                          .trim();
+                        if (/^(?:message|qr)\/[a-zA-Z0-9_-]+$/i.test(withoutDomain)) {
+                          return (
+                            <a
+                              href={`https://wa.me/${withoutDomain}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="پیام در واتساپ"
+                              className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
+                            >
+                              <MessageSquare size={15} className="block shrink-0 text-[#6E6E73] dark:text-[#98989F]" />
+                              <span>واتساپ</span>
+                            </a>
+                          );
+                        }
+                        const cleanSegment = withoutDomain.split('/')[0] || '';
+                        const isUsername = /[a-zA-Z]/.test(cleanSegment) || cleanSegment.startsWith('@');
                         const waSlug = isUsername
-                          ? strippedUrl.replace(/^@+/, '').replace(/[^a-zA-Z0-9._-]/g, '')
-                          : strippedUrl.replace(/[^0-9]/g, '');
+                          ? cleanSegment.replace(/^@+/, '').replace(/[^a-zA-Z0-9._-]/g, '')
+                          : cleanSegment.replace(/[^0-9]/g, '').replace(/^00+/, '');
                         if (!waSlug) return null;
                         return (
                           <a
@@ -528,7 +556,7 @@ export default function AdDetailPage({
                             title="پیام در واتساپ"
                             className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                           >
-                            <MessageSquare size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
+                            <MessageSquare size={15} className="block shrink-0 text-[#6E6E73] dark:text-[#98989F]" />
                             <span>{isUsername ? `واتساپ (@${waSlug})` : 'واتساپ'}</span>
                           </a>
                         );
@@ -536,10 +564,11 @@ export default function AdDetailPage({
 
                       {/* Telegram */}
                       {ad.contact_telegram && (() => {
-                        const cleanTgHandle = ad.contact_telegram
+                        const cleanTgHandle = String(ad.contact_telegram)
                           .trim()
+                          .replace(/^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\//i, '')
+                          .split(/[?#]/)[0]
                           .replace(/^@+/, '')
-                          .replace(/^https?:\/\/(?:www\.)?(?:t\.me|telegram\.me)\//i, '')
                           .replace(/[^a-zA-Z0-9_+]/g, '');
                         if (!cleanTgHandle) return null;
                         return (
@@ -550,7 +579,7 @@ export default function AdDetailPage({
                             title="گفتگو در تلگرام"
                             className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                           >
-                            <Send size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
+                            <Send size={15} className="block shrink-0 text-[#6E6E73] dark:text-[#98989F]" />
                             <span>تلگرام</span>
                           </a>
                         );

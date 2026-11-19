@@ -1941,18 +1941,20 @@ export default function App() {
             countries={portalCountries}
             lifecycleSettings={lifecycleSettings}
             turnstileSettings={turnstileSettings}
+            stripeSettings={stripeSettings}
             onClose={handleClosePostAd}
             onOpenManageExisting={(refNum) => {
               handleClosePostAd();
               handleOpenManageAd(refNum);
             }}
+            onProceedToVip={(targetAd) => {
+              handleClosePostAd();
+              handleOpenPayment(targetAd);
+            }}
             onCreated={(newAd, wantVip) => {
               fetchAds();
-              if (wantVip) {
-                handleClosePostAd();
-                handleOpenPayment(newAd);
-              } else {
-                showToast(`آگهی ثبت شد (کد: ${newAd.reference_number}). پس از تایید منتشر می‌شود.`);
+              if (!wantVip) {
+                showToast(`آگهی ثبت شد (کد: ${newAd.reference_number}).`);
               }
             }}
           />

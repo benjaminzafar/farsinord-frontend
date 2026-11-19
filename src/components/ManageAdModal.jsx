@@ -214,8 +214,12 @@ export default function ManageAdModal({
     e.preventDefault();
     setErrorMsg('');
     setActionSuccessMsg('');
-    const cleanRef = refInput.trim().toUpperCase();
-    const cleanPin = pinInput.trim();
+    const toAsciiDigits = (s) =>
+      String(s || '')
+        .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+        .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+    const cleanRef = toAsciiDigits(refInput).trim().toUpperCase();
+    const cleanPin = toAsciiDigits(pinInput).trim();
 
     if (!cleanRef || !cleanPin) {
       setErrorMsg('لطفاً کد پیگیری و پین کد را وارد کنید.');
@@ -678,7 +682,7 @@ export default function ManageAdModal({
                       </label>
                       <input
                         type="password"
-                        maxLength={10}
+                        maxLength={12}
                         required
                         dir="ltr"
                         placeholder="••••••••"

@@ -58,6 +58,22 @@ function setGeocodeCached(key, val) {
   geocodeCache.set(key, { val, ts: Date.now() });
 }
 
+function normalizeAsciiDigits(str) {
+  return String(str || '')
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+}
+
+function isValidPublicWebsite(rawUrl) {
+  if (!isSafeHttpUrl(rawUrl)) return false;
+  try {
+    const u = new URL(String(rawUrl).trim());
+    return Boolean(u.hostname && u.hostname.includes('.') && !u.hostname.startsWith('.') && !u.hostname.endsWith('.'));
+  } catch {
+    return false;
+  }
+}
+
 function safeEqual(a, b) {
   const bufA = Buffer.from(String(a || ''), 'utf8');
   const bufB = Buffer.from(String(b || ''), 'utf8');
@@ -504,10 +520,20 @@ export default async function handler(req, res) {
           });
           const revJson = revRes.ok ? await revRes.json().catch(() => null) : null;
           const addr = revJson?.address || {};
-          const parts = [
-            addr.road ? `${addr.road}${addr.house_number ? ` ${addr.house_number}` : ''}` : '',
-            addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || '',
-          ].filter(Boolean);
+          // Privacy-safe area extraction: never auto-expose exact house_number in public listings
+          const district =
+            addr.suburb ||
+            addr.neighbourhood ||
+            addr.quarter ||
+            addr.city_district ||
+            addr.village ||
+            addr.town ||
+            addr.hamlet ||
+            addr.municipality ||
+            '';
+          const parts = district
+            ? [district]
+            : [addr.road || ''].filter(Boolean);
           const label = parts.join('، ').slice(0, 120) || '';
           setGeocodeCached(cacheKey, label);
           res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
@@ -837,18 +863,47 @@ export default async function handler(req, res) {
         const cleanDesc = String(description || '').trim().slice(0, 4000);
         const cleanName = String(contact_name || '').trim().slice(0, 100) || 'آگهی‌دهنده';
         const cleanArea = area ? String(area).trim().slice(0, 160) : null;
-        const cleanPhone = contact_phone ? String(contact_phone).trim().slice(0, 40) : null;
-        const cleanWa = contact_whatsapp ? String(contact_whatsapp).trim().slice(0, 80) : null;
+        const cleanPhone = contact_phone ? normalizeAsciiDigits(contact_phone).trim().slice(0, 40) : null;
+        const cleanWa = contact_whatsapp ? normalizeAsciiDigits(contact_whatsapp).trim().slice(0, 80) : null;
         const cleanTg = contact_telegram ? String(contact_telegram).trim().slice(0, 80) : null;
         const cleanEmail = contact_email ? String(contact_email).trim().slice(0, 120) : null;
-        const cleanWebsite = body.contact_website && isSafeHttpUrl(body.contact_website) ? String(body.contact_website).trim().slice(0, 300) : null;
+        const rawSite = body.contact_website ? String(body.contact_website).trim() : '';
+        const normalizedSite = rawSite ? (/^https?:\/\//i.test(rawSite) ? rawSite : `https://${rawSite}`) : '';
+        const cleanWebsite = normalizedSite && isValidPublicWebsite(normalizedSite) ? normalizedSite.slice(0, 300) : null;
 
         if (!cleanTitle || !cleanDesc) {
           return res.status(400).json({ ok: false, error: 'عنوان و توضیحات آگهی الزامی است.' });
         }
 
         if (containsLinkInDescription(cleanDesc)) {
-          return res.status(400).json({ ok: false, error: 'لینک در توضیحات مجاز نیست. آدرس سایت را در بخش وبسایت بنویسید.' });
+          return res.status(400).json({ ok: false, error: 'درج لینک در توضیحات مجاز نیست. آدرس سایت را در بخش وب‌سایت وارد کنید.' });
+        }
+
+        if (rawSite && !cleanWebsite) {
+          return res.status(400).json({ ok: false, error: 'آدرس وب‌سایت واردشده معتبر نیست.' });
+        }
+        if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+          return res.status(400).json({ ok: false, error: 'آدرس ایمیل واردشده معتبر نیست.' });
+        }
+        if (cleanPhone && cleanPhone.replace(/\D/g, '').length < 6) {
+          return res.status(400).json({ ok: false, error: 'شماره تلفن واردشده معتبر نیست.' });
+        }
+        if (cleanTg) {
+          const tgCheck = cleanTg.replace(/^https?:\/\/(?:www\.)?(?:t\.me|telegram\.me)\//i, '').replace(/^@+/, '').split(/[/?#]/)[0].replace(/[^a-zA-Z0-9_]/g, '');
+          if (tgCheck.length < 3) {
+            return res.status(400).json({ ok: false, error: 'نام کاربری تلگرام واردشده معتبر نیست.' });
+          }
+        }
+        if (cleanWa) {
+          const waBase = cleanWa.replace(/^https?:\/\/(?:www\.)?(?:wa\.me|api\.whatsapp\.com\/send\?phone=)\/?/i, '').split(/[?#]/)[0].replace(/^@+/, '');
+          const waDigits = waBase.replace(/\D/g, '');
+          const waHandle = waBase.replace(/[^a-zA-Z0-9._-]/g, '');
+          if (waDigits.length < 6 && (!/[a-zA-Z]/.test(waHandle) || waHandle.length < 3)) {
+            return res.status(400).json({ ok: false, error: 'نام کاربری یا شماره واتساپ واردشده معتبر نیست.' });
+          }
+        }
+        if (!cleanPhone && !cleanWa && !cleanTg && !cleanEmail && !cleanWebsite) {
+          return res.status(400).json({ ok: false, error: 'ثبت حداقل یک روش تماس (تلگرام، ایمیل، واتساپ، شماره تلفن یا وب‌سایت) الزامی است.' });
         }
 
         const modReason = checkProhibitedText({ title: cleanTitle, description: cleanDesc, area: cleanArea, contact_name: cleanName });
@@ -1044,14 +1099,14 @@ export default async function handler(req, res) {
         });
       }
 
-      if (action === 'verify_pin') {
+        if (action === 'verify_pin') {
         if (!checkSubRateLimit(req)) {
           return res.status(429).json({ ok: false, error: 'تعداد تلاش‌های شما زیاد است. لطفاً چند دقیقه دیگر دوباره تلاش کنید.' });
         }
-        const cleanRef = String(body.reference_number || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-        const cleanPin = String(body.pin_code || '').trim();
+        const cleanRef = normalizeAsciiDigits(body.reference_number || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+        const cleanPin = normalizeAsciiDigits(body.pin_code || '').trim();
         if (!cleanRef || !cleanPin) {
-          return res.status(400).json({ ok: false, error: 'لطفا کد مرجع و پین را وارد کنید.' });
+          return res.status(400).json({ ok: false, error: 'لطفاً کد آگهی و کد مدیریت را وارد کنید.' });
         }
 
         const { data, error } = await supabase.rpc('owner_verify_ad', {
@@ -1060,7 +1115,7 @@ export default async function handler(req, res) {
         });
         if (error) throw error;
         if (!data?.ok) {
-          return res.status(401).json({ ok: false, error: data?.error || 'شماره مرجع یا پین کد وارد شده صحیح نیست.' });
+          return res.status(401).json({ ok: false, error: data?.error || 'کد آگهی یا کد مدیریت واردشده صحیح نیست.' });
         }
         return res.status(200).json({
           ok: true,
@@ -1075,8 +1130,8 @@ export default async function handler(req, res) {
         const seenRefs = new Set();
         const creds = [];
         for (const item of rawCreds) {
-          const ref = String(item?.reference_number || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 32);
-          const pin = String(item?.pin_code || '').trim().slice(0, 16);
+          const ref = normalizeAsciiDigits(item?.reference_number || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 32);
+          const pin = normalizeAsciiDigits(item?.pin_code || '').trim().slice(0, 16);
           if (ref && pin && !seenRefs.has(ref)) {
             seenRefs.add(ref);
             creds.push({ reference_number: ref, pin_code: pin });
@@ -1098,13 +1153,14 @@ export default async function handler(req, res) {
           return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
         }
         const { id, pin_code } = body;
-        if (!id || !pin_code) {
-          return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین کد الزامی است.' });
+        const cleanPin = normalizeAsciiDigits(pin_code || '').trim();
+        if (!id || !cleanPin) {
+          return res.status(400).json({ ok: false, error: 'شناسه آگهی و کد مدیریت الزامی است.' });
         }
 
         const { data, error } = await supabase.rpc('boost_ad_free', {
           p_ad_id: id,
-          p_pin_code: String(pin_code).trim(),
+          p_pin_code: cleanPin,
         });
         if (error) throw error;
 
@@ -1147,20 +1203,21 @@ export default async function handler(req, res) {
           return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
         }
         const { id, pin_code, title, price, area, description, status, contact_phone } = body;
-        if (!id || !pin_code) {
-          return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین الزامی است.' });
+        const cleanPin = normalizeAsciiDigits(pin_code || '').trim();
+        if (!id || !cleanPin) {
+          return res.status(400).json({ ok: false, error: 'شناسه آگهی و کد مدیریت الزامی است.' });
         }
         // Only allow owner-safe terminal statuses; never allow self-approving pending/rejected ads to 'active'
         const safeOwnerStatus = status === 'sold' || status === 'rented' ? status : undefined;
 
         const cleanTitle = String(title || '').trim().slice(0, 160);
         const cleanDesc = String(description || '').trim().slice(0, 4000);
-        const cleanArea = area !== undefined ? String(area || '').trim().slice(0, 80) : undefined;
-        const cleanPhone = contact_phone !== undefined ? String(contact_phone || '').trim().slice(0, 40) : undefined;
+        const cleanArea = area !== undefined ? String(area || '').trim().slice(0, 160) : undefined;
+        const cleanPhone = contact_phone !== undefined ? normalizeAsciiDigits(contact_phone || '').trim().slice(0, 40) : undefined;
         const safePrice = parseSafePrice(price);
 
         if (containsLinkInDescription(cleanDesc)) {
-          return res.status(400).json({ ok: false, error: 'لینک در توضیحات مجاز نیست. آدرس سایت را در بخش وبسایت بنویسید.' });
+          return res.status(400).json({ ok: false, error: 'درج لینک در توضیحات مجاز نیست. آدرس سایت را در بخش وب‌سایت وارد کنید.' });
         }
 
         const modReason = checkProhibitedText({ title: cleanTitle, description: cleanDesc, area: cleanArea });
@@ -1225,7 +1282,7 @@ export default async function handler(req, res) {
 
         const { data, error } = await supabase.rpc('owner_update_ad', {
           p_ad_id: id,
-          p_pin_code: String(pin_code).trim(),
+          p_pin_code: cleanPin,
           p_updates: {
             title: cleanTitle,
             price: safePrice,
@@ -1258,13 +1315,14 @@ export default async function handler(req, res) {
           return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
         }
         const { id, pin_code } = body;
-        if (!id || !pin_code) {
-          return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین الزامی است.' });
+        const cleanPin = normalizeAsciiDigits(pin_code || '').trim();
+        if (!id || !cleanPin) {
+          return res.status(400).json({ ok: false, error: 'شناسه آگهی و کد مدیریت الزامی است.' });
         }
 
         const { data, error } = await supabase.rpc('owner_soft_delete_ad', {
           p_ad_id: id,
-          p_pin_code: String(pin_code).trim(),
+          p_pin_code: cleanPin,
         });
         if (error) throw error;
         if (!data?.ok) {
