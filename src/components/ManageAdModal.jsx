@@ -490,7 +490,7 @@ export default function ManageAdModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-2.5 rounded-xl bg-stone-900 text-white font-bold text-xs active:scale-95 transition-all cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-stone-900 dark:bg-[#0A84FF] text-white font-bold text-xs active:scale-95 transition-all cursor-pointer"
                 >
                   {currentT.close}
                 </button>

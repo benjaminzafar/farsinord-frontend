@@ -178,7 +178,7 @@ export function GdprTabBody({
               }`}
             >
               <span
-                className={`inline-block h-5 w-5 rounded-full bg-white shadow-xs transform transition-transform duration-200 ${
+                className={`inline-block h-5 w-5 rounded-full bg-[#ffffff] shadow-xs transform transition-transform duration-200 ${
                   analyticsEnabled ? '-translate-x-4.5' : '-translate-x-0.5'
                 }`}
               />

@@ -1569,7 +1569,7 @@ export default function App() {
                         }`}
                       >
                         <span>{s.label}</span>
-                        {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#1D1D1F]" />}
+                        {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#1D1D1F] dark:bg-white" />}
                       </button>
                     );
                   })}

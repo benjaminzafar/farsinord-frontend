@@ -274,7 +274,7 @@ export default function CountryBanner({
                   }`}
                 >
                   <span
-                    className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-xs transform transition-transform duration-200 ${
+                    className={`inline-block h-3.5 w-3.5 rounded-full bg-[#ffffff] shadow-xs transform transition-transform duration-200 ${
                       analyticsChecked ? '-translate-x-4' : '-translate-x-0.5'
                     }`}
                   />
