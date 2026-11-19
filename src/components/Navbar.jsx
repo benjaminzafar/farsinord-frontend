@@ -95,13 +95,13 @@ export default function Navbar({
     : 'همه شهرها';
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 w-full bg-white md:bg-[#FBFBFC] border-b border-transparent md:border-[#E5E5EA] dark:bg-[#14171F] md:dark:bg-[#1C202A] md:dark:border-white/[0.065] select-none font-vazir transition-colors" dir="rtl">
+    <header className="fixed top-0 inset-x-0 z-40 w-full pointer-events-none md:pointer-events-auto bg-transparent md:bg-white md:border-b md:border-[#E8EBF0] md:dark:bg-[#1C202A] md:dark:border-white/[0.065] select-none font-vazir transition-colors" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
         <div className="relative flex md:hidden h-16 items-center">
 
-          <div className="flex-1 flex items-center h-12 rounded-full bg-white border border-[#ECEFF4] shadow-[0_1px_3px_rgba(15,23,42,0.04)] px-4 gap-3 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC]/45 focus-within:ring-2 focus-within:ring-[#0066CC]/15 dark:bg-[#222734] dark:border-white/[0.065]">
+          <div className="pointer-events-auto flex-1 flex items-center h-12 rounded-full bg-white/95 backdrop-blur-md border border-[#ECEFF4] shadow-[0_2px_10px_rgba(15,23,42,0.06)] px-4 gap-3 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC]/45 focus-within:ring-2 focus-within:ring-[#0066CC]/15 dark:bg-[#222734]/95 dark:border-white/[0.08] dark:shadow-[0_4px_16px_rgba(0,0,0,0.32)]">
 
             {/* Search Input (Icon on Right — exact same vertical center as City Selector) */}
             <div className="relative flex-1 flex items-center gap-2 min-w-0 h-full">
@@ -165,7 +165,7 @@ export default function Navbar({
 
           {/* Google-style Smart Autocomplete Suggestions (Mobile) */}
           {mobileSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-            <div className="absolute inset-x-0 top-[62px] bg-white border border-[#ECEFF4] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.14)] p-1.5 z-50 space-y-0.5">
+            <div className="pointer-events-auto absolute inset-x-0 top-[62px] bg-white border border-[#ECEFF4] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.14)] p-1.5 z-50 space-y-0.5">
               {searchSuggestions.map((item, idx) => (
                 <button
                   key={`${item.label}-${idx}`}

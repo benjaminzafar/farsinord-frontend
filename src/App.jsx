@@ -1169,7 +1169,7 @@ export default function App() {
   );
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-clip w-full max-w-full pb-20 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#F5F5F7] text-[#1D1D1F] overflow-x-clip w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
       {/* Geolocation Country Detection Pop-Up Modal */}
       <Suspense fallback={null}>
