@@ -148,14 +148,16 @@ const COUNTRY_PHONE_PLACEHOLDERS = {
 };
 
 const WIZARD_STEPS = [
-  { num: 1, shortLabel: 'امنیت', subtitle: 'حریم خصوصی، امنیت و قوانین انتشار' },
-  { num: 2, shortLabel: 'اطلاعات آگهی', subtitle: 'انتخاب نوع تبلیغ و مشخصات آگهی' },
-  { num: 3, shortLabel: 'تماس و نقشه', subtitle: 'راه‌های تماس و موقعیت روی نقشه گوگل' },
-  { num: 4, shortLabel: 'تصویر و VIP', subtitle: 'افزودن عکس، پیشنهاد VIP و انتشار' },
+  { num: 1, shortLabel: 'امنیت' },
+  { num: 2, shortLabel: 'اطلاعات' },
+  { num: 3, shortLabel: 'تماس و نقشه' },
+  { num: 4, shortLabel: 'تصویر و VIP' },
 ];
 
-const INPUT_CLASS =
-  'w-full h-11 rounded-xl border border-[#ECEFF4] dark:!border-white/[0.12] bg-[#FFFFFF] dark:bg-[#1C1F28] px-3.5 text-xs sm:text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] dark:placeholder:text-[#787880] focus:border-[#0066CC] dark:focus:!border-[#3B9BFF] focus:ring-2 focus:ring-[#0066CC]/15 focus:outline-none transition-colors';
+const SHORT_RULES = [
+  'ثبت آگهی تکراری و درج لینک در توضیحات مجاز نیست.',
+  'آگهی غیرفعال پس از پایان مهلت و هشدار حذف می‌شود.',
+];
 
 const COMPACT_INPUT_CLASS =
   'w-full h-11 sm:h-10 rounded-xl border border-[#ECEFF4] dark:!border-white/[0.12] bg-[#FFFFFF] dark:bg-[#1C1F28] px-3 text-xs sm:text-[13px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] dark:placeholder:text-[#787880] focus:border-[#0066CC] dark:focus:!border-[#3B9BFF] focus:ring-2 focus:ring-[#0066CC]/15 focus:outline-none transition-colors';
@@ -175,7 +177,6 @@ export default function PostAdModal({
 }) {
   const currentT = t.fa;
   const fullPolicyRules = buildAdPolicyRules(lifecycleSettings || {});
-  const compactPolicyRules = [fullPolicyRules[0], fullPolicyRules[2], fullPolicyRules[4]].filter(Boolean);
   const activeCountries = useMemo(
     () =>
       Array.isArray(countries) && countries.length > 0
@@ -542,7 +543,7 @@ export default function PostAdModal({
   const validateStep1 = () => {
     if (!rulesAccepted) {
       setRulesHighlightError(true);
-      showError('لطفاً پیش از ادامه، قوانین انتشار آگهی را تایید کنید.');
+      showError('ابتدا قوانین را تایید کنید.');
       return false;
     }
     setRulesHighlightError(false);
@@ -551,7 +552,7 @@ export default function PostAdModal({
 
   const validateStep2 = () => {
     if (!category || !title.trim() || !description.trim()) {
-      showError('لطفاً نوع تبلیغ، عنوان و توضیحات آگهی را وارد کنید.');
+      showError('عنوان و توضیحات آگهی را وارد کنید.');
       return false;
     }
     if (containsLinkInDescription(description)) {
@@ -569,32 +570,32 @@ export default function PostAdModal({
   const validateStep3 = () => {
     if (activeContacts.length === 0) {
       setContactHighlightError(true);
-      showError('لطفاً حداقل یک روش تماس (تلگرام، ایمیل، واتساپ، شماره تلفن یا وب‌سایت) وارد کنید.');
+      showError('حداقل یک روش تماس وارد کنید.');
       return false;
     }
     if (contactTelegram.trim() && !isValidTelegramInput(contactTelegram)) {
-      showError('نام کاربری تلگرام واردشده معتبر نیست (حداقل ۳ کاراکتر انگلیسی).');
+      showError('نام کاربری تلگرام معتبر نیست.');
       return false;
     }
     if (contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) {
-      showError('آدرس ایمیل واردشده معتبر نیست.');
+      showError('ایمیل واردشده معتبر نیست.');
       return false;
     }
     if (contactWhatsapp.trim() && !isValidWhatsAppInput(contactWhatsapp)) {
-      showError('نام کاربری یا شماره واتساپ واردشده معتبر نیست.');
+      showError('شناسه یا شماره واتساپ معتبر نیست.');
       return false;
     }
     if (contactPhone.trim() && normalizeAsciiDigits(contactPhone).replace(/\D/g, '').length < 6) {
-      showError('شماره تلفن واردشده معتبر نیست.');
+      showError('شماره تلفن معتبر نیست.');
       return false;
     }
     if (contactWebsite.trim() && !isValidWebsiteInput(contactWebsite)) {
-      showError('آدرس وب‌سایت واردشده معتبر نیست.');
+      showError('آدرس وب‌سایت معتبر نیست.');
       return false;
     }
     setContactHighlightError(false);
     if (!adCountry || !city) {
-      showError('لطفاً کشور و شهر محل آگهی را انتخاب کنید.');
+      showError('کشور و شهر را انتخاب کنید.');
       return false;
     }
     return true;
@@ -807,14 +808,13 @@ export default function PostAdModal({
       ? `${dynamicVipAmount.toLocaleString('fa-IR')} یورو`
       : `${dynamicVipAmount.toLocaleString('fa-IR')} کرون`;
 
-  const activeStepMeta = WIZARD_STEPS[step - 1] || WIZARD_STEPS[0];
   const isStep1SoftIncomplete = step === 1 && !rulesAccepted;
   const isStep3SoftIncomplete = step === 3 && activeContacts.length === 0;
-  const visibleRules = showAllRules ? fullPolicyRules : compactPolicyRules;
+  const visibleRules = showAllRules ? fullPolicyRules : SHORT_RULES;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto font-vazir"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto no-scrollbar font-vazir"
       dir="rtl"
     >
       {/* Backdrop */}
@@ -828,33 +828,28 @@ export default function PostAdModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="post-ad-modal-title"
-        className="relative w-full max-w-[540px] max-h-[90dvh] flex flex-col bg-[#FBFBFC] rounded-[24px] sm:rounded-[28px] border border-[#ECEFF4] shadow-[0_24px_70px_rgba(29,29,31,0.22)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.6)] overflow-hidden z-10"
+        className="relative w-full max-w-[520px] max-h-[90dvh] flex flex-col bg-[#FBFBFC] rounded-[24px] sm:rounded-[28px] border border-[#ECEFF4] shadow-[0_24px_70px_rgba(29,29,31,0.22)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.6)] overflow-hidden z-10"
       >
-        {/* Unified Calm Header + Slim 4-Segment Progress Bar */}
-        <div className="px-4 sm:px-6 pt-4 pb-3.5 border-b border-[#ECEFF4] bg-[#FBFBFC] space-y-3 shrink-0">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EAF2FB] text-[#0066CC] shrink-0">
-                <PlusCircle className="w-[19px] h-[19px] block shrink-0" strokeWidth={2} aria-hidden="true" />
+        {/* Unified Compact Header + Slim 4-Segment Progress Bar */}
+        <div className="px-4 sm:px-5 pt-3.5 pb-3 border-b border-[#ECEFF4] bg-[#FBFBFC] space-y-2.5 shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EAF2FB] text-[#0066CC] shrink-0">
+                <PlusCircle className="w-[18px] h-[18px] block shrink-0" strokeWidth={2} aria-hidden="true" />
               </div>
-              <div className="min-w-0">
-                <h2
-                  id="post-ad-modal-title"
-                  className="text-[15px] sm:text-base font-extrabold text-[#1D1D1F] leading-snug truncate"
-                >
-                  ثبت آگهی رایگان
-                </h2>
-                <p className="text-[11px] text-[#6E6E73] leading-snug truncate">
-                  {successData ? 'آگهی شما ثبت شد' : activeStepMeta.subtitle}
-                </p>
-              </div>
+              <h2
+                id="post-ad-modal-title"
+                className="text-[15px] font-extrabold text-[#1D1D1F] leading-none truncate"
+              >
+                {successData ? 'آگهی ثبت شد' : 'ثبت آگهی'}
+              </h2>
             </div>
 
             <button
               type="button"
               onClick={onClose}
               aria-label="بستن"
-              className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] dark:hover:!bg-white/[0.10] active:scale-95 transition-all cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC]"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] dark:hover:!bg-white/[0.10] active:scale-95 transition-all cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC]"
             >
               <X className="w-[18px] h-[18px] block shrink-0" strokeWidth={2} aria-hidden="true" />
             </button>
@@ -873,7 +868,7 @@ export default function PostAdModal({
                     disabled={!isDone}
                     onClick={() => isDone && goToStep(s.num)}
                     aria-current={isCurrent ? 'step' : undefined}
-                    className={`flex flex-col gap-1.5 text-right transition-opacity ${
+                    className={`flex flex-col gap-1 text-right transition-opacity ${
                       isDone ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
                     }`}
                   >
@@ -885,7 +880,7 @@ export default function PostAdModal({
                       }`}
                     />
                     <span
-                      className={`inline-flex items-center gap-1 text-[10.5px] sm:text-[11px] leading-none truncate ${
+                      className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] leading-none truncate ${
                         isCurrent
                           ? 'font-extrabold text-[#0066CC]'
                           : isDone
@@ -916,7 +911,7 @@ export default function PostAdModal({
         >
           <div
             ref={bodyScrollRef}
-            className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 sm:py-5 custom-scrollbar space-y-4"
+            className="flex-1 overflow-y-auto overscroll-contain no-scrollbar px-4 sm:px-5 py-3.5 sm:py-4 space-y-3"
           >
             {successData ? (
               /* ======================================================
@@ -1133,38 +1128,30 @@ export default function PostAdModal({
                 )}
 
                 {/* ======================================================
-                    STEP 1 — اطلاعات امنیتی (Security, Privacy & Rules)
+                    STEP 1 — امنیت و قوانین (Ultra-Concise)
                 ====================================================== */}
                 {step === 1 && (
-                  <div className="space-y-3.5">
-                    {/* Zone 1: Privacy & Security Assurance */}
-                    <div className="rounded-2xl border border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28] p-4 space-y-2.5">
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28] p-3.5 space-y-2">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EAF2FB] text-[#0066CC] shrink-0">
-                          <ShieldCheck className="w-4 h-4 block shrink-0" strokeWidth={2} aria-hidden="true" />
-                        </div>
-                        <h3 className="text-xs sm:text-[13px] font-extrabold text-[#1D1D1F] leading-none">
-                          حریم خصوصی و امنیت آگهی شما
+                        <ShieldCheck className="w-4 h-4 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
+                        <h3 className="text-xs font-extrabold text-[#1D1D1F] leading-none">
+                          امنیت و حریم خصوصی
                         </h3>
                       </div>
 
-                      <ul className="space-y-2 text-[11.5px] text-[#515154] leading-relaxed">
-                        <li className="flex items-start gap-2">
-                          <KeyRound className="w-3.5 h-3.5 block shrink-0 text-[#0066CC] mt-0.5" strokeWidth={2} aria-hidden="true" />
-                          <span>بدون نیاز به ثبت‌نام؛ پس از ثبت آگهی، کد پیگیری و کد امنیتی مدیریت اختصاصی به شما نمایش داده می‌شود.</span>
+                      <ul className="space-y-1.5 text-[11.5px] text-[#515154] leading-snug">
+                        <li className="flex items-center gap-2">
+                          <KeyRound className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
+                          <span>بدون ثبت‌نام؛ کد مدیریت پس از ثبت آگهی نمایش داده می‌شود.</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                          <Lock className="w-3.5 h-3.5 block shrink-0 text-[#0066CC] mt-0.5" strokeWidth={2} aria-hidden="true" />
-                          <span>شماره تلفن اختیاری است؛ راه‌های تماس پشت تایید امنیتی محافظت شده و در گوگل ثبت نمی‌شوند.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <ShieldCheck className="w-3.5 h-3.5 block shrink-0 text-[#0066CC] mt-0.5" strokeWidth={2} aria-hidden="true" />
-                          <span>تایید ضدربات کلودفلر دقیقاً در مرحله آخر پیش از انتشار آگهی انجام می‌شود.</span>
+                        <li className="flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
+                          <span>شماره تلفن اختیاری است و راه‌های تماس محفوظ می‌مانند.</span>
                         </li>
                       </ul>
                     </div>
 
-                    {/* Zone 2: Publishing Rules + Tactile Acceptance Checkbox */}
                     <div
                       className={`rounded-2xl border overflow-hidden divide-y divide-[#F0F2F5] transition-colors ${
                         rulesHighlightError
@@ -1172,10 +1159,10 @@ export default function PostAdModal({
                           : 'border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28]'
                       }`}
                     >
-                      <div className="p-4 space-y-2">
+                      <div className="p-3.5 space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-extrabold text-[#1D1D1F] leading-none">
-                            قوانین انتشار آگهی
+                            قوانین انتشار
                           </span>
                           <button
                             type="button"
@@ -1183,7 +1170,7 @@ export default function PostAdModal({
                             className="inline-flex items-center gap-1 text-[11px] font-bold leading-none text-[#0066CC] cursor-pointer"
                           >
                             <span className="leading-none">
-                              {showAllRules ? 'نمای خلاصه' : 'مشاهده کامل'}
+                              {showAllRules ? 'بستن' : 'همه قوانین'}
                             </span>
                             <ChevronDown
                               className={`w-3.5 h-3.5 block shrink-0 transition-transform ${
@@ -1195,14 +1182,14 @@ export default function PostAdModal({
                           </button>
                         </div>
 
-                        <ul className="space-y-1.5 text-[11.5px] text-[#515154] leading-relaxed list-disc ps-4">
+                        <ul className="space-y-1 text-[11.5px] text-[#515154] leading-snug list-disc ps-4">
                           {visibleRules.map((rule, idx) => (
                             <li key={idx}>{rule}</li>
                           ))}
                         </ul>
                       </div>
 
-                      <label className="flex items-center gap-3 min-h-[48px] px-4 py-3 bg-[#F5F5F7]/75 cursor-pointer select-none">
+                      <label className="flex items-center gap-2.5 min-h-[46px] px-3.5 py-2.5 bg-[#F5F5F7]/75 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={rulesAccepted}
@@ -1229,8 +1216,8 @@ export default function PostAdModal({
                             <Check className="w-3 h-3 block" strokeWidth={3} aria-hidden="true" />
                           )}
                         </span>
-                        <span className="text-xs font-bold leading-snug text-[#1D1D1F]">
-                          قوانین انتشار آگهی را خواندم و می‌پذیرم <span className="text-rose-500">*</span>
+                        <span className="text-xs font-bold leading-none text-[#1D1D1F]">
+                          قوانین را می‌پذیرم <span className="text-rose-500">*</span>
                         </span>
                       </label>
                     </div>
@@ -1238,19 +1225,19 @@ export default function PostAdModal({
                 )}
 
                 {/* ======================================================
-                    STEP 2 — نوع و اطلاعات تبلیغ (Ad Type & Core Info)
+                    STEP 2 — نوع و اطلاعات آگهی (Compact & Clean)
                 ====================================================== */}
                 {step === 2 && (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* Symmetrical 3×3 Category Selector */}
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <label className="block text-xs font-extrabold text-[#1D1D1F]">
-                        نوع تبلیغ (دسته‌بندی) <span className="text-rose-500">*</span>
+                        دسته‌بندی <span className="text-rose-500">*</span>
                       </label>
                       <div
                         role="radiogroup"
-                        aria-label="نوع تبلیغ"
-                        className="grid grid-cols-3 gap-1.5 sm:gap-2"
+                        aria-label="دسته‌بندی"
+                        className="grid grid-cols-3 gap-1.5"
                       >
                         {CATEGORIES.filter((c) => c.id !== 'all').map((c) => {
                           const isSelected = category === c.id;
@@ -1262,7 +1249,7 @@ export default function PostAdModal({
                               role="radio"
                               aria-checked={isSelected}
                               onClick={() => setCategory(c.id)}
-                              className={`min-h-[44px] sm:min-h-[40px] px-2.5 rounded-xl border inline-flex items-center justify-center sm:justify-start gap-1.5 text-[11.5px] sm:text-xs font-bold leading-none transition-all duration-150 active:scale-[0.97] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC] ${
+                              className={`min-h-[38px] px-2 rounded-xl border inline-flex items-center justify-center gap-1.5 text-[11.5px] font-bold leading-none transition-all duration-150 active:scale-[0.97] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC] ${
                                 isSelected
                                   ? 'bg-[#EAF2FB] border-[#0066CC] dark:!border-[#3B9BFF] text-[#0066CC] shadow-[0_0_0_1px_rgba(0,102,204,0.35)]'
                                   : 'bg-[#FFFFFF] dark:bg-[#1C1F28] border-[#ECEFF4] dark:!border-white/[0.10] text-[#515154] hover:bg-[#F5F5F7] dark:hover:!bg-white/[0.06] hover:text-[#1D1D1F]'
@@ -1283,13 +1270,13 @@ export default function PostAdModal({
                     </div>
 
                     {/* Title */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <label
                           htmlFor="post-ad-title"
                           className="text-xs font-extrabold text-[#1D1D1F]"
                         >
-                          عنوان آگهی <span className="text-rose-500">*</span>
+                          عنوان <span className="text-rose-500">*</span>
                         </label>
                         {title.length > 60 && (
                           <span className="text-[10.5px] font-medium text-[#86868B] tabular-nums">
@@ -1302,32 +1289,32 @@ export default function PostAdModal({
                         type="text"
                         required
                         maxLength={100}
-                        placeholder="مثال: اجاره آپارتمان ۲ خوابه در استکهلم"
+                        placeholder="مثال: اجاره آپارتمان ۲ خوابه"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className={INPUT_CLASS}
+                        className={COMPACT_INPUT_CLASS}
                       />
                     </div>
 
-                    {/* Description (Preserves link filter) */}
-                    <div className="space-y-1.5">
+                    {/* Description */}
+                    <div className="space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <label
                           htmlFor="post-ad-description"
                           className="text-xs font-extrabold text-[#1D1D1F]"
                         >
-                          توضیحات آگهی <span className="text-rose-500">*</span>
+                          توضیحات <span className="text-rose-500">*</span>
                         </label>
-                        <span className="text-[10.5px] text-[#86868B]">بدون درج لینک</span>
+                        <span className="text-[10.5px] text-[#86868B]">بدون لینک</span>
                       </div>
                       <textarea
                         id="post-ad-description"
                         required
-                        rows={4}
-                        placeholder="مشخصات اصلی، شرایط، ساعات کاری یا جزئیات مهم را کوتاه و شفاف بنویسید..."
+                        rows={3}
+                        placeholder="مشخصات و شرایط آگهی..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className={`w-full rounded-xl border bg-[#FFFFFF] dark:bg-[#1C1F28] px-3.5 py-3 text-xs sm:text-[13px] font-medium text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:ring-2 transition-colors resize-none leading-relaxed ${
+                        className={`w-full rounded-xl border bg-[#FFFFFF] dark:bg-[#1C1F28] px-3 py-2.5 text-xs sm:text-[13px] font-medium text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:ring-2 transition-colors resize-none leading-relaxed ${
                           descriptionHasLink
                             ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/15'
                             : 'border-[#ECEFF4] dark:!border-white/[0.12] focus:border-[#0066CC] dark:focus:!border-[#3B9BFF] focus:ring-[#0066CC]/15'
@@ -1344,8 +1331,8 @@ export default function PostAdModal({
                       )}
                     </div>
 
-                    {/* Always-Visible Optional Price + Negotiable Pill (No Collapsible Drawer!) */}
-                    <div className="space-y-1.5">
+                    {/* Price + Currency + Negotiable (Zero overlap in RTL/LTR) */}
+                    <div className="space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <label
                           htmlFor="post-ad-price"
@@ -1362,7 +1349,7 @@ export default function PostAdModal({
                               return next;
                             });
                           }}
-                          className={`min-h-[30px] px-3 rounded-full border text-[11px] font-bold leading-none inline-flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                          className={`min-h-[28px] px-2.5 rounded-full border text-[11px] font-bold leading-none inline-flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
                             priceNegotiable
                               ? 'bg-[#EAF2FB] border-[#0066CC] dark:!border-[#3B9BFF] text-[#0066CC]'
                               : 'bg-[#F5F5F7] border-[#ECEFF4] text-[#6E6E73] hover:text-[#1D1D1F]'
@@ -1375,23 +1362,23 @@ export default function PostAdModal({
                         </button>
                       </div>
 
-                      <div className="relative flex items-center">
+                      <div className="flex items-center gap-2">
                         <input
                           id="post-ad-price"
                           type="text"
                           inputMode="decimal"
                           dir="ltr"
                           disabled={priceNegotiable}
-                          placeholder={priceNegotiable ? 'توافقی' : 'مثال: 12000'}
+                          placeholder={priceNegotiable ? 'توافقی' : '12000'}
                           value={priceNegotiable ? '' : price}
                           onChange={(e) => setPrice(e.target.value)}
-                          className={`${INPUT_CLASS} pe-20 disabled:opacity-60 disabled:cursor-not-allowed`}
+                          className={`${COMPACT_INPUT_CLASS} flex-1 disabled:opacity-60 disabled:cursor-not-allowed`}
                         />
                         <button
                           type="button"
                           onClick={() => setPriceType((cur) => (cur === '€' ? 'kr' : '€'))}
-                          title="تغییر واحد پول (کرون / یورو)"
-                          className="absolute end-1.5 h-8 px-2.5 rounded-lg bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] text-[11px] font-bold text-[#515154] leading-none inline-flex items-center cursor-pointer transition-colors"
+                          title="تغییر واحد پول"
+                          className="h-11 sm:h-10 px-3.5 rounded-xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] dark:!border-white/[0.12] text-xs font-bold text-[#515154] leading-none inline-flex items-center justify-center cursor-pointer transition-colors shrink-0"
                         >
                           {priceType === '€' ? 'یورو (€)' : 'کرون'}
                         </button>
@@ -1401,51 +1388,51 @@ export default function PostAdModal({
                 )}
 
                 {/* ======================================================
-                    STEP 3 — اطلاعات تماس و نقشه گوگل (Contact + Location & Live Google Map)
+                    STEP 3 — تماس و نقشه گوگل (Ultra-Concise)
                 ====================================================== */}
                 {step === 3 && (
-                  <div className="space-y-4">
-                    {/* Card 1: Contact Methods (≥1 Required, Phone Optional) */}
+                  <div className="space-y-3">
+                    {/* Card 1: Contact Methods */}
                     <div
-                      className={`rounded-2xl border p-3.5 sm:p-4 space-y-3 transition-colors ${
+                      className={`rounded-2xl border p-3.5 space-y-2.5 transition-colors ${
                         contactHighlightError && activeContacts.length === 0
                           ? 'border-rose-400 bg-rose-50/35'
                           : 'border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28]'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-2">
-                          <Lock className="w-4 h-4 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
-                          <h3 className="text-xs sm:text-[13px] font-extrabold text-[#1D1D1F] leading-none">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
+                          <h3 className="text-xs font-extrabold text-[#1D1D1F] leading-none">
                             راه‌های تماس
                           </h3>
                         </div>
 
                         {activeContacts.length > 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-emerald-50 text-emerald-700 text-[10.5px] font-bold leading-none">
-                            <Check className="w-3 h-3 block shrink-0" strokeWidth={2.75} aria-hidden="true" />
+                          <span className="inline-flex items-center gap-1 px-2 h-5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold leading-none">
+                            <Check className="w-2.5 h-2.5 block shrink-0" strokeWidth={2.75} aria-hidden="true" />
                             <span className="leading-none">
-                              {activeContacts.length.toLocaleString('fa-IR')} روش تماس ثبت شد
+                              {activeContacts.length.toLocaleString('fa-IR')} مورد
                             </span>
                           </span>
                         ) : (
                           <span
-                            className={`inline-flex items-center px-2.5 h-6 rounded-full text-[10.5px] font-bold leading-none ${
+                            className={`inline-flex items-center px-2 h-5 rounded-full text-[10px] font-bold leading-none ${
                               contactHighlightError
                                 ? 'bg-rose-100 text-rose-700'
                                 : 'bg-[#EAF2FB] text-[#0066CC]'
                             }`}
                           >
-                            حداقل ۱ مورد الزامی
+                            حداقل ۱ مورد
                           </span>
                         )}
                       </div>
 
-                      <p className="text-[11px] text-[#6E6E73] leading-relaxed">
-                        شماره تلفن کاملاً اختیاری است؛ برای حریم خصوصی بیشتر می‌توانید از نام کاربری تلگرام، واتساپ یا ایمیل استفاده کنید.
+                      <p className="text-[11px] text-[#6E6E73] leading-snug">
+                        تلفن اختیاری است؛ تلگرام یا ایمیل امن‌تر است.
                       </p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {/* Telegram */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between gap-1">
@@ -1453,19 +1440,19 @@ export default function PostAdModal({
                               htmlFor="post-ad-telegram"
                               className="text-[11.5px] font-bold text-[#1D1D1F]"
                             >
-                              تلگرام <span className="text-[10.5px] font-medium text-[#0066CC]">(پیشنهادی)</span>
+                              تلگرام
                             </label>
                             <button
                               type="button"
                               onClick={() => setOpenHelp((h) => (h === 'telegram' ? null : 'telegram'))}
-                              className={`relative h-6 px-2 rounded-full inline-flex items-center gap-1 text-[10px] font-bold leading-none transition-colors cursor-pointer before:content-[''] before:absolute before:-inset-2 sm:before:inset-0 ${
+                              aria-label="راهنمای تلگرام"
+                              className={`relative h-5 w-5 rounded-full inline-flex items-center justify-center transition-colors cursor-pointer before:content-[''] before:absolute before:-inset-2 sm:before:inset-0 ${
                                 openHelp === 'telegram'
                                   ? 'bg-[#EAF2FB] text-[#0066CC]'
-                                  : 'bg-[#F5F5F7] text-[#6E6E73] hover:text-[#0066CC]'
+                                  : 'text-[#86868B] hover:text-[#0066CC]'
                               }`}
                             >
-                              <HelpCircle className="w-3 h-3 block shrink-0" strokeWidth={2} aria-hidden="true" />
-                              <span className="leading-none">راهنما</span>
+                              <HelpCircle className="w-3.5 h-3.5 block" strokeWidth={2} aria-hidden="true" />
                             </button>
                           </div>
                           <div className="relative">
@@ -1495,8 +1482,8 @@ export default function PostAdModal({
                             )}
                           </div>
                           {openHelp === 'telegram' && (
-                            <p className="rounded-xl bg-[#F5F5F7] border border-[#ECEFF4] px-2.5 py-2 text-[10.5px] text-[#515154] leading-relaxed">
-                              در تلگرام به <strong dir="ltr">Settings → Username</strong> بروید و آیدی خود را بسازید یا کپی کنید (شماره شما مخفی می‌ماند).
+                            <p className="rounded-lg bg-[#F5F5F7] px-2.5 py-1.5 text-[10.5px] text-[#515154]">
+                              تلگرام ← <strong dir="ltr">Settings → Username</strong>
                             </p>
                           )}
                         </div>
@@ -1505,9 +1492,9 @@ export default function PostAdModal({
                         <div className="space-y-1">
                           <label
                             htmlFor="post-ad-email"
-                            className="block text-[11.5px] font-bold text-[#1D1D1F] leading-6"
+                            className="block text-[11.5px] font-bold text-[#1D1D1F] leading-5"
                           >
-                            ایمیل <span className="text-[10.5px] font-medium text-[#0066CC]">(پیشنهادی)</span>
+                            ایمیل
                           </label>
                           <div className="relative">
                             <Mail
@@ -1544,19 +1531,19 @@ export default function PostAdModal({
                               htmlFor="post-ad-whatsapp"
                               className="text-[11.5px] font-bold text-[#1D1D1F]"
                             >
-                              واتساپ <span className="text-[10.5px] font-medium text-[#86868B]">(اختیاری)</span>
+                              واتساپ
                             </label>
                             <button
                               type="button"
                               onClick={() => setOpenHelp((h) => (h === 'whatsapp' ? null : 'whatsapp'))}
-                              className={`relative h-6 px-2 rounded-full inline-flex items-center gap-1 text-[10px] font-bold leading-none transition-colors cursor-pointer before:content-[''] before:absolute before:-inset-2 sm:before:inset-0 ${
+                              aria-label="راهنمای واتساپ"
+                              className={`relative h-5 w-5 rounded-full inline-flex items-center justify-center transition-colors cursor-pointer before:content-[''] before:absolute before:-inset-2 sm:before:inset-0 ${
                                 openHelp === 'whatsapp'
                                   ? 'bg-[#EAF2FB] text-[#0066CC]'
-                                  : 'bg-[#F5F5F7] text-[#6E6E73] hover:text-[#0066CC]'
+                                  : 'text-[#86868B] hover:text-[#0066CC]'
                               }`}
                             >
-                              <HelpCircle className="w-3 h-3 block shrink-0" strokeWidth={2} aria-hidden="true" />
-                              <span className="leading-none">راهنما</span>
+                              <HelpCircle className="w-3.5 h-3.5 block" strokeWidth={2} aria-hidden="true" />
                             </button>
                           </div>
                           <div className="relative">
@@ -1586,19 +1573,19 @@ export default function PostAdModal({
                             )}
                           </div>
                           {openHelp === 'whatsapp' && (
-                            <p className="rounded-xl bg-[#F5F5F7] border border-[#ECEFF4] px-2.5 py-2 text-[10.5px] text-[#515154] leading-relaxed">
-                              در واتساپ به <strong dir="ltr">Settings → Profile → Username</strong> بروید یا شماره با کد کشور (مثل <span dir="ltr">+46...</span>) وارد کنید.
+                            <p className="rounded-lg bg-[#F5F5F7] px-2.5 py-1.5 text-[10.5px] text-[#515154]">
+                              واتساپ ← <strong dir="ltr">Settings → Profile → Username</strong> یا شماره با کد کشور
                             </p>
                           )}
                         </div>
 
-                        {/* Phone (Optional) */}
+                        {/* Phone */}
                         <div className="space-y-1">
                           <label
                             htmlFor="post-ad-phone"
-                            className="block text-[11.5px] font-bold text-[#1D1D1F] leading-6"
+                            className="block text-[11.5px] font-bold text-[#1D1D1F] leading-5"
                           >
-                            شماره تلفن <span className="text-[10.5px] font-medium text-[#86868B]">(اختیاری)</span>
+                            تلفن
                           </label>
                           <div className="relative">
                             <Phone
@@ -1628,13 +1615,13 @@ export default function PostAdModal({
                           </div>
                         </div>
 
-                        {/* Website (Optional, full width) */}
+                        {/* Website */}
                         <div className="sm:col-span-2 space-y-1">
                           <label
                             htmlFor="post-ad-website"
                             className="block text-[11.5px] font-bold text-[#1D1D1F]"
                           >
-                            وب‌سایت یا صفحه رسمی <span className="text-[10.5px] font-medium text-[#86868B]">(اختیاری)</span>
+                            وب‌سایت
                           </label>
                           <div className="relative">
                             <Globe
@@ -1668,23 +1655,18 @@ export default function PostAdModal({
 
                     {/* Card 2: Location & Automatic Free Google Map */}
                     <div className="rounded-2xl border border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28] overflow-hidden">
-                      <div className="p-3.5 sm:p-4 space-y-3">
+                      <div className="p-3.5 space-y-2.5">
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
-                            <h3 className="text-xs sm:text-[13px] font-extrabold text-[#1D1D1F] leading-none">
-                              موقعیت مکانی و نقشه گوگل
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
+                            <h3 className="text-xs font-extrabold text-[#1D1D1F] leading-none">
+                              موقعیت و نقشه گوگل
                             </h3>
                           </div>
-                          {googleMapEmbedUrl && (
-                            <span className="text-[10.5px] font-bold text-[#0066CC] bg-[#EAF2FB] px-2 py-0.5 rounded-full leading-none">
-                              تبدیل خودکار آدرس به نقشه
-                            </span>
-                          )}
                         </div>
 
                         {/* Country + City Side-by-Side */}
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-2 gap-2">
                           {/* Country Popover */}
                           <div className="space-y-1" ref={countryDropdownRef}>
                             <label className="block text-[11.5px] font-bold text-[#1D1D1F]">
@@ -1698,7 +1680,7 @@ export default function PostAdModal({
                                   setCityDropdownOpen(false);
                                 }}
                                 aria-expanded={countryDropdownOpen}
-                                className="w-full h-11 sm:h-10 rounded-xl border border-[#ECEFF4] dark:!border-white/[0.12] bg-[#FFFFFF] dark:bg-[#1C1F28] px-3 text-xs font-bold text-[#1D1D1F] flex items-center justify-between gap-1.5 hover:border-[#0066CC]/45 transition-colors cursor-pointer"
+                                className="w-full h-10 rounded-xl border border-[#ECEFF4] dark:!border-white/[0.12] bg-[#FFFFFF] dark:bg-[#1C1F28] px-3 text-xs font-bold text-[#1D1D1F] flex items-center justify-between gap-1.5 hover:border-[#0066CC]/45 transition-colors cursor-pointer"
                               >
                                 <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
                                   <Globe className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
@@ -1714,7 +1696,7 @@ export default function PostAdModal({
                               </button>
 
                               {countryDropdownOpen && (
-                                <div className="absolute z-30 mt-1.5 inset-x-0 rounded-2xl border border-[#ECEFF4] dark:!border-white/[0.12] bg-[#FFFFFF] dark:bg-[#1C1F28] shadow-xl p-1.5 max-h-56 overflow-y-auto custom-scrollbar space-y-0.5">
+                                <div className="absolute z-30 mt-1.5 inset-x-0 rounded-2xl border border-[#ECEFF4] dark:!border-white/[0.12] bg-[#FFFFFF] dark:bg-[#1C1F28] shadow-xl p-1.5 max-h-52 overflow-y-auto no-scrollbar space-y-0.5">
                                   {activeCountries.map((c) => {
                                     const active = c.id === adCountry;
                                     return (
@@ -1722,7 +1704,7 @@ export default function PostAdModal({
                                         key={c.id}
                                         type="button"
                                         onClick={() => handleSelectCountry(c)}
-                                        className={`w-full min-h-[38px] px-2.5 rounded-xl text-xs font-bold flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                                        className={`w-full min-h-[36px] px-2.5 rounded-xl text-xs font-bold flex items-center justify-between gap-2 transition-colors cursor-pointer ${
                                           active
                                             ? 'bg-[#EAF2FB] text-[#0066CC]'
                                             : 'text-[#1D1D1F] hover:bg-[#F5F5F7]'
@@ -1759,7 +1741,7 @@ export default function PostAdModal({
                                   });
                                 }}
                                 aria-expanded={cityDropdownOpen}
-                                className="w-full h-11 sm:h-10 rounded-xl border border-[#ECEFF4] dark:!border-white/[0.12] bg-[#FFFFFF] dark:bg-[#1C1F28] px-3 text-xs font-bold text-[#1D1D1F] flex items-center justify-between gap-1.5 hover:border-[#0066CC]/45 transition-colors cursor-pointer"
+                                className="w-full h-10 rounded-xl border border-[#ECEFF4] dark:!border-white/[0.12] bg-[#FFFFFF] dark:bg-[#1C1F28] px-3 text-xs font-bold text-[#1D1D1F] flex items-center justify-between gap-1.5 hover:border-[#0066CC]/45 transition-colors cursor-pointer"
                               >
                                 <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
                                   <MapPin className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
@@ -1793,7 +1775,7 @@ export default function PostAdModal({
                                       />
                                     </div>
                                   </div>
-                                  <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 space-y-0.5">
+                                  <div className="max-h-44 overflow-y-auto no-scrollbar p-1.5 space-y-0.5">
                                     {filteredCities.length > 0 ? (
                                       filteredCities.map((ct) => {
                                         const active = ct.id === city;
@@ -1833,21 +1815,17 @@ export default function PostAdModal({
                             htmlFor="post-ad-area"
                             className="block text-[11.5px] font-bold text-[#1D1D1F]"
                           >
-                            محله یا آدرس{' '}
-                            <span className="text-[10.5px] font-medium text-[#86868B]">(اختیاری)</span>
+                            محله یا آدرس <span className="font-medium text-[#86868B]">(اختیاری)</span>
                           </label>
                           <input
                             id="post-ad-area"
                             type="text"
                             maxLength={140}
-                            placeholder="مثال: Södermalm یا نام خیابان / محله"
+                            placeholder="مثال: Södermalm"
                             value={area}
                             onChange={(e) => setArea(e.target.value)}
                             className={COMPACT_INPUT_CLASS}
                           />
-                          <p className="text-[10.5px] text-[#6E6E73] leading-relaxed">
-                            برای آگهی شخصی نیازی به پلاک دقیق منزل نیست؛ نوشتن نام محله کافی است. آدرس شما به‌صورت خودکار در صفحه آگهی روی نقشه گوگل نمایش داده می‌شود.
-                          </p>
                         </div>
                       </div>
 
@@ -1857,16 +1835,16 @@ export default function PostAdModal({
                           <GoogleMapEmbed
                             embedUrl={googleMapEmbedUrl}
                             title={`پیش‌نمایش نقشه ${googleMapQuery}`}
-                            heightClass="h-[176px] sm:h-[196px]"
+                            heightClass="h-[164px] sm:h-[184px]"
                             deferForLcp={false}
                             mobileScrollGuard={false}
                           />
-                          <div className="px-3.5 py-2.5 bg-[#F5F5F7] border-t border-[#ECEFF4] flex items-center justify-between gap-2 flex-wrap">
+                          <div className="px-3 py-2 bg-[#F5F5F7] border-t border-[#ECEFF4] flex items-center justify-between gap-2">
                             <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#515154] min-w-0 truncate">
                               <MapPin className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
                               <span className="truncate">
-                                {currentCountryObj.nameFa}، {currentCityObj?.fa || city}
-                                {area.trim() ? ` — ${area.trim()}` : ''}
+                                {currentCityObj?.fa || city}
+                                {area.trim() ? ` • ${area.trim()}` : ''}
                               </span>
                             </span>
 
@@ -1875,9 +1853,9 @@ export default function PostAdModal({
                                 href={googleMapSearchUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-[#EAF2FB] text-[#0066CC] text-[10.5px] font-bold leading-none shrink-0 hover:opacity-85 transition-opacity"
+                                className="inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-[#EAF2FB] text-[#0066CC] text-[10.5px] font-bold leading-none shrink-0"
                               >
-                                <span className="leading-none">باز کردن در گوگل مپ</span>
+                                <span className="leading-none">گوگل مپ</span>
                                 <ExternalLink className="w-3 h-3 block shrink-0" strokeWidth={2.2} aria-hidden="true" />
                               </a>
                             )}
@@ -1889,25 +1867,25 @@ export default function PostAdModal({
                 )}
 
                 {/* ======================================================
-                    STEP 4 — تصاویر (آپلود یا لینک مستقیم) + پیشنهاد VIP + انتشار
+                    STEP 4 — تصاویر + پیشنهاد VIP + انتشار (Ultra-Concise)
                 ====================================================== */}
                 {step === 4 && (
-                  <div className="space-y-4">
-                    {/* Card 1: Always-Visible Photo Card (Upload OR Direct Link) */}
-                    <div className="rounded-2xl border border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28] p-3.5 sm:p-4 space-y-3">
+                  <div className="space-y-3">
+                    {/* Card 1: Always-Visible Photo Card */}
+                    <div className="rounded-2xl border border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28] p-3.5 space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <ImagePlus className="w-4 h-4 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
-                          <h3 className="text-xs sm:text-[13px] font-extrabold text-[#1D1D1F] leading-none">
-                            تصاویر آگهی <span className="font-medium text-[#86868B]">(اختیاری)</span>
+                          <h3 className="text-xs font-extrabold text-[#1D1D1F] leading-none">
+                            تصاویر <span className="font-medium text-[#86868B]">(اختیاری)</span>
                           </h3>
                         </div>
                         <span className="px-2 py-0.5 rounded-full bg-[#F5F5F7] text-[#6E6E73] text-[10.5px] font-bold tabular-nums leading-none">
-                          {imagesList.length.toLocaleString('fa-IR')} از ۴
+                          {imagesList.length.toLocaleString('fa-IR')} / ۴
                         </span>
                       </div>
 
-                      {/* Segmented Pill Switcher: Upload vs Direct Link */}
+                      {/* Segmented Pill Switcher */}
                       <div
                         role="tablist"
                         aria-label="روش افزودن تصویر"
@@ -1918,7 +1896,7 @@ export default function PostAdModal({
                           role="tab"
                           aria-selected={photoInputMode === 'upload'}
                           onClick={() => setPhotoInputMode('upload')}
-                          className={`min-h-[40px] sm:min-h-[36px] px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-xs leading-none transition-all duration-200 active:scale-[0.98] cursor-pointer ${
+                          className={`min-h-[36px] px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-xs leading-none transition-all cursor-pointer ${
                             photoInputMode === 'upload'
                               ? 'bg-[#FFFFFF] dark:bg-[#1C1F28] text-[#1D1D1F] border border-[#ECEFF4] dark:!border-white/[0.12] shadow-xs font-extrabold'
                               : 'bg-transparent border border-transparent text-[#6E6E73] hover:text-[#1D1D1F] font-semibold'
@@ -1931,7 +1909,7 @@ export default function PostAdModal({
                             strokeWidth={2}
                             aria-hidden="true"
                           />
-                          <span className="leading-none">آپلود از دستگاه</span>
+                          <span className="leading-none">آپلود</span>
                         </button>
 
                         <button
@@ -1939,7 +1917,7 @@ export default function PostAdModal({
                           role="tab"
                           aria-selected={photoInputMode === 'link'}
                           onClick={() => setPhotoInputMode('link')}
-                          className={`min-h-[40px] sm:min-h-[36px] px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-xs leading-none transition-all duration-200 active:scale-[0.98] cursor-pointer ${
+                          className={`min-h-[36px] px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-xs leading-none transition-all cursor-pointer ${
                             photoInputMode === 'link'
                               ? 'bg-[#FFFFFF] dark:bg-[#1C1F28] text-[#1D1D1F] border border-[#ECEFF4] dark:!border-white/[0.12] shadow-xs font-extrabold'
                               : 'bg-transparent border border-transparent text-[#6E6E73] hover:text-[#1D1D1F] font-semibold'
@@ -1952,7 +1930,7 @@ export default function PostAdModal({
                             strokeWidth={2}
                             aria-hidden="true"
                           />
-                          <span className="leading-none">لینک مستقیم تصویر</span>
+                          <span className="leading-none">لینک مستقیم</span>
                         </button>
                       </div>
 
@@ -1980,12 +1958,12 @@ export default function PostAdModal({
                               fileInputRef.current?.click();
                             }
                           }}
-                          className={`rounded-2xl border border-dashed p-4 text-center transition-all ${
+                          className={`rounded-2xl border border-dashed p-3.5 text-center transition-all ${
                             imagesList.length >= MAX_PHOTOS
                               ? 'border-[#ECEFF4] bg-[#F5F5F7]/60 opacity-60 cursor-not-allowed'
                               : dragOverUpload
                                 ? 'border-[#0066CC] bg-[#EAF2FB]/60 cursor-pointer'
-                                : 'border-[#C7C7CC] dark:!border-white/[0.20] bg-[#F5F5F7]/60 hover:border-[#0066CC] hover:bg-[#EAF2FB]/35 cursor-pointer'
+                                : 'border-[#C7C7CC] dark:!border-white/[0.20] bg-[#F5F5F7]/60 hover:border-[#0066CC] cursor-pointer'
                           }`}
                         >
                           <input
@@ -1997,23 +1975,23 @@ export default function PostAdModal({
                             disabled={uploadingPhotos || imagesList.length >= MAX_PHOTOS}
                             className="hidden"
                           />
-                          <div className="flex flex-col items-center gap-1.5">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFFFFF] dark:bg-[#1C1F28] border border-[#ECEFF4] text-[#0066CC]">
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFFFFF] dark:bg-[#1C1F28] border border-[#ECEFF4] text-[#0066CC]">
                               {uploadingPhotos ? (
-                                <Loader2 className="w-5 h-5 block animate-spin" strokeWidth={2} aria-hidden="true" />
+                                <Loader2 className="w-4 h-4 block animate-spin" strokeWidth={2} aria-hidden="true" />
                               ) : (
-                                <ImagePlus className="w-5 h-5 block" strokeWidth={1.9} aria-hidden="true" />
+                                <ImagePlus className="w-4 h-4 block" strokeWidth={1.9} aria-hidden="true" />
                               )}
                             </div>
                             <span className="text-xs font-bold text-[#1D1D1F]">
                               {uploadingPhotos
-                                ? 'در حال فشرده‌سازی و ارسال...'
+                                ? 'در حال آپلود...'
                                 : imagesList.length >= MAX_PHOTOS
-                                  ? 'ظرفیت ۴ تصویر تکمیل است'
-                                  : 'انتخاب عکس از گالری یا کشیدن و رها کردن'}
+                                  ? 'حداکثر ۴ عکس انتخاب شد'
+                                  : 'انتخاب یا کشیدن عکس'}
                             </span>
                             <span className="text-[10.5px] text-[#6E6E73]">
-                              حداکثر ۴ تصویر • JPG، PNG، WebP • بهینه‌سازی خودکار تا ۱ مگابایت
+                              حداکثر ۴ عکس • تا ۱ مگابایت
                             </span>
                           </div>
                         </div>
@@ -2021,180 +1999,151 @@ export default function PostAdModal({
 
                       {/* Tab Panel 2: Direct Image Link */}
                       {photoInputMode === 'link' && (
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="url"
-                              dir="ltr"
-                              disabled={imagesList.length >= MAX_PHOTOS}
-                              placeholder="https://example.com/photo.jpg"
-                              value={imageUrl}
-                              onChange={(e) => setImageUrl(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  addImageByUrl();
-                                }
-                              }}
-                              className={`${COMPACT_INPUT_CLASS} flex-1`}
-                            />
-                            <button
-                              type="button"
-                              disabled={!imageUrl.trim() || imagesList.length >= MAX_PHOTOS}
-                              onClick={addImageByUrl}
-                              className="min-h-[44px] sm:min-h-[40px] px-3.5 rounded-xl bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-45 disabled:pointer-events-none text-[#FBFBFC] text-xs font-bold leading-none inline-flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
-                            >
-                              <Plus className="w-3.5 h-3.5 block shrink-0" strokeWidth={2.4} aria-hidden="true" />
-                              <span className="leading-none">افزودن</span>
-                            </button>
-                          </div>
-                          <p className="text-[10.5px] text-[#6E6E73]">
-                            لینک مستقیم تصویر با <span dir="ltr">https://</span> وارد کرده و روی افزودن بزنید.
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="url"
+                            dir="ltr"
+                            disabled={imagesList.length >= MAX_PHOTOS}
+                            placeholder="https://example.com/photo.jpg"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addImageByUrl();
+                              }
+                            }}
+                            className={`${COMPACT_INPUT_CLASS} flex-1`}
+                          />
+                          <button
+                            type="button"
+                            disabled={!imageUrl.trim() || imagesList.length >= MAX_PHOTOS}
+                            onClick={addImageByUrl}
+                            className="h-11 sm:h-10 px-3.5 rounded-xl bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-45 disabled:pointer-events-none text-[#FBFBFC] text-xs font-bold leading-none inline-flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+                          >
+                            <Plus className="w-3.5 h-3.5 block shrink-0" strokeWidth={2.4} aria-hidden="true" />
+                            <span className="leading-none">افزودن</span>
+                          </button>
                         </div>
                       )}
 
                       {/* Uploaded / Linked Photos Preview Grid */}
                       {imagesList.length > 0 && (
-                        <div className="space-y-1.5">
-                          <div className="grid grid-cols-4 gap-2">
-                            {imagesList.map((img, idx) => (
-                              <div
-                                key={`${img}-${idx}`}
-                                className="relative aspect-square rounded-xl overflow-hidden bg-[#F5F5F7] border border-[#ECEFF4] group"
+                        <div className="grid grid-cols-4 gap-2">
+                          {imagesList.map((img, idx) => (
+                            <div
+                              key={`${img}-${idx}`}
+                              className="relative aspect-square rounded-xl overflow-hidden bg-[#F5F5F7] border border-[#ECEFF4]"
+                            >
+                              <img
+                                src={img}
+                                alt={`تصویر ${idx + 1}`}
+                                onClick={() => idx > 0 && makePrimaryImage(idx)}
+                                title={idx === 0 ? 'کاور اصلی' : 'انتخاب به‌عنوان کاور'}
+                                className={`w-full h-full object-cover ${idx > 0 ? 'cursor-pointer' : ''}`}
+                              />
+                              {idx === 0 && (
+                                <span className="absolute bottom-1 start-1 inline-flex items-center gap-0.5 px-1.5 h-4 rounded-full bg-[#1D1D1F]/75 text-white text-[9px] font-bold leading-none">
+                                  <Star className="w-2.5 h-2.5 block shrink-0 text-amber-400" fill="currentColor" strokeWidth={2} aria-hidden="true" />
+                                  <span className="leading-none">اصلی</span>
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => removeImage(idx)}
+                                aria-label="حذف تصویر"
+                                className="absolute top-1 end-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#1D1D1F]/75 hover:bg-rose-600 text-white active:scale-90 transition-colors cursor-pointer before:content-[''] before:absolute before:-inset-2 sm:before:inset-0"
                               >
-                                <img
-                                  src={img}
-                                  alt={`تصویر ${idx + 1}`}
-                                  onClick={() => idx > 0 && makePrimaryImage(idx)}
-                                  title={idx === 0 ? 'تصویر اصلی آگهی' : 'کلیک برای انتخاب به‌عنوان تصویر اصلی'}
-                                  className={`w-full h-full object-cover ${idx > 0 ? 'cursor-pointer' : ''}`}
-                                />
-                                {idx === 0 && (
-                                  <span className="absolute bottom-1.5 start-1.5 inline-flex items-center gap-0.5 px-1.5 h-5 rounded-full bg-[#1D1D1F]/75 backdrop-blur-xs text-white text-[9.5px] font-bold leading-none">
-                                    <Star className="w-2.5 h-2.5 block shrink-0 text-amber-400" fill="currentColor" strokeWidth={2} aria-hidden="true" />
-                                    <span className="leading-none">اصلی</span>
-                                  </span>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => removeImage(idx)}
-                                  aria-label="حذف تصویر"
-                                  className="absolute top-1.5 end-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#1D1D1F]/75 hover:bg-rose-600 text-white backdrop-blur-xs active:scale-90 transition-colors cursor-pointer before:content-[''] before:absolute before:-inset-2 sm:before:inset-0"
-                                >
-                                  <X className="w-3.5 h-3.5 block shrink-0" strokeWidth={2.5} aria-hidden="true" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                          {imagesList.length > 1 && (
-                            <p className="text-[10.5px] text-[#86868B]">
-                              برای تغییر عکس اصلی (کاور)، روی هر تصویر کلیک کنید.
-                            </p>
-                          )}
+                                <X className="w-3.5 h-3.5 block shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
 
-                    {/* Zone 2: Standard (Free) vs VIP Offer */}
+                    {/* Zone 2: Standard vs VIP Offer */}
                     {vipEnabled && (
-                      <div className="space-y-2">
-                        <span className="block text-xs font-extrabold text-[#1D1D1F]">
-                          نوع انتشار آگهی
-                        </span>
-                        <div
-                          role="radiogroup"
-                          aria-label="نوع انتشار آگهی"
-                          className="grid grid-cols-2 gap-2.5"
+                      <div
+                        role="radiogroup"
+                        aria-label="نوع انتشار"
+                        className="grid grid-cols-2 gap-2"
+                      >
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={!wantVipPromotion}
+                          onClick={() => setWantVipPromotion(false)}
+                          className={`p-3 rounded-2xl border text-right flex flex-col justify-between gap-1.5 transition-all active:scale-[0.98] cursor-pointer ${
+                            !wantVipPromotion
+                              ? 'bg-[#EAF2FB]/70 border-[#0066CC] dark:!border-[#3B9BFF] shadow-[0_0_0_1px_rgba(0,102,204,0.35)]'
+                              : 'bg-[#FFFFFF] dark:bg-[#1C1F28] border-[#ECEFF4] dark:!border-white/[0.10]'
+                          }`}
                         >
-                          {/* Standard Free Card */}
-                          <button
-                            type="button"
-                            role="radio"
-                            aria-checked={!wantVipPromotion}
-                            onClick={() => setWantVipPromotion(false)}
-                            className={`min-h-[88px] p-3.5 rounded-2xl border text-right flex flex-col justify-between gap-2 transition-all duration-200 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC] ${
-                              !wantVipPromotion
-                                ? 'bg-[#EAF2FB]/70 border-[#0066CC] dark:!border-[#3B9BFF] shadow-[0_0_0_1px_rgba(0,102,204,0.35)]'
-                                : 'bg-[#FFFFFF] dark:bg-[#1C1F28] border-[#ECEFF4] dark:!border-white/[0.10] hover:border-[#0066CC]/35'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1.5">
-                              <span className="text-xs font-extrabold leading-none text-[#1D1D1F]">
-                                آگهی عادی
-                              </span>
-                              <span
-                                className={`flex h-4 w-4 items-center justify-center rounded-full border shrink-0 transition-colors ${
-                                  !wantVipPromotion
-                                    ? 'bg-[#0066CC] border-[#0066CC] text-white'
-                                    : 'border-[#C7C7CC] dark:!border-white/25'
-                                }`}
-                              >
-                                {!wantVipPromotion && (
-                                  <Check className="w-2.5 h-2.5 block" strokeWidth={3} aria-hidden="true" />
-                                )}
-                              </span>
-                            </div>
-                            <div className="space-y-0.5">
-                              <span className="block text-xs font-extrabold text-emerald-700 leading-none">
-                                رایگان
-                              </span>
-                              <span className="block text-[10.5px] text-[#6E6E73] leading-snug">
-                                انتشار استاندارد + بوست رایگان
-                              </span>
-                            </div>
-                          </button>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-extrabold leading-none text-[#1D1D1F]">
+                              عادی
+                            </span>
+                            <span
+                              className={`flex h-4 w-4 items-center justify-center rounded-full border shrink-0 ${
+                                !wantVipPromotion
+                                  ? 'bg-[#0066CC] border-[#0066CC] text-white'
+                                  : 'border-[#C7C7CC] dark:!border-white/25'
+                              }`}
+                            >
+                              {!wantVipPromotion && (
+                                <Check className="w-2.5 h-2.5 block" strokeWidth={3} aria-hidden="true" />
+                              )}
+                            </span>
+                          </div>
+                          <span className="text-xs font-extrabold text-emerald-700 leading-none">
+                            رایگان
+                          </span>
+                        </button>
 
-                          {/* VIP Offer Card */}
-                          <button
-                            type="button"
-                            role="radio"
-                            aria-checked={wantVipPromotion}
-                            onClick={() => setWantVipPromotion(true)}
-                            className={`min-h-[88px] p-3.5 rounded-2xl border text-right flex flex-col justify-between gap-2 transition-all duration-200 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
-                              wantVipPromotion
-                                ? 'bg-amber-50/80 border-amber-500/80 dark:!border-amber-400/70 shadow-[0_0_0_1px_rgba(245,158,11,0.45)]'
-                                : 'bg-[#FFFFFF] dark:bg-[#1C1F28] border-[#ECEFF4] dark:!border-white/[0.10] hover:border-amber-300/80'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1.5">
-                              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold leading-none text-[#1D1D1F]">
-                                <Crown className="w-3.5 h-3.5 block shrink-0 text-amber-500" strokeWidth={2.1} aria-hidden="true" />
-                                <span className="leading-none">ویژه (VIP)</span>
-                              </span>
-                              <span
-                                className={`flex h-4 w-4 items-center justify-center rounded-full border shrink-0 transition-colors ${
-                                  wantVipPromotion
-                                    ? 'bg-amber-500 border-amber-500 text-white'
-                                    : 'border-[#C7C7CC] dark:!border-white/25'
-                                }`}
-                              >
-                                {wantVipPromotion && (
-                                  <Check className="w-2.5 h-2.5 block" strokeWidth={3} aria-hidden="true" />
-                                )}
-                              </span>
-                            </div>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-xs font-extrabold text-amber-800 dark:text-amber-300 leading-none tabular-nums">
-                                  {vipPriceLabel}
-                                </span>
-                                <span className="px-1.5 py-0.5 rounded-full bg-amber-100/90 dark:!bg-amber-500/20 text-amber-900 dark:text-amber-300 text-[9.5px] font-bold leading-none">
-                                  ۳× بازدید
-                                </span>
-                              </div>
-                              <span className="block text-[10.5px] text-[#6E6E73] leading-snug">
-                                صدر آگهی‌های {currentCountryObj.nameFa}
-                              </span>
-                            </div>
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={wantVipPromotion}
+                          onClick={() => setWantVipPromotion(true)}
+                          className={`p-3 rounded-2xl border text-right flex flex-col justify-between gap-1.5 transition-all active:scale-[0.98] cursor-pointer ${
+                            wantVipPromotion
+                              ? 'bg-amber-50/80 border-amber-500/80 dark:!border-amber-400/70 shadow-[0_0_0_1px_rgba(245,158,11,0.45)]'
+                              : 'bg-[#FFFFFF] dark:bg-[#1C1F28] border-[#ECEFF4] dark:!border-white/[0.10]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="inline-flex items-center gap-1 text-xs font-extrabold leading-none text-[#1D1D1F]">
+                              <Crown className="w-3.5 h-3.5 block shrink-0 text-amber-500" strokeWidth={2.1} aria-hidden="true" />
+                              <span className="leading-none">ویژه VIP</span>
+                            </span>
+                            <span
+                              className={`flex h-4 w-4 items-center justify-center rounded-full border shrink-0 ${
+                                wantVipPromotion
+                                  ? 'bg-amber-500 border-amber-500 text-white'
+                                  : 'border-[#C7C7CC] dark:!border-white/25'
+                              }`}
+                            >
+                              {wantVipPromotion && (
+                                <Check className="w-2.5 h-2.5 block" strokeWidth={3} aria-hidden="true" />
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-extrabold text-amber-800 dark:text-amber-300 leading-none tabular-nums">
+                              {vipPriceLabel}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-amber-100/90 dark:!bg-amber-500/20 text-amber-900 dark:text-amber-300 text-[9.5px] font-bold leading-none">
+                              ۳× بازدید
+                            </span>
+                          </div>
+                        </button>
                       </div>
                     )}
 
-                    {/* Zone 3: Compact 3-Row Review Summary */}
-                    <div className="rounded-2xl border border-[#ECEFF4] bg-[#F5F5F7] px-3.5 py-1 divide-y divide-[#ECEFF4]/80 text-[11.5px]">
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                    {/* Zone 3: Compact 2-Row Summary */}
+                    <div className="rounded-2xl border border-[#ECEFF4] bg-[#F5F5F7] px-3 py-1 divide-y divide-[#ECEFF4]/80 text-[11.5px]">
+                      <div className="flex items-center justify-between gap-2 py-2">
                         <div className="min-w-0 truncate text-[#1D1D1F] font-bold">
                           <span>{title.trim()}</span>
                           <span className="text-[#86868B] font-normal"> • {currentCategoryObj?.fa || category}</span>
@@ -2205,17 +2154,17 @@ export default function PostAdModal({
                         <button
                           type="button"
                           onClick={() => goToStep(2)}
-                          title="ویرایش اطلاعات آگهی"
-                          className="p-1.5 rounded-lg text-[#6E6E73] hover:text-[#0066CC] hover:bg-[#ECECEF] transition-colors cursor-pointer shrink-0"
+                          title="ویرایش"
+                          className="p-1 rounded-lg text-[#6E6E73] hover:text-[#0066CC] cursor-pointer shrink-0"
                         >
                           <Pencil className="w-3.5 h-3.5 block" strokeWidth={2} aria-hidden="true" />
                         </button>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2 py-2">
                         <div className="min-w-0 truncate text-[#515154]">
                           <span className="font-semibold text-[#1D1D1F]">
-                            {currentCountryObj.nameFa}، {currentCityObj?.fa || city}
+                            {currentCityObj?.fa || city}
                             {area.trim() ? ` (${area.trim()})` : ''}
                           </span>
                           <span className="text-[#86868B]">
@@ -2225,22 +2174,18 @@ export default function PostAdModal({
                         <button
                           type="button"
                           onClick={() => goToStep(3)}
-                          title="ویرایش تماس و موقعیت"
-                          className="p-1.5 rounded-lg text-[#6E6E73] hover:text-[#0066CC] hover:bg-[#ECECEF] transition-colors cursor-pointer shrink-0"
+                          title="ویرایش"
+                          className="p-1 rounded-lg text-[#6E6E73] hover:text-[#0066CC] cursor-pointer shrink-0"
                         >
                           <Pencil className="w-3.5 h-3.5 block" strokeWidth={2} aria-hidden="true" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Zone 4: Cloudflare Turnstile Anti-Bot Verification */}
+                    {/* Zone 4: Cloudflare Turnstile */}
                     {turnstileSettings.enabled !== false &&
                       turnstileSettings.protectPostAd !== false && (
-                        <div className="rounded-2xl border border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28] px-3.5 py-3 flex flex-col items-center gap-1.5">
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#6E6E73] leading-none">
-                            <ShieldCheck className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
-                            <span className="leading-none">تایید امنیتی پیش از انتشار</span>
-                          </span>
+                        <div className="rounded-2xl border border-[#ECEFF4] bg-[#FFFFFF] dark:bg-[#1C1F28] px-3 py-2.5 flex flex-col items-center gap-1">
                           <CloudflareTurnstile
                             key={turnstileResetKey}
                             theme="auto"
@@ -2262,15 +2207,15 @@ export default function PostAdModal({
 
           {/* Recessed Sticky Bottom Action Bar */}
           {!successData && (
-            <div className="px-4 sm:px-6 py-3.5 bg-[#F5F5F7] border-t border-[#ECEFF4] flex items-center gap-2.5 shrink-0">
+            <div className="px-4 sm:px-5 py-3 bg-[#F5F5F7] border-t border-[#ECEFF4] flex items-center gap-2 shrink-0">
               {step > 1 && (
                 <button
                   type="button"
                   onClick={handlePrevStep}
-                  className="min-h-[44px] h-11 px-4 sm:px-5 rounded-full bg-[#FFFFFF] dark:bg-[#1C1F28] hover:bg-[#ECECEF] dark:hover:!bg-white/[0.10] border border-[#ECEFF4] dark:!border-white/[0.12] text-[#1D1D1F] font-bold text-xs sm:text-[13px] leading-none inline-flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-[0.95] cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC]"
+                  className="min-h-[42px] h-[42px] px-4 rounded-full bg-[#FFFFFF] dark:bg-[#1C1F28] hover:bg-[#ECECEF] dark:hover:!bg-white/[0.10] border border-[#ECEFF4] dark:!border-white/[0.12] text-[#1D1D1F] font-bold text-xs leading-none inline-flex items-center justify-center gap-1 transition-all active:scale-[0.95] cursor-pointer shrink-0"
                 >
                   <ChevronRight className="w-4 h-4 block shrink-0" strokeWidth={2.25} aria-hidden="true" />
-                  <span className="leading-none">مرحله قبل</span>
+                  <span className="leading-none">قبلی</span>
                 </button>
               )}
 
@@ -2278,26 +2223,20 @@ export default function PostAdModal({
                 <button
                   type="submit"
                   disabled={step === 2 && descriptionHasLink}
-                  className={`flex-1 min-h-[44px] h-11 px-5 rounded-full text-[#FBFBFC] font-bold text-xs sm:text-[13.5px] leading-none inline-flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-[0.97] cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC] ${
+                  className={`flex-1 min-h-[42px] h-[42px] px-5 rounded-full text-[#FBFBFC] font-bold text-xs sm:text-[13px] leading-none inline-flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed ${
                     isStep1SoftIncomplete || isStep3SoftIncomplete
                       ? 'bg-[#0066CC]/65 hover:bg-[#0066CC]/80'
                       : 'bg-[#0066CC] hover:bg-[#0055AA] shadow-[0_4px_14px_rgba(0,102,204,0.22)]'
                   }`}
                 >
-                  <span className="leading-none">
-                    {step === 1
-                      ? 'تایید و ادامه: اطلاعات آگهی'
-                      : step === 2
-                        ? 'ادامه: تماس و نقشه گوگل'
-                        : 'ادامه: تصاویر و پیشنهاد VIP'}
-                  </span>
+                  <span className="leading-none">ادامه</span>
                   <ChevronLeft className="w-4 h-4 block shrink-0" strokeWidth={2.25} aria-hidden="true" />
                 </button>
               ) : (
                 <button
                   type="submit"
                   disabled={loading || uploadingPhotos || descriptionHasLink}
-                  className="flex-1 min-h-[44px] h-11 px-5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-45 disabled:cursor-not-allowed text-[#FBFBFC] font-bold text-xs sm:text-[13.5px] leading-none inline-flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(0,102,204,0.22)] transition-all duration-200 active:scale-[0.97] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC]"
+                  className="flex-1 min-h-[42px] h-[42px] px-5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-45 disabled:cursor-not-allowed text-[#FBFBFC] font-bold text-xs sm:text-[13px] leading-none inline-flex items-center justify-center gap-1.5 shadow-[0_4px_14px_rgba(0,102,204,0.22)] transition-all active:scale-[0.97] cursor-pointer"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 block shrink-0 animate-spin" strokeWidth={2.25} aria-hidden="true" />
@@ -2308,10 +2247,10 @@ export default function PostAdModal({
                   )}
                   <span className="leading-none">
                     {loading
-                      ? 'در حال انتشار آگهی...'
+                      ? 'در حال انتشار...'
                       : wantVipPromotion && vipEnabled
-                        ? `انتشار و ارتقا به VIP (${vipPriceLabel})`
-                        : 'انتشار رایگان آگهی'}
+                        ? `انتشار VIP (${vipPriceLabel})`
+                        : 'انتشار آگهی'}
                   </span>
                 </button>
               )}
