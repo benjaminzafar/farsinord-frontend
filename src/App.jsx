@@ -1601,16 +1601,6 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* CTA Button */}
-                  <button
-                    type="button"
-                    onClick={handleHeroSearchSubmit}
-                    className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-xs font-bold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
-                  >
-                    <Search size={15} strokeWidth={2} className="block shrink-0" />
-                    <span className="leading-none">{currentT.searchBtn}</span>
-                  </button>
-
                 </div>
               </div>
 
