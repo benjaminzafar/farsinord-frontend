@@ -101,7 +101,7 @@ export default function Navbar({
         {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
         <div className="relative flex md:hidden h-16 items-center">
 
-          <div className="flex-1 flex items-center h-11 rounded-2xl bg-white border border-[#E4E7EC] shadow-[0_1px_3px_rgba(15,23,42,0.05)] px-3 gap-2.5 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15 dark:bg-[#252A36] dark:border-[#343B4C]">
+          <div className="flex-1 flex items-center h-11 rounded-2xl bg-white border border-[#F0F2F5] shadow-[0_1px_4px_rgba(15,23,42,0.03)] px-3 gap-2.5 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC]/45 focus-within:ring-2 focus-within:ring-[#0066CC]/15 dark:bg-[#252A36] dark:border-white/[0.065]">
 
             {/* Search Input (Icon on Right — exact same vertical center as City Selector) */}
             <div className="relative flex-1 flex items-center gap-2 min-w-0 h-full">
@@ -130,7 +130,7 @@ export default function Navbar({
             </div>
 
             {/* Vertical separator */}
-            <div className="h-5 w-px bg-[#E5E5EA] shrink-0" />
+            <div className="h-5 w-px bg-[#ECEFF4] shrink-0" />
 
             {/* City Selector on Left (Flat, aligned on exact same horizontal axis) */}
             <div className="relative shrink-0 flex items-center h-full">
@@ -165,7 +165,7 @@ export default function Navbar({
 
           {/* Google-style Smart Autocomplete Suggestions (Mobile) */}
           {mobileSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-            <div className="absolute inset-x-0 top-[60px] bg-[#FBFBFC] border border-[#E5E5EA] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5">
+            <div className="absolute inset-x-0 top-[60px] bg-[#FBFBFC] border border-[#F0F2F5] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5">
               {searchSuggestions.map((item, idx) => (
                 <button
                   key={`${item.label}-${idx}`}

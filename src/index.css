@@ -187,6 +187,10 @@ html.dark body {
 
 :where(html.dark) .border-\[\#E5E5EA\],
 :where(html.dark) .border-\[\#ECECEF\],
+:where(html.dark) .border-\[\#EFEFF4\],
+:where(html.dark) .border-\[\#F0F2F5\],
+:where(html.dark) .border-\[\#F0F2F5\]\/90,
+:where(html.dark) .border-\[\#E4E7EC\],
 :where(html.dark) .border-\[\#D2D2D7\],
 :where(html.dark) .border-slate-200,
 :where(html.dark) .border-slate-200\/80,
@@ -194,11 +198,16 @@ html.dark body {
 :where(html.dark) .border-slate-100,
 :where(html.dark) .border-white\/40,
 :where(html.dark) .border-white\/80 {
-  border-color: #303645;
+  border-color: rgba(255, 255, 255, 0.065);
+}
+
+:where(html.dark) .bg-\[\#E5E5EA\],
+:where(html.dark) .bg-\[\#ECEFF4\] {
+  background-color: rgba(255, 255, 255, 0.07);
 }
 
 :where(html.dark) .divide-\[\#E5E5EA\] > :not([hidden]) ~ :not([hidden]) {
-  border-color: #303645;
+  border-color: rgba(255, 255, 255, 0.065);
 }
 
 :where(html.dark) .text-\[\#1D1D1F\],

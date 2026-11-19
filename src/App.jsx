@@ -1313,7 +1313,7 @@ export default function App() {
 
               {/* Flat Unified Search Capsule — Hairline-Divided (No Box-in-Box) */}
               <div className="pt-2 sm:pt-3 px-1 hidden md:block">
-                <div className="bg-white rounded-full p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.16)] border border-white/80 dark:bg-[#222734] dark:border-[#343B4C] max-w-2xl mx-auto flex items-center gap-1.5 transition-all">
+                <div className="bg-white rounded-full p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-[#F0F2F5]/90 dark:bg-[#222734] dark:border-white/[0.065] max-w-2xl mx-auto flex items-center gap-1.5 transition-all">
                   
                   {/* Keyword Input with Google-style Smart Autocomplete (Right side in RTL) */}
                   <div className="relative flex-1 flex items-center gap-2 h-10 px-3 min-w-0">
@@ -1341,7 +1341,7 @@ export default function App() {
                     )}
 
                     {heroSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] border border-[#E5E5EA] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5 text-right">
+                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] border border-[#F0F2F5] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5 text-right">
                         {searchSuggestions.map((item, idx) => (
                           <button
                             key={`${item.label}-${idx}`}
@@ -1367,7 +1367,7 @@ export default function App() {
                   </div>
 
                   {/* Clean Hairline Divider (No inner box) */}
-                  <div className="h-5 w-px bg-[#E5E5EA] shrink-0" />
+                  <div className="h-5 w-px bg-[#ECEFF4] shrink-0" />
 
                   {/* Flat Borderless City Selector (Flex-aligned on exact same baseline) */}
                   <div className="relative flex items-center h-10 px-2.5 shrink-0">
