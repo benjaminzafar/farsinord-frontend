@@ -51,7 +51,7 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
         )}
 
         {/* Category Pill */}
-        <div className="absolute top-1.5 end-1.5 sm:top-2.5 sm:end-2.5 rounded-full bg-[#FBFBFC] px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10.5px] font-semibold text-[#1D1D1F] shadow-xs border border-[#E5E5EA] max-w-[85px] sm:max-w-none truncate">
+        <div className="absolute top-1.5 end-1.5 sm:top-2.5 sm:end-2.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10.5px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] shadow-none border border-[#ECEFF4] dark:border-white/[0.06] max-w-[85px] sm:max-w-none truncate">
           {catName}
         </div>
 
@@ -86,7 +86,7 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
         </div>
 
         {/* Footer info */}
-        <div className="pt-2 sm:pt-2.5 border-t border-[#ECECEF] flex items-center justify-between text-[9.5px] sm:text-[11px] leading-none text-[#6E6E73] tabular-nums">
+        <div className="pt-2 sm:pt-2.5 border-t border-[#F0F2F5] dark:border-white/[0.03] flex items-center justify-between text-[9.5px] sm:text-[11px] leading-none text-[#6E6E73] dark:text-[#98989F] tabular-nums">
           <div className="inline-flex items-center gap-1 font-medium truncate">
             <span className="flex h-3.5 w-3.5 items-center justify-center shrink-0">
               <Clock size={11} strokeWidth={2} className="block text-[#86868B]" />

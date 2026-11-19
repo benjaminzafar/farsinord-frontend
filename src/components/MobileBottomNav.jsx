@@ -186,16 +186,16 @@ export default function MobileBottomNav({
 
         {/* Bottom Sheet Card */}
         <div
-          className={`relative w-full bg-[#FBFBFC] rounded-t-[28px] border-t border-[#E5E5EA] p-5 pb-8 space-y-4 shadow-2xl z-10 max-h-[85vh] overflow-y-auto custom-scrollbar transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+          className={`relative w-full bg-[#FBFBFC] dark:bg-[#171920] rounded-t-[28px] border-t border-[#ECEFF4] dark:border-white/[0.05] p-5 pb-8 space-y-4 shadow-2xl z-10 max-h-[85vh] overflow-y-auto custom-scrollbar transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
             collectionSheetOpen ? 'translate-y-0' : 'translate-y-full'
           }`}
         >
             
             {/* Grab Handle Pill */}
-            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-2 shrink-0" />
+            <div className="w-12 h-1.5 bg-slate-300 dark:bg-white/10 rounded-full mx-auto mb-2 shrink-0" />
 
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-[#F0F2F5] dark:border-white/[0.038]">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
                   <LayoutGrid size={18} />
@@ -292,21 +292,21 @@ export default function MobileBottomNav({
         />
 
         <div
-          className={`relative w-full bg-[#FBFBFC] rounded-t-[28px] border-t border-[#E5E5EA] p-5 pb-8 space-y-4 shadow-2xl z-10 max-h-[85vh] overflow-y-auto custom-scrollbar transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+          className={`relative w-full bg-[#FBFBFC] dark:bg-[#171920] rounded-t-[28px] border-t border-[#ECEFF4] dark:border-white/[0.05] p-5 pb-8 space-y-4 shadow-2xl z-10 max-h-[85vh] overflow-y-auto custom-scrollbar transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
             moreSheetOpen ? 'translate-y-0' : 'translate-y-full'
           }`}
         >
-          <div className="w-12 h-1.5 bg-[#D2D2D7] rounded-full mx-auto mb-2 shrink-0" />
+          <div className="w-12 h-1.5 bg-[#D2D2D7] dark:bg-white/10 rounded-full mx-auto mb-2 shrink-0" />
 
-          <div className="flex items-center justify-between pb-2 border-b border-[#E5E5EA]">
+          <div className="flex items-center justify-between pb-2 border-b border-[#F0F2F5] dark:border-white/[0.038]">
             <div>
-              <h3 className="text-base font-black text-[#1D1D1F]">امکانات بیشتر</h3>
-              <p className="text-[11px] text-[#6E6E73]">بخش‌های کاربردی و سرویس‌های آینده</p>
+              <h3 className="text-base font-black text-[#1D1D1F] dark:text-white">امکانات بیشتر</h3>
+              <p className="text-[11px] text-[#6E6E73] dark:text-[#98989F]">بخش‌های کاربردی و سرویس‌های آینده</p>
             </div>
             <button
               type="button"
               onClick={() => setMoreSheetOpen(false)}
-              className="p-2 rounded-full bg-[#F5F5F7] text-[#515154] hover:text-[#1D1D1F] transition-colors cursor-pointer"
+              className="p-2 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
             >
               <X size={18} />
             </button>
@@ -318,10 +318,10 @@ export default function MobileBottomNav({
               type="button"
               aria-pressed={theme === 'dark'}
               onClick={() => onToggleTheme?.()}
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] transition-all active:scale-[0.98] cursor-pointer"
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-white/[0.04] hover:bg-[#ECECEF] dark:hover:bg-white/[0.08] border border-[#ECEFF4] dark:border-white/[0.05] transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-[#FBFBFC] text-[#0066CC] border border-[#E5E5EA] flex items-center justify-center shrink-0">
+                <div className="h-9 w-9 rounded-xl bg-[#FBFBFC] dark:bg-[#171920] text-[#0066CC] dark:text-[#388BFD] border border-[#ECEFF4] dark:border-white/[0.05] flex items-center justify-center shrink-0">
                   {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
                 </div>
                 <div className="text-right">

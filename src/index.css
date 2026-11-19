@@ -106,6 +106,30 @@
 }
 
 /* =====================================================================
+   LIGHT THEME DELICATE HAIRLINE BORDERS & DIVIDERS (Balanced & Soft)
+   ===================================================================== */
+:root:not(.dark) .border-\[\#E5E5EA\],
+:root:not(.dark) .border-\[\#D2D2D7\],
+:root:not(.dark) .border-\[\#ECECEF\],
+:root:not(.dark) .border-slate-200,
+:root:not(.dark) .border-slate-200\/80,
+:root:not(.dark) .border-slate-200\/90 {
+  border-color: #ECEFF4;
+}
+
+:root:not(.dark) .border-\[\#F0F2F5\],
+:root:not(.dark) .border-slate-100,
+:root:not(.dark) .border-slate-100\/60,
+:root:not(.dark) .border-slate-100\/80,
+:root:not(.dark) .divide-\[\#E5E5EA\] > :not([hidden]) ~ :not([hidden]),
+:root:not(.dark) .divide-\[\#ECECEF\] > :not([hidden]) ~ :not([hidden]),
+:root:not(.dark) .divide-\[\#F0F2F5\] > :not([hidden]) ~ :not([hidden]),
+:root:not(.dark) .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+:root:not(.dark) .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #F2F4F7;
+}
+
+/* =====================================================================
    HANDCRAFTED APPLE-INSPIRED DARK MODE TOKENS (.dark root class)
    ===================================================================== */
 html.dark,

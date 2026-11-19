@@ -1290,7 +1290,7 @@ export default function App() {
           <div className="relative min-h-[200px] sm:min-h-[300px] md:min-h-[350px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-14 md:py-16">
             
             {/* Rounded Architectural Cityscape Backdrop */}
-            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#E5E5EA] bg-[#1D1D1F] pointer-events-none select-none">
+            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#ECEFF4] dark:border-white/[0.04] bg-[#1D1D1F] pointer-events-none select-none">
               <img
                 key={activeHero.image}
                 src={activeHero.image}
@@ -1341,7 +1341,7 @@ export default function App() {
                     )}
 
                     {heroSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] border border-[#E5E5EA] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5 text-right">
+                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.12)] p-1.5 z-50 space-y-0.5 text-right">
                         {searchSuggestions.map((item, idx) => (
                           <button
                             key={`${item.label}-${idx}`}
@@ -1351,13 +1351,13 @@ export default function App() {
                               setSearchQuery(item.label);
                               setHeroSearchFocused(false);
                             }}
-                            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-2 min-w-0">
                               <Search size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
-                              <span className="text-xs font-semibold leading-none text-[#1D1D1F] truncate">{item.label}</span>
+                              <span className="text-xs font-semibold leading-none text-[#1D1D1F] dark:text-white truncate">{item.label}</span>
                             </div>
-                            <span className="text-[10px] font-bold leading-none px-2 py-1 rounded-full bg-[#F5F5F7] text-[#6E6E73] shrink-0">
+                            <span className="text-[10px] font-bold leading-none px-2 py-1 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#98989F] shrink-0">
                               {item.badge}
                             </span>
                           </button>
@@ -1367,7 +1367,7 @@ export default function App() {
                   </div>
 
                   {/* Clean Hairline Divider (No inner box) */}
-                  <div className="h-5 w-px bg-[#E5E5EA] shrink-0" />
+                  <div className="h-5 w-px bg-[#F0F2F5] dark:bg-white/[0.05] shrink-0" />
 
                   {/* Flat Borderless City Selector (Flex-aligned on exact same baseline) */}
                   <div className="relative flex items-center h-10 px-2.5 shrink-0">
@@ -1499,7 +1499,7 @@ export default function App() {
               <h2 className="text-base sm:text-lg font-bold text-[#1D1D1F] tracking-tight">
                 {currentT.recentAds}
               </h2>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FBFBFC] border border-[#E5E5EA] text-[#515154] text-[11px] font-bold tabular-nums">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.04] text-[#515154] dark:text-[#A1A1A6] text-[11px] font-bold tabular-nums">
                 {searchQuery.trim() === debouncedSearchQuery ? totalAdsCount : sortedAds.length} آگهی
               </span>
               {selectedCategory !== 'all' && (
@@ -1536,7 +1536,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setSortMenuOpen((v) => !v)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold transition-colors active:scale-95 cursor-pointer select-none"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] hover:bg-[#ECECEF] dark:hover:bg-white/[0.06] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold transition-colors active:scale-95 cursor-pointer select-none"
               >
                 <span>فیلتر آگهی</span>
                 <ChevronDown
@@ -1546,7 +1546,7 @@ export default function App() {
               </button>
 
               {sortMenuOpen && (
-                <div className="absolute end-0 top-full mt-1.5 w-40 rounded-2xl bg-[#FBFBFC] border border-[#E5E5EA] shadow-[0_12px_32px_rgba(29,29,31,0.12)] divide-y divide-[#E5E5EA] overflow-hidden z-30 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute end-0 top-full mt-1.5 w-40 rounded-2xl bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_12px_32px_rgba(29,29,31,0.08)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.5)] divide-y divide-[#F0F2F5] dark:divide-white/[0.038] overflow-hidden z-30 animate-in fade-in zoom-in-95 duration-150">
                   {[
                     { id: 'newest', label: 'جدیدترین' },
                     { id: 'most_viewed', label: 'پربازدیدترین' },
