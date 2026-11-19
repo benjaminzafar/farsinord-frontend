@@ -261,8 +261,8 @@ export default async function handler(req, res) {
           } else if (item.key === 'turnstile_settings' && item.value) {
             settings.turnstile_settings = {
               enabled: item.value.enabled,
-              mode: item.value.mode,
-              siteKey: item.value.siteKey,
+              mode: item.value.mode === 'live' ? 'live' : 'test',
+              siteKey: String(item.value.siteKey || '').replace(/[\s\u200B-\u200D\uFEFF]/g, ''),
               protectPostAd: item.value.protectPostAd
             };
           } else if (item.key === 'site_branding' && item.value) {
@@ -277,7 +277,7 @@ export default async function handler(req, res) {
           }
         });
 
-        res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=20');
         return res.status(200).json({ ok: true, settings });
       }
 

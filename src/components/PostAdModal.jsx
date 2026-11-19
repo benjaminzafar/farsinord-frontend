@@ -55,6 +55,7 @@ export default function PostAdModal({
   selectedCountry = 'se',
   countries = COUNTRIES,
   lifecycleSettings = null,
+  turnstileSettings: propTurnstileSettings = null,
   onClose, 
   onCreated,
   onOpenManageExisting
@@ -75,13 +76,14 @@ export default function PostAdModal({
   const [copiedPin, setCopiedPin] = useState(false);
   const [wantVipPromotion, setWantVipPromotion] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
-  const [turnstileSettings] = useState(() => {
+  const [storedTurnstileSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('swedpersiska_turnstile_settings');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return { enabled: true, protectPostAd: true, mode: 'test' };
+    return { enabled: true, protectPostAd: true, mode: 'test', siteKey: '' };
   });
+  const turnstileSettings = propTurnstileSettings || storedTurnstileSettings;
 
   // Form fields
   const [adCountry, setAdCountry] = useState(selectedCountry === 'all' ? 'se' : (selectedCountry || 'se'));
@@ -1060,7 +1062,8 @@ export default function PostAdModal({
                 <div className="pt-2 pb-1 flex flex-col items-center justify-center">
                   <CloudflareTurnstile
                     theme="light"
-                    siteKey={turnstileSettings.mode === 'live' ? turnstileSettings.siteKey : undefined}
+                    mode={turnstileSettings.mode}
+                    siteKey={turnstileSettings.siteKey}
                     onVerify={(token) => {
                       setTurnstileToken(token);
                       setErrorMsg('');

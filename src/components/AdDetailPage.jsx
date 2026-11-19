@@ -457,7 +457,8 @@ export default function AdDetailPage({
                         </p>
                         <CloudflareTurnstile
                           theme="light"
-                          siteKey={turnstileSettings?.mode === 'live' ? turnstileSettings?.siteKey : undefined}
+                          mode={turnstileSettings?.mode}
+                          siteKey={turnstileSettings?.siteKey}
                           onVerify={() => setContactRevealed(true)}
                         />
                       </div>

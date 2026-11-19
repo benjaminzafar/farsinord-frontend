@@ -380,6 +380,13 @@ export default function App() {
         }
         if (settings.turnstile_settings) {
           setTurnstileSettings(prev => ({ ...prev, ...settings.turnstile_settings }));
+          try {
+            const existing = JSON.parse(localStorage.getItem('swedpersiska_turnstile_settings') || '{}');
+            localStorage.setItem(
+              'swedpersiska_turnstile_settings',
+              JSON.stringify({ ...existing, ...settings.turnstile_settings })
+            );
+          } catch {}
         }
         if (settings.analytics_settings) {
           setAnalyticsSettings(prev => ({ ...prev, ...settings.analytics_settings }));
@@ -1639,6 +1646,7 @@ export default function App() {
             selectedCountry={selectedCountry}
             countries={portalCountries}
             lifecycleSettings={lifecycleSettings}
+            turnstileSettings={turnstileSettings}
             onClose={handleClosePostAd}
             onOpenManageExisting={(refNum) => {
               handleClosePostAd();

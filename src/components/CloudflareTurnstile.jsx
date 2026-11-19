@@ -1,23 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  CLOUDFLARE_TEST_SITEKEY,
+  resolveTurnstileSiteKey,
+  formatTurnstileError,
+} from '../lib/turnstileConfig';
 
-// Official Cloudflare Turnstile Test Sitekeys:
-// 1x00000000000000000000AA -> Always passes (non-interactive)
-// 2x00000000000000000000AB -> Always blocks
-// 3x00000000000000000000FF -> Interactive challenge (click checkbox to verify)
-export const CLOUDFLARE_TEST_SITEKEY = '3x00000000000000000000FF';
+export { CLOUDFLARE_TEST_SITEKEY };
 
-/**
- * CloudflareTurnstile Component
- * Provides bot protection using Cloudflare Turnstile API
- * 
- * @param {string} siteKey - Optional explicit site key
- * @param {string} theme - 'auto' | 'light' | 'dark'
- * @param {function} onVerify - Callback receiving verification token
- * @param {function} onExpire - Callback when token expires
- * @param {function} onError - Callback on error
- * @param {string} className - Extra classes for wrapper
- */
 export default function CloudflareTurnstile({
+  mode,
   siteKey,
   theme = 'auto',
   onVerify,
@@ -28,26 +19,29 @@ export default function CloudflareTurnstile({
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const callbacksRef = useRef({ onVerify, onExpire, onError });
-  callbacksRef.current = { onVerify, onExpire, onError };
   const [loaded, setLoaded] = useState(() => typeof window !== 'undefined' && Boolean(window.turnstile));
-  const [error, setError] = useState('');
+  const [errorState, setErrorState] = useState({ key: '', msg: '' });
 
-  // Determine effective sitekey
+  useEffect(() => {
+    callbacksRef.current = { onVerify, onExpire, onError };
+  });
+
   const effectiveKey = (() => {
-    if (siteKey && siteKey.trim()) return siteKey.trim();
-    try {
-      const saved = localStorage.getItem('swedpersiska_turnstile_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.mode === 'live' && parsed.siteKey && parsed.siteKey.trim()) {
-          return parsed.siteKey.trim();
-        }
-      }
-    } catch {}
-    return CLOUDFLARE_TEST_SITEKEY;
+    let stored = null;
+    if (mode === undefined || mode === null) {
+      try {
+        const saved = localStorage.getItem('swedpersiska_turnstile_settings');
+        if (saved) stored = JSON.parse(saved);
+      } catch {}
+    }
+    return resolveTurnstileSiteKey({ mode, siteKey, storedSettings: stored });
   })();
 
-  // 1. Ensure Cloudflare Turnstile script is loaded in document
+  const missingLiveKey = mode === 'live' && !effectiveKey;
+  const visibleError = missingLiveKey
+    ? 'کلید عمومی کلودفلر (Site Key) در تنظیمات مدیریت وارد نشده است.'
+    : (errorState.key === effectiveKey ? errorState.msg : '');
+
   useEffect(() => {
     if (window.turnstile) return;
 
@@ -70,17 +64,15 @@ export default function CloudflareTurnstile({
       setLoaded(true);
     };
     script.onerror = () => {
-      setError('خطا در بارگذاری سامانه امنیتی کلودفلر');
+      setErrorState({ key: effectiveKey, msg: 'خطا در بارگذاری سامانه امنیتی کلودفلر' });
       callbacksRef.current.onError?.('Script load error');
     };
     document.head.appendChild(script);
-  }, []);
+  }, [effectiveKey]);
 
-  // 2. Render Turnstile widget once script and container are ready
   useEffect(() => {
-    if (!loaded || !window.turnstile || !containerRef.current) return;
+    if (!loaded || !window.turnstile || !containerRef.current || !effectiveKey) return;
 
-    // Remove existing widget if already mounted
     if (widgetIdRef.current !== null) {
       try {
         window.turnstile.remove(widgetIdRef.current);
@@ -91,9 +83,9 @@ export default function CloudflareTurnstile({
     try {
       const widgetId = window.turnstile.render(containerRef.current, {
         sitekey: effectiveKey,
-        theme: theme,
+        theme,
         callback: (token) => {
-          setError('');
+          setErrorState({ key: '', msg: '' });
           callbacksRef.current.onVerify?.(token);
         },
         'expired-callback': () => {
@@ -101,7 +93,7 @@ export default function CloudflareTurnstile({
         },
         'error-callback': (err) => {
           console.warn('Cloudflare Turnstile error:', err);
-          setError('خطا در احراز هویت امنیتی');
+          setErrorState({ key: effectiveKey, msg: formatTurnstileError(err) });
           callbacksRef.current.onError?.(err);
         }
       });
@@ -124,9 +116,9 @@ export default function CloudflareTurnstile({
   return (
     <div className={`cloudflare-turnstile-container flex flex-col items-center justify-center min-h-[68px] ${className}`} dir="ltr">
       <div ref={containerRef} className="inline-block" />
-      {error && (
-        <span className="text-[11px] text-rose-500 mt-1 font-medium font-vazir" dir="rtl">
-          {error}
+      {visibleError && (
+        <span className="text-[11px] text-rose-500 mt-1.5 font-medium font-vazir text-center leading-relaxed" dir="rtl">
+          {visibleError}
         </span>
       )}
     </div>
