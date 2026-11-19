@@ -71,7 +71,7 @@ export default function LegalModal({
                   حریم خصوصی و کوکی‌ها (GDPR)
                 </h2>
                 <p className="text-[11px] sm:text-[11.5px] text-[#6E6E73] mt-0.5 truncate">
-                  {siteName} — مطابق با قوانین حفاظت از داده‌های اتحادیه اروپا
+                  مطابق با استاندارد حفاظت از داده‌های اروپا
                 </p>
               </div>
             </div>
@@ -79,7 +79,8 @@ export default function LegalModal({
             <button
               type="button"
               onClick={onClose}
-              className="h-8 w-8 rounded-full flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] active:scale-95 transition-all cursor-pointer shrink-0"
+              aria-label="بستن"
+              className="h-9 w-9 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] active:scale-95 transition-all cursor-pointer shrink-0"
               title="بستن"
             >
               <X size={17} />
@@ -128,7 +129,7 @@ export default function LegalModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold shadow-[0_4px_14px_rgba(0,102,204,0.22)] transition-all cursor-pointer"
+                className="h-11 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold shadow-[0_4px_14px_rgba(0,102,204,0.22)] transition-all cursor-pointer"
               >
                 بستن
               </button>

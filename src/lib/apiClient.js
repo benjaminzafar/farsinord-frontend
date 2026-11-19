@@ -1,6 +1,14 @@
-import { supabase, PUBLIC_AD_COLUMNS } from './supabase';
+import { PUBLIC_AD_COLUMNS, PUBLIC_AD_LIST_COLUMNS } from './urlUtils';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
+let _sbModulePromise = null;
+async function getFallbackSupabase() {
+  if (!_sbModulePromise) {
+    _sbModulePromise = import('./supabase').then((m) => m.supabase);
+  }
+  return _sbModulePromise;
+}
 
 function normalizeClientAd(ad) {
   if (!ad) return ad;
@@ -44,7 +52,7 @@ async function postPublic(action, payload = {}) {
 }
 
 /**
- * Public Frontend API Client (communicates with /api/public & secure Postgres RPCs)
+ * Public Frontend API Client (communicates with /api/public & lazy Supabase fallback)
  */
 export const publicApi = {
   async fetchBootstrap() {
@@ -58,17 +66,18 @@ export const publicApi = {
       }
     } catch {}
 
+    const supabase = await getFallbackSupabase();
     const { data } = await supabase
       .from('swedpersiska_settings')
       .select('key, value')
       .in('key', [
         'site_branding',
         'seo_settings',
-        'portal_categories',
         'portal_cities',
         'portal_countries',
         'stripe_settings',
         'turnstile_settings',
+        'analytics_settings',
         'ad_lifecycle_settings',
       ]);
     const settings = {};
@@ -87,6 +96,8 @@ export const publicApi = {
     q = '',
     sort = '',
     featuredOnly = false,
+    includeFeatured = false,
+    featuredLimit = 12,
   } = {}) {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(48, Math.max(1, Number(limit) || 16));
@@ -100,6 +111,10 @@ export const publicApi = {
     if (q && String(q).trim()) params.set('q', String(q).trim());
     if (sort) params.set('sort', sort);
     if (featuredOnly) params.set('featuredOnly', 'true');
+    if (includeFeatured && !featuredOnly && safePage === 1) {
+      params.set('includeFeatured', '1');
+      params.set('featuredLimit', String(featuredLimit));
+    }
 
     try {
       const res = await fetch(`${API_BASE}/api/public?${params.toString()}`, {
@@ -108,22 +123,27 @@ export const publicApi = {
       if (res.ok) {
         const json = await res.json();
         if (json && json.ok && Array.isArray(json.ads)) {
-          return {
+          const out = {
             ads: json.ads.map(normalizeClientAd),
-            total: Number(json.total ?? json.ads.length) || 0,
+            total: json.total !== undefined ? Number(json.total) : undefined,
             page: Number(json.page ?? safePage) || safePage,
             limit: Number(json.limit ?? safeLimit) || safeLimit,
             hasMore: Boolean(json.hasMore),
           };
+          if (Array.isArray(json.featuredAds)) {
+            out.featuredAds = json.featuredAds.map(normalizeClientAd);
+          }
+          return out;
         }
       }
     } catch {}
 
+    const supabase = await getFallbackSupabase();
     const from = (safePage - 1) * safeLimit;
     const to = from + safeLimit - 1;
     let query = supabase
       .from('swedpersiska_ads')
-      .select(PUBLIC_AD_COLUMNS, { count: 'exact' })
+      .select(PUBLIC_AD_LIST_COLUMNS, { count: 'exact' })
       .eq('status', 'active')
       .is('deleted_at', null);
 
@@ -136,7 +156,8 @@ export const publicApi = {
     }
     if (q && String(q).trim()) {
       const sanitized = String(q)
-        .replace(/[,()]/g, ' ')
+        .slice(0, 100)
+        .replace(/[,()"'\\*%_]/g, ' ')
         .replace(/ي/g, 'ی')
         .replace(/ك/g, 'ک')
         .trim();
@@ -178,6 +199,7 @@ export const publicApi = {
     const total = count ?? normalized.length;
     return {
       ads: normalized,
+      featuredAds: includeFeatured ? normalized.filter((a) => a.is_active_vip).slice(0, featuredLimit) : undefined,
       total,
       page: safePage,
       limit: safeLimit,
@@ -202,9 +224,14 @@ export const publicApi = {
       }
     } catch {}
 
+    const supabase = await getFallbackSupabase();
     const clean = rawParam.trim();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
-    let query = supabase.from('swedpersiska_ads').select(PUBLIC_AD_COLUMNS).is('deleted_at', null);
+    let query = supabase
+      .from('swedpersiska_ads')
+      .select(PUBLIC_AD_COLUMNS)
+      .eq('status', 'active')
+      .is('deleted_at', null);
     if (isUuid) {
       query = query.eq('id', clean);
     } else {
@@ -225,6 +252,7 @@ export const publicApi = {
       return await postPublic('verify_pin', { reference_number, pin_code });
     } catch (err) {
       if (!err.isNetworkOrUnavailable) throw err;
+      const supabase = await getFallbackSupabase();
       const { data, error } = await supabase.rpc('owner_verify_ad', {
         p_reference_number: reference_number,
         p_pin_code: pin_code,
@@ -243,6 +271,7 @@ export const publicApi = {
       return await postPublic('owner_list_ads', { credentials });
     } catch (err) {
       if (!err.isNetworkOrUnavailable) throw err;
+      const supabase = await getFallbackSupabase();
       const { data, error } = await supabase.rpc('owner_list_ads', { p_credentials: credentials });
       if (error) throw error;
       return data || { ok: true, ads: [], count: 0 };
@@ -254,6 +283,7 @@ export const publicApi = {
       return await postPublic('boost_ad', { id, pin_code });
     } catch (err) {
       if (!err.isNetworkOrUnavailable) throw err;
+      const supabase = await getFallbackSupabase();
       const { data, error } = await supabase.rpc('boost_ad_free', { p_ad_id: id, p_pin_code: pin_code });
       if (error) throw error;
       if (!data?.ok) {
@@ -268,6 +298,7 @@ export const publicApi = {
       return await postPublic('update_ad', payload);
     } catch (err) {
       if (!err.isNetworkOrUnavailable) throw err;
+      const supabase = await getFallbackSupabase();
       const { id, pin_code, ...rest } = payload;
       const { data, error } = await supabase.rpc('owner_update_ad', {
         p_ad_id: id,
@@ -285,6 +316,7 @@ export const publicApi = {
       return await postPublic('delete_ad', { id, pin_code });
     } catch (err) {
       if (!err.isNetworkOrUnavailable) throw err;
+      const supabase = await getFallbackSupabase();
       const { data, error } = await supabase.rpc('owner_soft_delete_ad', { p_ad_id: id, p_pin_code: pin_code });
       if (error) throw error;
       if (!data?.ok) throw makeApiError(data, 'خطا در حذف آگهی.', 400);
@@ -304,6 +336,7 @@ export const publicApi = {
     } catch {}
 
     try {
+      const supabase = await getFallbackSupabase();
       await supabase.rpc('increment_ad_view', { p_ad_id: id });
     } catch {}
   },
@@ -314,6 +347,7 @@ export const publicApi = {
       return true;
     } catch (err) {
       if (!err.isNetworkOrUnavailable) throw err;
+      const supabase = await getFallbackSupabase();
       const { data, error } = await supabase.rpc('report_ad_secure', {
         p_ad_id: id,
         p_reason: reason,

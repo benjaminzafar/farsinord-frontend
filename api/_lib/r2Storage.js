@@ -48,15 +48,25 @@ export async function resolveR2Config(supabase) {
   };
 }
 
+const STRICT_AD_OBJECT_KEY_RE = /^ads\/\d+-[a-f0-9]{16}\.(jpg|png|webp|avif)$/i;
+
 function extractOwnedObjectKey(url, r2PublicUrl) {
   const cleanUrl = String(url || '').trim();
   const base = String(r2PublicUrl || '').trim().replace(/\/+$/, '');
   if (!cleanUrl || !base || !cleanUrl.startsWith(`${base}/`)) {
     return null;
   }
-  const rel = cleanUrl.slice(base.length + 1).split('?')[0].split('#')[0];
-  if (!rel || rel.includes('..')) return null;
-  return decodeURIComponent(rel);
+  const rawRel = cleanUrl.slice(base.length + 1).split('?')[0].split('#')[0];
+  if (!rawRel) return null;
+  let decoded = '';
+  try {
+    decoded = decodeURIComponent(rawRel);
+  } catch {
+    return null;
+  }
+  if (!decoded || decoded.includes('..') || decoded.includes('\\')) return null;
+  if (!STRICT_AD_OBJECT_KEY_RE.test(decoded)) return null;
+  return decoded;
 }
 
 function createR2SignedDeleteHeaders({ accountId, accessKeyId, secretAccessKey, bucketName, objectKey }) {
@@ -94,13 +104,13 @@ function createR2SignedDeleteHeaders({ accountId, accessKeyId, secretAccessKey, 
  * Safely deletes Cloudflare R2 images owned by a purged ad,
  * skipping external URLs (Unsplash, etc.) and images still referenced by any other ad.
  */
-export async function deleteR2ObjectsForAd(supabase, imageUrls = [], excludeAdId = null) {
+export async function deleteR2ObjectsForAd(supabase, imageUrls = [], excludeAdId = null, preResolvedR2 = null) {
   const urls = Array.isArray(imageUrls) ? imageUrls.filter(Boolean) : [];
   if (urls.length === 0) {
     return { deletedKeys: [], failedKeys: [], skippedExternal: 0 };
   }
 
-  const r2 = await resolveR2Config(supabase);
+  const r2 = preResolvedR2 || (await resolveR2Config(supabase));
   if (!r2) {
     return { deletedKeys: [], failedKeys: [], skippedExternal: urls.length };
   }
@@ -116,16 +126,29 @@ export async function deleteR2ObjectsForAd(supabase, imageUrls = [], excludeAdId
       continue;
     }
 
-    // Never delete if another ad still references this image URL
+    const canonicalUrl = `${r2.publicUrl}/${objectKey}`;
+
+    // Never delete if another ad still references either the canonical URL or raw URL
     if (supabase && excludeAdId) {
       try {
-        const { count } = await supabase
-          .from('swedpersiska_ads')
-          .select('id', { count: 'exact', head: true })
-          .neq('id', excludeAdId)
-          .contains('images', [url]);
-        if ((count || 0) > 0) continue;
-      } catch {}
+        const urlsToCheck = canonicalUrl === url ? [canonicalUrl] : [canonicalUrl, url];
+        let stillReferenced = false;
+        for (const checkUrl of urlsToCheck) {
+          const { count } = await supabase
+            .from('swedpersiska_ads')
+            .select('id', { count: 'exact', head: true })
+            .neq('id', excludeAdId)
+            .contains('images', [checkUrl]);
+          if ((count || 0) > 0) {
+            stillReferenced = true;
+            break;
+          }
+        }
+        if (stillReferenced) continue;
+      } catch {
+        // Fail safe: skip deletion if we cannot verify shared references
+        continue;
+      }
     }
 
     try {
@@ -136,11 +159,17 @@ export async function deleteR2ObjectsForAd(supabase, imageUrls = [], excludeAdId
         bucketName: r2.bucketName,
         objectKey,
       });
-      const delRes = await fetch(endpoint, { method: 'DELETE', headers });
-      if (delRes.ok || delRes.status === 204 || delRes.status === 404) {
-        deletedKeys.push(objectKey);
-      } else {
-        failedKeys.push(objectKey);
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const delRes = await fetch(endpoint, { method: 'DELETE', headers, signal: ctrl.signal });
+        if (delRes.ok || delRes.status === 204 || delRes.status === 404) {
+          deletedKeys.push(objectKey);
+        } else {
+          failedKeys.push(objectKey);
+        }
+      } finally {
+        clearTimeout(timer);
       }
     } catch {
       failedKeys.push(objectKey);

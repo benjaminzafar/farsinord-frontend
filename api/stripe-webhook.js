@@ -174,6 +174,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ ok: true, received: true, eventType, handled });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message || 'Webhook processing error' });
+    console.error('[stripe-webhook] error:', err?.message || err);
+    return res.status(500).json({ ok: false, error: 'Webhook processing error' });
   }
 }

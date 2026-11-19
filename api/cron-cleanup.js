@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'node:crypto';
-import { deleteR2ObjectsForAd } from './_lib/r2Storage.js';
+import { deleteR2ObjectsForAd, resolveR2Config } from './_lib/r2Storage.js';
 import { dispatchPendingNotifications } from './_lib/notifications.js';
 
 const TOKEN_SECRET = process.env.ADMIN_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -18,9 +18,6 @@ function isAuthorizedCron(req) {
   const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
 
   if (cronSecret && bearer && safeEqual(bearer, cronSecret)) {
-    return true;
-  }
-  if (!cronSecret && req.headers['x-vercel-cron']) {
     return true;
   }
   if (TOKEN_SECRET && bearer && bearer.includes('.')) {
@@ -78,8 +75,9 @@ export default async function handler(req, res) {
       notifications = await dispatchPendingNotifications(supabase, 100);
 
       const candidates = Array.isArray(runResult.purge_candidates) ? runResult.purge_candidates : [];
+      const cachedR2 = candidates.length > 0 ? await resolveR2Config(supabase) : null;
       for (const candidate of candidates) {
-        const r2Res = await deleteR2ObjectsForAd(supabase, candidate.images, candidate.id);
+        const r2Res = await deleteR2ObjectsForAd(supabase, candidate.images, candidate.id, cachedR2);
         storageDeleted += r2Res.deletedKeys.length;
 
         if (r2Res.failedKeys.length > 0) {
@@ -126,6 +124,7 @@ export default async function handler(req, res) {
       notifications,
     });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message || 'Cleanup execution failed' });
+    console.error('[cron-cleanup] error:', err?.message || err);
+    return res.status(500).json({ ok: false, error: 'Cleanup execution failed' });
   }
 }

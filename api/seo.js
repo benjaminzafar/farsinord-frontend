@@ -21,7 +21,17 @@ const supabaseKey =
   process.env.VITE_SUPABASE_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlemJueW1qY25tYXpkb25memt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2OTM1NjksImV4cCI6MjExMDI2OTU2OX0.ylsHBAZ1zo1z_aKpHx7hgl-yZu2yt2puFNhR8jBm6S4';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const SEO_FETCH_TIMEOUT_MS = 4500;
+
+function fetchWithTimeout(input, init = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SEO_FETCH_TIMEOUT_MS);
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  global: { fetch: fetchWithTimeout },
+});
 
 // Strictly public columns — never expose contact_phone, contact_email, whatsapp, telegram, or pin_code
 const SAFE_PUBLIC_SEO_COLUMNS = [
@@ -44,6 +54,30 @@ const SAFE_PUBLIC_SEO_COLUMNS = [
   'updated_at',
 ].join(',');
 
+// Leaner list columns (omits images array) for llms-full and HTML crawler feeds
+const SAFE_PUBLIC_SEO_LIST_COLUMNS = [
+  'id',
+  'reference_number',
+  'title',
+  'title_fa',
+  'description',
+  'category',
+  'country',
+  'city',
+  'area',
+  'price',
+  'price_type',
+  'is_featured',
+  'promotion_expires_at',
+  'sort_timestamp',
+  'created_at',
+  'updated_at',
+].join(',');
+
+const SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedSeoSettings = null;
+let cachedSeoSettingsAt = 0;
+
 function mergeCountriesForSeo(rawCustom) {
   const baseMap = new Map(SEO_COUNTRIES.map((c) => [c.id, { ...c, enabled: true }]));
   if (Array.isArray(rawCustom)) {
@@ -57,6 +91,10 @@ function mergeCountriesForSeo(rawCustom) {
 }
 
 async function fetchSeoPortalSettings() {
+  const now = Date.now();
+  if (cachedSeoSettings && now - cachedSeoSettingsAt < SETTINGS_CACHE_TTL_MS) {
+    return cachedSeoSettings;
+  }
   try {
     const { data } = await supabase
       .from('swedpersiska_settings')
@@ -67,10 +105,22 @@ async function fetchSeoPortalSettings() {
     for (const row of data || []) {
       map[row.key] = row.value;
     }
+    cachedSeoSettings = map;
+    cachedSeoSettingsAt = now;
     return map;
   } catch {
-    return {};
+    return cachedSeoSettings || {};
   }
+}
+
+function extractPortalContext(settingsMap) {
+  const siteSettings = settingsMap.site_branding || settingsMap.site_settings || {};
+  const seoSettings = settingsMap.seo_settings || {};
+  const countries = mergeCountriesForSeo(settingsMap.portal_countries);
+  const siteName = String(siteSettings.siteName || 'لینک شو').trim() || 'لینک شو';
+  const logoUrl = String(siteSettings.logoUrl || '').trim();
+  const socialLinks = siteSettings.socialLinks || {};
+  return { siteSettings, seoSettings, countries, siteName, logoUrl, socialLinks };
 }
 
 export default async function handler(req, res) {
@@ -88,21 +138,17 @@ export default async function handler(req, res) {
       return res.status(200).send(getIndexNowKey());
     }
 
-    const settingsMap = await fetchSeoPortalSettings();
-    const siteSettings = settingsMap.site_branding || settingsMap.site_settings || {};
-    const seoSettings = settingsMap.seo_settings || {};
-    const countries = mergeCountriesForSeo(settingsMap.portal_countries);
-    const siteName = String(siteSettings.siteName || 'لینک شو').trim() || 'لینک شو';
-    const logoUrl = String(siteSettings.logoUrl || '').trim();
-    const socialLinks = siteSettings.socialLinks || {};
-
     if (mode === 'llms') {
-      const { data: metaAds } = await supabase
-        .from('swedpersiska_ads')
-        .select('country, category')
-        .eq('status', 'active')
-        .is('deleted_at', null)
-        .limit(1000);
+      const [settingsMap, { data: metaAds }] = await Promise.all([
+        fetchSeoPortalSettings(),
+        supabase
+          .from('swedpersiska_ads')
+          .select('country, category')
+          .eq('status', 'active')
+          .is('deleted_at', null)
+          .limit(1000),
+      ]);
+      const { countries, siteName } = extractPortalContext(settingsMap);
 
       const countryCounts = {};
       const categoryCounts = {};
@@ -132,14 +178,18 @@ export default async function handler(req, res) {
     }
 
     if (mode === 'llms-full') {
-      const { data: ads } = await supabase
-        .from('swedpersiska_ads')
-        .select(SAFE_PUBLIC_SEO_COLUMNS)
-        .eq('status', 'active')
-        .is('deleted_at', null)
-        .order('sort_timestamp', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(250);
+      const [settingsMap, { data: ads }] = await Promise.all([
+        fetchSeoPortalSettings(),
+        supabase
+          .from('swedpersiska_ads')
+          .select(SAFE_PUBLIC_SEO_LIST_COLUMNS)
+          .eq('status', 'active')
+          .is('deleted_at', null)
+          .order('sort_timestamp', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(250),
+      ]);
+      const { countries, siteName } = extractPortalContext(settingsMap);
 
       const body = renderLlmsFullTxt({
         origin: CANONICAL_ORIGIN,
@@ -155,14 +205,18 @@ export default async function handler(req, res) {
     }
 
     if (mode === 'feed') {
-      const { data: ads } = await supabase
-        .from('swedpersiska_ads')
-        .select(SAFE_PUBLIC_SEO_COLUMNS)
-        .eq('status', 'active')
-        .is('deleted_at', null)
-        .order('sort_timestamp', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(100);
+      const [settingsMap, { data: ads }] = await Promise.all([
+        fetchSeoPortalSettings(),
+        supabase
+          .from('swedpersiska_ads')
+          .select(SAFE_PUBLIC_SEO_COLUMNS)
+          .eq('status', 'active')
+          .is('deleted_at', null)
+          .order('sort_timestamp', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(100),
+      ]);
+      const { countries, siteName } = extractPortalContext(settingsMap);
 
       const xml = renderRssFeed({
         origin: CANONICAL_ORIGIN,
@@ -201,7 +255,12 @@ export default async function handler(req, res) {
         q = q.eq('reference_number', safeRef || '__none__');
       }
 
-      const { data: adRow } = await q.maybeSingle();
+      const [settingsMap, { data: adRow }] = await Promise.all([
+        fetchSeoPortalSettings(),
+        q.maybeSingle(),
+      ]);
+      const { countries, siteName, logoUrl, socialLinks } = extractPortalContext(settingsMap);
+
       if (!adRow) {
         const notFoundHtml = renderCrawlerHtml({
           origin: CANONICAL_ORIGIN,
@@ -238,16 +297,15 @@ export default async function handler(req, res) {
       return res.status(200).send(html);
     }
 
-    const activeCountryObj = resolveCountryMeta(requestedCountry || 'se', countries);
     const activeCategoryObj = resolveCategoryMeta(rawCategory, SEO_CATEGORIES);
     const pageMode =
       rawPage === 'podcast' || rawPage === 'website-builder' ? rawPage : 'feed';
 
-    let adsList = [];
+    let adsPromise = Promise.resolve({ data: [] });
     if (pageMode === 'feed') {
       let q = supabase
         .from('swedpersiska_ads')
-        .select(SAFE_PUBLIC_SEO_COLUMNS)
+        .select(SAFE_PUBLIC_SEO_LIST_COLUMNS)
         .eq('status', 'active')
         .is('deleted_at', null);
 
@@ -259,13 +317,20 @@ export default async function handler(req, res) {
       if (activeCategoryObj) q = q.eq('category', activeCategoryObj.id);
       if (rawCity && rawCity !== 'all') q = q.eq('city', rawCity);
 
-      const { data } = await q
+      adsPromise = q
         .order('is_featured', { ascending: false })
         .order('sort_timestamp', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(24);
-      adsList = data || [];
     }
+
+    const [settingsMap, { data: feedData }] = await Promise.all([
+      fetchSeoPortalSettings(),
+      adsPromise,
+    ]);
+    const { seoSettings, countries, siteName, logoUrl, socialLinks } = extractPortalContext(settingsMap);
+    const activeCountryObj = resolveCountryMeta(requestedCountry || 'se', countries);
+    const adsList = feedData || [];
 
     const customCountrySeo = seoSettings[activeCountryObj.id] || {};
     let pageTitle = '';
@@ -327,6 +392,7 @@ export default async function handler(req, res) {
     });
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Vary', 'User-Agent');
+    res.setHeader('Cache-Control', 'public, s-maxage=30');
     return res.status(200).send(fallbackHtml);
   }
 }

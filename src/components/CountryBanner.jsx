@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, X, Check, Globe, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
 import { COUNTRIES } from '../lib/translations';
 import { getGdprConsent, saveGdprConsent } from '../lib/gdpr';
@@ -66,15 +66,21 @@ export default function CountryBanner({
     }
   }, [isOpen]);
 
-  // Progressive IP check (async only)
+  // Progressive IP check (async only, at most once per session when needed)
+  const validCountryKey = validCountryIds.join(',');
+  const geoFetchedRef = useRef(false);
   useEffect(() => {
+    if (!isOpen || geoFetchedRef.current) return;
+    if (localStorage.getItem('scandi_country_selected')) return;
+    geoFetchedRef.current = true;
     let active = true;
+    const allowedSet = new Set(validCountryKey.split(','));
     fetch('https://api.country.is/')
       .then(res => res.json())
       .then(data => {
         if (!active || !data || !data.country) return;
         const code = data.country.toLowerCase();
-        if (validCountryIds.includes(code)) {
+        if (allowedSet.has(code)) {
           setDetectedCountryId(code);
           if (!localStorage.getItem('scandi_country_selected')) {
             setActiveChoice(code);
@@ -83,7 +89,7 @@ export default function CountryBanner({
       })
       .catch(() => {});
     return () => { active = false; };
-  }, [validCountryIds]);
+  }, [isOpen, validCountryKey]);
 
   const handleConfirm = (countryId) => {
     if (!gdprChecked) {
@@ -145,15 +151,16 @@ export default function CountryBanner({
 
         {activeSubView === 'main' ? (
           <div className="overflow-y-auto p-4 sm:p-5 space-y-3.5">
-            {/* Close Button (shown after initial GDPR consent) */}
+            {/* Close Button (shown after initial GDPR consent — top-left in RTL) */}
             {hasConsented && (
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="absolute top-3.5 start-3.5 h-7 w-7 rounded-full flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] active:scale-95 transition-all cursor-pointer"
-                title="بستن پنجره"
+                className="absolute top-3.5 end-3.5 h-9 w-9 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] active:scale-95 transition-all cursor-pointer"
+                title="بستن"
+                aria-label="بستن"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             )}
 
@@ -190,7 +197,7 @@ export default function CountryBanner({
                     key={country.id}
                     type="button"
                     onClick={() => setActiveChoice(country.id)}
-                    className={`group relative flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-xl border text-right transition-all duration-150 cursor-pointer active:scale-[0.96] ${
+                    className={`group relative min-h-[42px] flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-xl border text-right transition-all duration-150 cursor-pointer active:scale-[0.96] ${
                       isSelected
                         ? 'border-[#0066CC] bg-[#0066CC]/[0.06] shadow-[0_0_0_1px_#0066CC]'
                         : 'border-[#E5E5EA] bg-[#FBFBFC] hover:bg-[#F5F5F7] hover:border-[#D2D2D7]'
@@ -248,10 +255,10 @@ export default function CountryBanner({
                         : 'bg-[#FBFBFC] border-[#C7C7CC] group-hover:border-[#0066CC]'
                   }`}
                 >
-                  {gdprChecked && <Check size={11.5} strokeWidth={3} />}
+                  {gdprChecked && <Check size={12} strokeWidth={3} />}
                 </span>
                 <span className="text-[11.5px] leading-snug text-[#1D1D1F] font-semibold">
-                  قوانین حریم خصوصی (<span className="text-[#0066CC] font-bold">EU GDPR</span>) و کوکی‌های ضروری سایت را می‌پذیرم.
+                  قوانین حریم خصوصی (<span className="text-[#0066CC] font-bold">GDPR</span>) و کوکی‌های ضروری را می‌پذیرم.
                   <span className="text-red-500 ms-1">*</span>
                 </span>
               </label>
@@ -259,7 +266,7 @@ export default function CountryBanner({
               {/* Optional Analytics Toggle Row */}
               <label className="flex items-center justify-between gap-2.5 pt-2 border-t border-[#E5E5EA] cursor-pointer">
                 <span className="text-[11px] text-[#515154] leading-snug">
-                  کوکی‌های آمار و بهبود سایت (اختیاری)
+                  کوکی‌های آماری (اختیاری)
                 </span>
                 <input
                   type="checkbox"
@@ -284,7 +291,7 @@ export default function CountryBanner({
               {gdprError && !gdprChecked && (
                 <p className="text-[10.5px] font-bold text-red-600 flex items-center gap-1 pt-0.5">
                   <ShieldCheck size={12} className="shrink-0" />
-                  <span>برای ورود به سایت، ابتدا تایید قوانین EU GDPR را انتخاب کنید.</span>
+                  <span>لطفاً قوانین حریم خصوصی (GDPR) را تایید کنید.</span>
                 </p>
               )}
 
@@ -295,7 +302,7 @@ export default function CountryBanner({
                   onClick={() => setActiveSubView('privacy')}
                   className="hover:underline cursor-pointer"
                 >
-                  حریم خصوصی (GDPR)
+                  حریم خصوصی
                 </button>
                 <span className="text-[#C7C7CC]">•</span>
                 <button
@@ -303,7 +310,7 @@ export default function CountryBanner({
                   onClick={() => setActiveSubView('cookies')}
                   className="hover:underline cursor-pointer"
                 >
-                  سیاست کوکی‌ها
+                  کوکی‌ها
                 </button>
                 <span className="text-[#C7C7CC]">•</span>
                 <button
@@ -311,7 +318,7 @@ export default function CountryBanner({
                   onClick={() => setActiveSubView('settings')}
                   className="hover:underline cursor-pointer"
                 >
-                  تنظیمات کوکی‌ها
+                  تنظیمات
                 </button>
               </div>
             </div>
@@ -328,7 +335,7 @@ export default function CountryBanner({
                     : 'bg-[#0066CC]/55 hover:bg-[#0066CC]/70'
                 }`}
               >
-                <span>تایید و ورود به {chosenObj.nameFa}</span>
+                <span>ورود به {chosenObj.nameFa}</span>
                 <ArrowLeft size={15} />
               </button>
 
@@ -338,7 +345,7 @@ export default function CountryBanner({
                   onClick={handleDismiss}
                   className="w-full h-7 rounded-full text-[11px] font-semibold text-[#6E6E73] hover:text-[#1D1D1F] transition-colors cursor-pointer"
                 >
-                  بستن پنجره
+                  بستن
                 </button>
               )}
             </div>
@@ -384,7 +391,7 @@ export default function CountryBanner({
                 }}
                 className="flex-1 h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold shadow-[0_4px_14px_rgba(0,102,204,0.22)] transition-all cursor-pointer"
               >
-                تایید و بازگشت به انتخاب کشور
+                تایید و بازگشت
               </button>
             </div>
           </>

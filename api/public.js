@@ -23,6 +23,33 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const PUBLIC_AD_COLUMNS =
   'id, reference_number, title, title_fa, category, country, city, area, price, price_type, description, contact_name, contact_phone, contact_whatsapp, contact_telegram, contact_email, contact_website, images, is_featured, status, views_count, created_at, updated_at, last_boosted_at, last_meaningful_activity_at, sort_timestamp, next_free_boost_at, boost_count, duplicate_detection_status, cleanup_warning_sent_at, scheduled_deletion_at, deleted_at, promotion_expires_at';
 
+// Lean list projection: omits all contact PII and heavy lifecycle fields (saves 60-80% egress & protects contact info)
+const PUBLIC_AD_LIST_COLUMNS =
+  'id, reference_number, title, title_fa, category, country, city, area, price, price_type, description, images, is_featured, views_count, created_at, sort_timestamp, promotion_expires_at';
+
+const ALLOWED_VIP_COUNTRIES = new Set(['se', 'no', 'dk', 'fi', 'de', 'at', 'nl', 'fr']);
+
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a || ''), 'utf8');
+  const bufB = Buffer.from(String(b || ''), 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function normalizeListAd(ad) {
+  const norm = normalizePublicAd(ad);
+  if (!norm) return norm;
+  const rawDesc = String(norm.description || '');
+  const shortDesc = rawDesc.length > 200 ? `${rawDesc.slice(0, 197).trim()}...` : rawDesc;
+  const coverOnly = Array.isArray(norm.images) && norm.images.length > 0 ? [norm.images[0]] : [];
+  return {
+    ...norm,
+    description: shortDesc,
+    images: coverOnly,
+    _isSummary: true,
+  };
+}
+
 const PROHIBITED_PATTERNS = [
   /\b(csam|cp|child\s*porn|underage\s*sex|pedo|pedophil|loli|shota)\b/i,
   /(کودک\s*آزاری|بچه\s*بازی|سکس\s*کودک|پورن\s*کودک)/i,
@@ -86,22 +113,34 @@ function generatePinCode() {
   return code;
 }
 
-// In-memory rate limiter for 8-digit subscription code lookups/actions (per IP)
+function getTrustedClientIp(req) {
+  const xReal = String(req.headers?.['x-real-ip'] || '').trim();
+  if (xReal) return xReal;
+  const xVercel = String(req.headers?.['x-vercel-forwarded-for'] || '').split(',').pop()?.trim();
+  if (xVercel) return xVercel;
+  const xFwd = String(req.headers?.['x-forwarded-for'] || '').split(',').pop()?.trim();
+  if (xFwd) return xFwd;
+  return String(req.socket?.remoteAddress || 'unknown').trim();
+}
+
+// Per-IP rate limiter keyed on trusted edge client IP
 const subRateLimitMap = new Map();
-function checkSubRateLimit(req) {
-  const rawIp = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown')
-    .split(',')[0]
-    .trim();
+function checkSubRateLimit(req, { bucket = 'sub', maxAttempts = 15, windowMs = 15 * 60 * 1000, cost = 1 } = {}) {
+  const key = `${bucket}:${getTrustedClientIp(req)}`;
   const now = Date.now();
-  const windowMs = 15 * 60 * 1000;
-  const maxAttempts = 15;
-  const entry = subRateLimitMap.get(rawIp);
+  const safeCost = Math.max(1, Number(cost) || 1);
+  const entry = subRateLimitMap.get(key);
   if (!entry || now - entry.windowStart > windowMs) {
-    subRateLimitMap.set(rawIp, { windowStart: now, count: 1 });
-    return true;
+    subRateLimitMap.set(key, { windowStart: now, count: safeCost });
+    if (subRateLimitMap.size > 1000) {
+      for (const [k, v] of subRateLimitMap.entries()) {
+        if (now - v.windowStart > windowMs) subRateLimitMap.delete(k);
+      }
+    }
+    return safeCost <= maxAttempts;
   }
-  if (entry.count >= maxAttempts) return false;
-  entry.count += 1;
+  if (entry.count + safeCost > maxAttempts) return false;
+  entry.count += safeCost;
   return true;
 }
 
@@ -216,7 +255,8 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://www.linksho.eu,
 
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin;
-  if (origin && (ALLOWED_ORIGINS.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin))) {
+  const isDevLocalhost = process.env.VERCEL_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin || '');
+  if (origin && (ALLOWED_ORIGINS.includes(origin) || isDevLocalhost)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
   }
@@ -240,7 +280,7 @@ export default async function handler(req, res) {
         const { data } = await supabase
           .from('swedpersiska_settings')
           .select('key, value')
-          .in('key', ['site_branding', 'seo_settings', 'portal_categories', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings', 'analytics_settings', 'podcast_settings', 'ad_lifecycle_settings']);
+          .in('key', ['site_branding', 'seo_settings', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings', 'analytics_settings', 'ad_lifecycle_settings']);
 
         const settings = {};
         (data || []).forEach((item) => {
@@ -277,7 +317,7 @@ export default async function handler(req, res) {
           }
         });
 
-        res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=20');
+        res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=600, stale-while-revalidate=3600');
         return res.status(200).json({ ok: true, settings });
       }
 
@@ -392,7 +432,11 @@ export default async function handler(req, res) {
       if (action === 'ad' && id) {
         const clean = String(id).trim();
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
-        let query = supabase.from('swedpersiska_ads').select(PUBLIC_AD_COLUMNS).is('deleted_at', null);
+        let query = supabase
+          .from('swedpersiska_ads')
+          .select(PUBLIC_AD_COLUMNS)
+          .eq('status', 'active')
+          .is('deleted_at', null);
         if (isUuid) {
           query = query.eq('id', clean);
         } else {
@@ -402,6 +446,7 @@ export default async function handler(req, res) {
         }
         const { data, error } = await query.maybeSingle();
         if (error) throw error;
+        res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=600');
         return res.status(200).json({ ok: true, ad: normalizePublicAd(data) || null });
       }
 
@@ -411,37 +456,47 @@ export default async function handler(req, res) {
       const country = String(req.query.country || 'all').trim().toLowerCase();
       const category = String(req.query.category || 'all').trim();
       const city = String(req.query.city || 'all').trim();
-      const search = String(req.query.q || '').trim();
+      const search = String(req.query.q || '').trim().slice(0, 100);
       const sort = String(req.query.sort || '').trim();
       const featuredOnly = req.query.featuredOnly === 'true' || req.query.featuredOnly === '1';
+      const includeFeatured = !featuredOnly && page === 1 && (req.query.includeFeatured === 'true' || req.query.includeFeatured === '1');
+      const featuredLimit = Math.min(24, Math.max(1, Number(req.query.featuredLimit) || 12));
 
       const from = (page - 1) * limit;
-      const to = from + limit - 1;
+      const needExactCount = !featuredOnly && page === 1;
+      const to = needExactCount ? from + limit - 1 : from + limit;
 
-      let q = supabase
-        .from('swedpersiska_ads')
-        .select(PUBLIC_AD_COLUMNS, { count: 'exact' })
-        .eq('status', 'active')
-        .is('deleted_at', null);
+      const sanitizedSearch = search
+        ? search
+            .replace(/[,()"'\\*%_]/g, ' ')
+            .replace(/ي/g, 'ی')
+            .replace(/ك/g, 'ک')
+            .replace(/\s+/g, ' ')
+            .trim()
+        : '';
 
-      if (country && country !== 'all') q = q.eq('country', country);
-      if (category && category !== 'all') q = q.eq('category', category);
-      if (city && city !== 'all') q = q.eq('city', city);
-      if (featuredOnly) {
-        const nowIso = new Date().toISOString();
-        q = q.eq('is_featured', true).or(`promotion_expires_at.is.null,promotion_expires_at.gt.${nowIso}`);
-      }
-      if (search) {
-        const sanitized = search
-          .replace(/[,()]/g, ' ')
-          .replace(/ي/g, 'ی')
-          .replace(/ك/g, 'ک')
-          .trim();
-        if (sanitized) {
-          const term = `%${sanitized}%`;
-          q = q.or(`title.ilike.${term},title_fa.ilike.${term},description.ilike.${term},city.ilike.${term},reference_number.ilike.${term}`);
+      const applyFilters = (baseQuery, isFeaturedQuery = false) => {
+        let query = baseQuery.eq('status', 'active').is('deleted_at', null);
+        if (country && country !== 'all') query = query.eq('country', country);
+        if (category && category !== 'all') query = query.eq('category', category);
+        if (city && city !== 'all') query = query.eq('city', city);
+        if (isFeaturedQuery) {
+          const nowIso = new Date().toISOString();
+          query = query.eq('is_featured', true).or(`promotion_expires_at.is.null,promotion_expires_at.gt.${nowIso}`);
         }
-      }
+        if (sanitizedSearch) {
+          const term = `%${sanitizedSearch}%`;
+          query = query.or(`title.ilike.${term},title_fa.ilike.${term},description.ilike.${term},city.ilike.${term},reference_number.ilike.${term}`);
+        }
+        return query;
+      };
+
+      let q = applyFilters(
+        supabase
+          .from('swedpersiska_ads')
+          .select(PUBLIC_AD_LIST_COLUMNS, needExactCount ? { count: 'exact' } : undefined),
+        featuredOnly
+      );
 
       if (sort === 'most_viewed') {
         q = q
@@ -469,27 +524,52 @@ export default async function handler(req, res) {
           .order('id', { ascending: false });
       }
 
-      const { data, count, error } = await q.range(from, to);
+      const mainQueryPromise = q.range(from, to);
+      const featuredQueryPromise = includeFeatured
+        ? applyFilters(
+            supabase.from('swedpersiska_ads').select(PUBLIC_AD_LIST_COLUMNS),
+            true
+          )
+            .order('sort_timestamp', { ascending: false })
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: false })
+            .range(0, featuredLimit - 1)
+        : Promise.resolve(null);
 
-      if (error) throw error;
-      const normalizedAds = (data || []).map(normalizePublicAd);
-      const total = count ?? normalizedAds.length;
-      res.setHeader('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=60');
-      return res.status(200).json({
+      const [mainRes, featuredRes] = await Promise.all([mainQueryPromise, featuredQueryPromise]);
+      if (mainRes.error) throw mainRes.error;
+
+      const rawRows = mainRes.data || [];
+      const hasMore = needExactCount ? to + 1 < (mainRes.count ?? rawRows.length) : rawRows.length > limit;
+      const pageRows = needExactCount ? rawRows : rawRows.slice(0, limit);
+      const normalizedAds = pageRows.map(normalizeListAd);
+      const total = needExactCount ? (mainRes.count ?? normalizedAds.length) : undefined;
+
+      const responseBody = {
         ok: true,
         ads: normalizedAds,
-        total,
         page,
         limit,
-        hasMore: to + 1 < total,
-      });
+        hasMore,
+      };
+      if (total !== undefined) responseBody.total = total;
+      if (includeFeatured) {
+        responseBody.featuredAds = (featuredRes?.data || []).map(normalizeListAd);
+      }
+
+      res.setHeader('Cache-Control', 'public, max-age=15, s-maxage=60, stale-while-revalidate=300');
+      return res.status(200).json(responseBody);
     }
 
     if (req.method === 'POST') {
+      res.setHeader('Cache-Control', 'no-store');
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
       const { action } = body;
 
       if (action === 'create_ad') {
+        if (!checkSubRateLimit(req, { bucket: 'create_ad', maxAttempts: 10, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌های ثبت آگهی زیاد است. لطفاً کمی بعد دوباره تلاش کنید.' });
+        }
         const {
           title,
           category,
@@ -533,26 +613,67 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: modReason });
         }
 
-        // Optional server-side Turnstile verification when secret key is configured
+        // Strict server-side Turnstile verification when live mode & secret key are configured
         const turnstileSecret = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
-        if (turnstileSecret && turnstileToken && !String(turnstileToken).startsWith('test')) {
+        if (turnstileSecret) {
+          let requireLiveTurnstile = true;
           try {
-            const verifyBody = new URLSearchParams({ secret: turnstileSecret, response: String(turnstileToken) });
-            const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-              method: 'POST',
-              body: verifyBody,
-            });
-            const tsJson = await tsRes.json().catch(() => ({}));
-            if (!tsJson.success) {
-              return res.status(403).json({ ok: false, error: 'تایید امنیتی کپچا معتبر نیست. لطفاً مجدداً امتحان کنید.' });
+            const { data: tsRow } = await supabase
+              .from('swedpersiska_settings')
+              .select('value')
+              .eq('key', 'turnstile_settings')
+              .maybeSingle();
+            const tsCfg = tsRow?.value;
+            if (tsCfg && (tsCfg.enabled === false || tsCfg.protectPostAd === false || tsCfg.mode !== 'live')) {
+              requireLiveTurnstile = false;
             }
           } catch {}
+
+          if (requireLiveTurnstile) {
+            const cleanToken = String(turnstileToken || '').trim();
+            if (!cleanToken) {
+              return res.status(403).json({ ok: false, error: 'تایید امنیتی کپچا الزامی است. لطفاً مجدداً امتحان کنید.' });
+            }
+            const tsCtrl = new AbortController();
+            const tsTimer = setTimeout(() => tsCtrl.abort(), 6000);
+            try {
+              const verifyBody = new URLSearchParams({
+                secret: turnstileSecret,
+                response: cleanToken,
+                remoteip: getTrustedClientIp(req),
+              });
+              const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+                method: 'POST',
+                body: verifyBody,
+                signal: tsCtrl.signal,
+              });
+              const tsJson = await tsRes.json().catch(() => ({}));
+              if (!tsRes.ok || !tsJson.success) {
+                return res.status(403).json({ ok: false, error: 'تایید امنیتی کپچا معتبر نیست. لطفاً مجدداً امتحان کنید.' });
+              }
+            } catch {
+              return res.status(503).json({ ok: false, error: 'خطا در بررسی امنیتی کپچا. لطفاً لحظاتی بعد دوباره تلاش کنید.' });
+            } finally {
+              clearTimeout(tsTimer);
+            }
+          }
         }
 
         const cleanCountry = /^[a-z0-9_-]{2,10}$/i.test(String(country || '')) ? String(country).toLowerCase() : 'se';
         const cleanCategory = category || 'bostad';
         const cleanCity = String(city || 'Stockholm').trim().slice(0, 80);
-        const safeImages = Array.isArray(images) ? images.filter(isSafeHttpUrl) : [];
+        const r2PublicBase = String(process.env.R2_PUBLIC_URL || '').trim().replace(/\/+$/, '');
+        const safeImages = (Array.isArray(images) ? images : [])
+          .filter(isSafeHttpUrl)
+          .map((u) => {
+            const trimmed = String(u).trim();
+            // Strip query/hash on own-R2 URLs so shared-reference deletion checks cannot be bypassed
+            if (r2PublicBase && trimmed.startsWith(`${r2PublicBase}/`)) {
+              return trimmed.split('?')[0].split('#')[0];
+            }
+            return trimmed;
+          })
+          .slice(0, 6);
         const finalImages = safeImages.length > 0
           ? safeImages
           : ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80'];
@@ -711,17 +832,17 @@ export default async function handler(req, res) {
       }
 
       if (action === 'owner_list_ads') {
-        if (!checkSubRateLimit(req)) {
+        const creds = Array.isArray(body.credentials) ? body.credentials.slice(0, 20) : [];
+        if (!checkSubRateLimit(req, { bucket: 'owner_list', maxAttempts: 40, windowMs: 15 * 60 * 1000, cost: Math.max(1, creds.length) })) {
           return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است.' });
         }
-        const creds = Array.isArray(body.credentials) ? body.credentials.slice(0, 30) : [];
         const { data, error } = await supabase.rpc('owner_list_ads', { p_credentials: creds });
         if (error) throw error;
         return res.status(200).json({ ok: true, ads: data?.ads || [], count: data?.count || 0 });
       }
 
       if (action === 'boost_ad') {
-        if (!checkSubRateLimit(req)) {
+        if (!checkSubRateLimit(req, { bucket: 'pin_mut', maxAttempts: 20 })) {
           return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
         }
         const { id, pin_code } = body;
@@ -757,7 +878,7 @@ export default async function handler(req, res) {
               `${CANONICAL_ORIGIN}/?c=${boostedCountry}`,
               `${CANONICAL_ORIGIN}/`,
             ],
-            { origin: CANONICAL_ORIGIN }
+            { origin: CANONICAL_ORIGIN, timeoutMs: 1200 }
           ).catch(() => {});
         }
 
@@ -770,10 +891,15 @@ export default async function handler(req, res) {
       }
 
       if (action === 'update_ad') {
+        if (!checkSubRateLimit(req, { bucket: 'pin_mut', maxAttempts: 20 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
         const { id, pin_code, title, price, area, description, status, contact_phone } = body;
         if (!id || !pin_code) {
           return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین الزامی است.' });
         }
+        // Only allow owner-safe terminal statuses; never allow self-approving pending/rejected ads to 'active'
+        const safeOwnerStatus = status === 'sold' || status === 'rented' ? status : undefined;
 
         const cleanTitle = String(title || '').trim().slice(0, 160);
         const cleanDesc = String(description || '').trim().slice(0, 4000);
@@ -835,7 +961,7 @@ export default async function handler(req, res) {
             price: price !== undefined && price !== '' && price !== null ? parseFloat(price) : null,
             area: area !== undefined ? area : undefined,
             description: cleanDesc,
-            status,
+            status: safeOwnerStatus,
             contact_phone,
             normalized_title: prepared.titleNorm,
             normalized_text: prepared.normalizedText,
@@ -858,6 +984,9 @@ export default async function handler(req, res) {
       }
 
       if (action === 'delete_ad') {
+        if (!checkSubRateLimit(req, { bucket: 'pin_mut', maxAttempts: 20 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
         const { id, pin_code } = body;
         if (!id || !pin_code) {
           return res.status(400).json({ ok: false, error: 'شناسه آگهی و پین الزامی است.' });
@@ -876,16 +1005,23 @@ export default async function handler(req, res) {
       }
 
       if (action === 'submit_website_order') {
+        if (!checkSubRateLimit(req, { bucket: 'web_order', maxAttempts: 10 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است.' });
+        }
         const validated = validateWebsiteOrderFields(body);
         if (!validated.ok) {
           return res.status(400).json({ ok: false, error: validated.error });
         }
 
-        const { mode: stripeMode } = await getStripeConfig();
-        if (stripeMode === 'live') {
+        const { mode: stripeMode, secretKey } = await getStripeConfig();
+        if (
+          stripeMode === 'live' ||
+          Boolean(secretKey) ||
+          (process.env.VERCEL_ENV === 'production' && process.env.ALLOW_SIMULATED_TEST_PAYMENTS !== 'true')
+        ) {
           return res.status(403).json({
             ok: false,
-            error: 'در حالت واقعی، ثبت سفارش فقط پس از تایید پرداخت در درگاه رسمی Stripe انجام می‌شود.',
+            error: 'ثبت سفارش فقط پس از تایید پرداخت در درگاه رسمی Stripe انجام می‌شود.',
           });
         }
 
@@ -985,10 +1121,10 @@ export default async function handler(req, res) {
           .maybeSingle();
         const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
 
-        // Idempotency: return existing order if this session was already redeemed
+        // Idempotency: return sanitized order if this session was already redeemed (never leak admin-populated credentials/notes)
         const existingOrder = prev.find((item) => item?.stripeSessionId === sessionId);
         if (existingOrder) {
-          return res.status(200).json({ ok: true, order: existingOrder });
+          return res.status(200).json({ ok: true, order: sanitizePublicSubscription(existingOrder) });
         }
 
         const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
@@ -1058,7 +1194,7 @@ export default async function handler(req, res) {
           .eq('key', 'seller_deployments')
           .maybeSingle();
         const list = Array.isArray(existingRow?.value) ? existingRow.value : [];
-        const idx = list.findIndex((item) => String(item.manageCode || '') === cleanCode);
+        const idx = list.findIndex((item) => safeEqual(String(item.manageCode || ''), cleanCode));
         if (idx === -1) {
           return res.status(404).json({ ok: false, error: 'اشتراکی با این کد ۸ رقمی یافت نشد.' });
         }
@@ -1066,7 +1202,11 @@ export default async function handler(req, res) {
         const current = list[idx];
         if (subAction === 'renew') {
           const { mode: stripeMode, secretKey } = await getStripeConfig();
-          if (stripeMode === 'live') {
+          const requireStripeCheckout =
+            stripeMode === 'live' ||
+            Boolean(secretKey) ||
+            (process.env.VERCEL_ENV === 'production' && process.env.ALLOW_SIMULATED_TEST_PAYMENTS !== 'true');
+          if (requireStripeCheckout) {
             if (secretKey) {
               const keyCheck = validateStripeSecretKeyForMode(secretKey, stripeMode);
               if (!keyCheck.ok) {
@@ -1175,13 +1315,14 @@ export default async function handler(req, res) {
           .eq('key', 'seller_deployments')
           .maybeSingle();
         const list = Array.isArray(existingRow?.value) ? existingRow.value : [];
-        const idx = list.findIndex((item) => String(item.manageCode || '') === cleanCode);
+        const idx = list.findIndex((item) => safeEqual(String(item.manageCode || ''), cleanCode));
         if (idx === -1) {
           return res.status(404).json({ ok: false, error: 'اشتراک مرتبط یافت نشد.' });
         }
 
         const current = list[idx];
-        if (current.lastRenewSessionId === session.id) {
+        const prevRedeemed = Array.isArray(current.redeemedRenewSessionIds) ? current.redeemedRenewSessionIds : [];
+        if (current.lastRenewSessionId === session.id || prevRedeemed.includes(session.id)) {
           return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(current) });
         }
 
@@ -1193,6 +1334,7 @@ export default async function handler(req, res) {
           status: current.status === 'cancelled' ? 'active' : current.status,
           expiresAt: new Date(baseTime + 30 * 24 * 60 * 60 * 1000).toISOString(),
           lastRenewSessionId: session.id,
+          redeemedRenewSessionIds: [...prevRedeemed, session.id].slice(-50),
           renewRequestedAt: '',
         };
         const nextList = list.map((x, i) => (i === idx ? updated : x));
@@ -1205,141 +1347,13 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(updated) });
       }
 
-      if (action === 'deploy_seller_website') {
-        const name = String(body.name || '').trim();
-        const phone = String(body.phone || '').trim();
-        const companyNumber = String(body.companyNumber || '').trim();
-        const email = String(body.email || '').trim();
-
-        if (!name || !phone || !companyNumber || !email) {
-          return res.status(400).json({
-            ok: false,
-            error: 'لطفاً نام سایت، شماره تماس، شماره ثبت شرکت و ایمیل را کامل وارد کنید.',
-          });
-        }
-
-        const { data: cfRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'cloudflare_deploy_settings')
-          .maybeSingle();
-
-        const cfCfg = (cfRow && cfRow.value) || {};
-        const cfToken = String(cfCfg.apiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
-        const accountId = String(cfCfg.accountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
-        const deployEndpoint = String(
-          cfCfg.deployUrl || process.env.SELLER_DEPLOY_URL || 'https://linksho-seller.vercel.app/api/cloudflare/deploy'
-        ).trim();
-
-        if (!cfToken) {
-          return res.status(503).json({
-            ok: false,
-            error: 'توکن کلودفلر هنوز در پنل ادمین تنظیم نشده است.',
-          });
-        }
-
-        const deployRes = await fetch(deployEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cfToken,
-            accountId,
-            name,
-            phone,
-            companyNumber,
-            email,
-            type: 'webshop',
-            currency: 'SEK',
-            shippingFee: 0,
-          }),
-        });
-
-        const deployJson = await deployRes.json().catch(() => ({}));
-        if (!deployRes.ok || !deployJson?.ok) {
-          return res.status(deployRes.status || 500).json({
-            ok: false,
-            error: deployJson?.error || 'خطا در ساخت خودکار وب‌سایت روی کلودفلر.',
-          });
-        }
-
-        const { data: existingRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'seller_deployments')
-          .maybeSingle();
-        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
-        const nextList = [
-          {
-            storeId: String(deployJson.storeId || ''),
-            name: name.slice(0, 120),
-            phone: phone.slice(0, 40),
-            companyNumber: companyNumber.slice(0, 60),
-            email: email.slice(0, 120),
-            panelUrl: String(deployJson.panelUrl || '').slice(0, 300),
-            storefrontApiUrl: String(deployJson.storefrontApiUrl || '').slice(0, 400),
-            workerName: String(deployJson.workerName || '').slice(0, 100),
-            dbId: String(deployJson.dbId || '').slice(0, 100),
-            monthlyPrice: 260,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            createdAt: deployJson.createdAt || new Date().toISOString(),
-          },
-          ...prev.filter((x) => x.workerName !== deployJson.workerName),
-        ].slice(0, 500);
-
-        await supabase.from('swedpersiska_settings').upsert({
-          key: 'seller_deployments',
-          value: nextList,
-          updated_at: new Date().toISOString(),
-        });
-
-        return res.status(200).json({
-          ok: true,
-          panelUrl: deployJson.panelUrl,
-          storefrontApiUrl: deployJson.storefrontApiUrl,
-          pinCode: deployJson.pinCode,
-          storeId: deployJson.storeId,
-        });
-      }
-
-      if (action === 'register_seller_deployment') {
-        const dep = body.deployment;
-        if (!dep || !dep.workerName || !dep.panelUrl) {
-          return res.status(400).json({ ok: false, error: 'Missing deployment metadata' });
-        }
-        const { data: existingRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'seller_deployments')
-          .maybeSingle();
-        const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
-        const nextList = [
-          {
-            storeId: String(dep.storeId || ''),
-            name: String(dep.name || '').slice(0, 120),
-            type: dep.type === 'restaurant' ? 'restaurant' : 'webshop',
-            currency: String(dep.currency || 'SEK').slice(0, 10),
-            panelUrl: String(dep.panelUrl || '').slice(0, 300),
-            storefrontApiUrl: String(dep.storefrontApiUrl || '').slice(0, 400),
-            workerName: String(dep.workerName || '').slice(0, 100),
-            dbId: String(dep.dbId || '').slice(0, 100),
-            monthlyPrice: Number(dep.monthlyPrice) || 240,
-            createdAt: dep.createdAt || new Date().toISOString(),
-          },
-          ...prev.filter((x) => x.workerName !== dep.workerName),
-        ].slice(0, 500);
-
-        await supabase.from('swedpersiska_settings').upsert({
-          key: 'seller_deployments',
-          value: nextList,
-          updated_at: new Date().toISOString(),
-        });
-        return res.status(200).json({ ok: true });
-      }
-
       if (action === 'increment_view') {
+        if (!checkSubRateLimit(req, { bucket: 'inc_view', maxAttempts: 60, windowMs: 5 * 60 * 1000 })) {
+          return res.status(200).json({ ok: true });
+        }
         const { id } = body;
-        if (id) {
-          await supabase.rpc('increment_ad_view', { p_ad_id: id });
+        if (id && UUID_RE.test(String(id).trim())) {
+          await supabase.rpc('increment_ad_view', { p_ad_id: String(id).trim() });
         }
         return res.status(200).json({ ok: true });
       }
@@ -1390,6 +1404,9 @@ export default async function handler(req, res) {
       }
 
       if (action === 'create_vip_checkout') {
+        if (!checkSubRateLimit(req, { bucket: 'vip_checkout', maxAttempts: 12, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌های پرداخت زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
         if (!HAS_SERVICE_ROLE) {
           return res.status(503).json({ ok: false, error: 'متغیر امنیتی SUPABASE_SERVICE_ROLE_KEY روی سرور تنظیم نشده است.' });
         }
@@ -1399,15 +1416,14 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: 'شناسه آگهی نامعتبر است.' });
         }
 
-        const targetCountry = country && /^[a-z0-9_-]{2,10}$/i.test(String(country))
-          ? String(country).toLowerCase()
-          : 'se';
+        const rawCountry = String(country || 'se').trim().toLowerCase();
+        const targetCountry = ALLOWED_VIP_COUNTRIES.has(rawCountry) ? rawCountry : 'se';
 
         const [{ enabled, mode, secretKey, stripeCfg }, { data: adRow }] = await Promise.all([
           getStripeConfig(),
           supabase
             .from('swedpersiska_ads')
-            .select('id, reference_number, title, title_fa, contact_email, status')
+            .select('id, reference_number, title, title_fa, status')
             .eq('id', String(id).trim())
             .is('deleted_at', null)
             .maybeSingle(),
@@ -1437,7 +1453,6 @@ export default async function handler(req, res) {
           productName: `ارتقای ویژه (VIP) آگهی ${adRow.reference_number} (${pricing.durationDays} روز)`,
           successUrl: `${safeOrigin}/?vip_session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${safeOrigin}/?vip_cancelled=1`,
-          customerEmail: adRow.contact_email || undefined,
           idempotencyKey: `vip_${adRow.id}_${pricing.targetCountry}_${minuteBucket}`,
           metadata: {
             type: 'ad_vip_promotion',
@@ -1525,11 +1540,14 @@ export default async function handler(req, res) {
       }
 
       if (action === 'report_ad') {
+        if (!checkSubRateLimit(req, { bucket: 'report_ad', maxAttempts: 10, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد گزارش‌های شما بیش از حد مجاز است.' });
+        }
         const { id, reason, details } = body;
-        if (!id || !reason) return res.status(400).json({ ok: false, error: 'Missing report fields' });
+        if (!id || !UUID_RE.test(String(id).trim()) || !reason) return res.status(400).json({ ok: false, error: 'Missing report fields' });
 
         const { data, error } = await supabase.rpc('report_ad_secure', {
-          p_ad_id: id,
+          p_ad_id: String(id).trim(),
           p_reason: String(reason).slice(0, 80),
           p_details: String(details || '').slice(0, 400),
         });
@@ -1545,6 +1563,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message || 'Internal Server Error' });
+    console.error('[public] error:', err?.message || err);
+    return res.status(500).json({ ok: false, error: 'خطای داخلی سرور. لطفاً دوباره تلاش کنید.' });
   }
 }

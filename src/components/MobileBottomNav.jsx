@@ -100,7 +100,7 @@ export default function MobileBottomNav({
             <span className="text-[10px] leading-none whitespace-nowrap">خانه</span>
           </button>
 
-          {/* Tab 2: دسته‌بندی‌ها (Categories) */}
+          {/* Tab 2: دسته‌ها (Categories) */}
           <button
             type="button"
             onClick={() => setCollectionSheetOpen(true)}
@@ -113,10 +113,10 @@ export default function MobileBottomNav({
             <span className="relative flex h-6 w-6 items-center justify-center shrink-0">
               <LayoutGrid size={19} strokeWidth={isCollectionActive ? 2.2 : 1.85} className="block" />
               {selectedCategory !== 'all' && (
-                <span className="absolute -top-0.5 -end-0.5 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
+                <span className="absolute -top-0.5 -end-0.5 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC] dark:ring-[#171920]" />
               )}
             </span>
-            <span className="text-[10px] leading-none whitespace-nowrap">دسته‌بندی‌ها</span>
+            <span className="text-[10px] leading-none whitespace-nowrap">دسته‌ها</span>
           </button>
 
           {/* Tab 3: دکمه مرکزی ثبت آگهی (Post Ad — aligned on exact same baseline) */}
@@ -197,15 +197,15 @@ export default function MobileBottomNav({
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-[#F0F2F5] dark:border-white/[0.038]">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#A1A1A6] shrink-0">
                   <LayoutGrid size={18} />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-950">
-                    دسته‌بندی‌های نیازمندی‌ها
+                    دسته‌بندی‌ها
                   </h3>
                   <span className="text-[11px] text-slate-500 font-medium">
-                    دسته‌بندی موضوعی آگهی‌های جامعه فارسی‌زبانان اروپا
+                    انتخاب موضوع آگهی
                   </span>
                 </div>
               </div>
@@ -213,7 +213,8 @@ export default function MobileBottomNav({
               <button
                 type="button"
                 onClick={() => setCollectionSheetOpen(false)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+                aria-label="بستن"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] active:scale-95 transition-all cursor-pointer shrink-0"
               >
                 <X size={18} />
               </button>
@@ -233,7 +234,7 @@ export default function MobileBottomNav({
                     onClick={() => handleCategoryClick(cat.id)}
                     className={`flex items-center justify-between p-3 rounded-2xl border text-right transition-all cursor-pointer active:scale-[0.98] ${
                       isSelected
-                        ? 'border-[#1877F2] bg-blue-50/80 shadow-2xs ring-1 ring-[#1877F2]'
+                        ? 'border-[#0066CC] bg-blue-50/80 shadow-2xs ring-1 ring-[#0066CC]'
                         : 'border-slate-200/80 bg-slate-50/60 hover:bg-slate-100/80'
                     }`}
                   >
@@ -247,7 +248,7 @@ export default function MobileBottomNav({
                     </div>
 
                     {isSelected && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1877F2] text-white shrink-0 ms-1">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0066CC] text-white shrink-0 ms-1">
                         <Check size={11} strokeWidth={2.75} className="block" />
                       </div>
                     )}
@@ -300,13 +301,14 @@ export default function MobileBottomNav({
 
           <div className="flex items-center justify-between pb-2 border-b border-[#F0F2F5] dark:border-white/[0.038]">
             <div>
-              <h3 className="text-base font-black text-[#1D1D1F] dark:text-white">امکانات بیشتر</h3>
-              <p className="text-[11px] text-[#6E6E73] dark:text-[#98989F]">بخش‌های کاربردی و سرویس‌های آینده</p>
+              <h3 className="text-base font-black text-[#1D1D1F] dark:text-white">بیشتر</h3>
+              <p className="text-[11px] text-[#6E6E73] dark:text-[#98989F]">تنظیمات و رسانه</p>
             </div>
             <button
               type="button"
               onClick={() => setMoreSheetOpen(false)}
-              className="p-2 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
+              aria-label="بستن"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer shrink-0"
             >
               <X size={18} />
             </button>
@@ -325,9 +327,9 @@ export default function MobileBottomNav({
                   {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
                 </div>
                 <div className="text-right">
-                  <span className="block text-[13px] font-bold text-[#1D1D1F]">حالت تاریک / روشن</span>
+                  <span className="block text-[13px] font-bold text-[#1D1D1F]">حالت تیره</span>
                   <span className="block text-[11px] text-[#6E6E73]">
-                    {theme === 'dark' ? 'ظاهر تاریک فعال است' : 'ظاهر روشن فعال است'}
+                    {theme === 'dark' ? 'فعال' : 'غیرفعال'}
                   </span>
                 </div>
               </div>
@@ -352,15 +354,15 @@ export default function MobileBottomNav({
                 setMoreSheetOpen(false);
                 onOpenCountryModal?.();
               }}
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] transition-all active:scale-[0.98] cursor-pointer"
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-white/[0.04] hover:bg-[#ECECEF] dark:hover:bg-white/[0.08] border border-[#ECEFF4] dark:border-white/[0.05] transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center">
+                <div className="h-9 w-9 rounded-xl bg-[#FBFBFC] dark:bg-[#171920] text-[#6E6E73] dark:text-[#A1A1A6] border border-[#ECEFF4] dark:border-white/[0.05] flex items-center justify-center shrink-0">
                   <Globe size={18} />
                 </div>
                 <div className="text-right">
-                  <span className="block text-[13px] font-bold text-[#1D1D1F]">تغییر کشور</span>
-                  <span className="block text-[11px] text-[#6E6E73]">کشور فعلی: {currentCountryObj.nameFa}</span>
+                  <span className="block text-[13px] font-bold text-[#1D1D1F]">کشور</span>
+                  <span className="block text-[11px] text-[#6E6E73]">{currentCountryObj.nameFa}</span>
                 </div>
               </div>
               <ChevronLeft size={16} className="text-[#6E6E73]" />
@@ -373,23 +375,23 @@ export default function MobileBottomNav({
                 setMoreSheetOpen(false);
                 onOpenLegal?.('privacy');
               }}
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] transition-all active:scale-[0.98] cursor-pointer"
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-white/[0.04] hover:bg-[#ECECEF] dark:hover:bg-white/[0.08] border border-[#ECEFF4] dark:border-white/[0.05] transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-[#F5F5F7] text-[#6E6E73] flex items-center justify-center">
+                <div className="h-9 w-9 rounded-xl bg-[#FBFBFC] dark:bg-[#171920] text-[#6E6E73] dark:text-[#A1A1A6] border border-[#ECEFF4] dark:border-white/[0.05] flex items-center justify-center shrink-0">
                   <ShieldCheck size={18} />
                 </div>
                 <div className="text-right">
                   <span className="block text-[13px] font-bold text-[#1D1D1F]">حریم خصوصی و کوکی‌ها</span>
-                  <span className="block text-[11px] text-[#6E6E73]">تنظیمات GDPR و سیاست کوکی‌ها</span>
+                  <span className="block text-[11px] text-[#6E6E73]">تنظیمات GDPR</span>
                 </div>
               </div>
               <ChevronLeft size={16} className="text-[#6E6E73]" />
             </button>
 
-            {/* Upcoming Future Services */}
+            {/* Media Section */}
             <div className="pt-2 space-y-2">
-              <span className="block text-[11px] font-bold text-[#6E6E73] px-1">سرویس‌های آینده</span>
+              <span className="block text-[11px] font-bold text-[#6E6E73] px-1">رسانه</span>
 
               <button
                 type="button"
@@ -400,12 +402,12 @@ export default function MobileBottomNav({
                 className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/80 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-rose-600 text-white flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0">
                     <Headphones size={18} />
                   </div>
                   <div className="text-right">
                     <span className="block text-[13px] font-bold text-[#1D1D1F]">پادکست خبری</span>
-                    <span className="block text-[11px] text-[#6E6E73]">فید خبری و ویدیوهای یوتیوب</span>
+                    <span className="block text-[11px] text-[#6E6E73]">خبرها و ویدیوهای یوتیوب</span>
                   </div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">

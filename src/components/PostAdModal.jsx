@@ -20,7 +20,7 @@ import {
   CopyCheck
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
-import { isSafeHttpUrl } from '../lib/supabase';
+import { isSafeHttpUrl } from '../lib/urlUtils';
 import { publicApi } from '../lib/apiClient';
 import { saveAdCredential } from '../lib/myAdsStorage';
 import {
@@ -61,7 +61,8 @@ export default function PostAdModal({
   onOpenManageExisting
 }) {
   const currentT = t.fa;
-  const policyRules = buildAdPolicyRules(lifecycleSettings || {});
+  const fullPolicyRules = buildAdPolicyRules(lifecycleSettings || {});
+  const policyRules = [fullPolicyRules[0], fullPolicyRules[2], fullPolicyRules[4]].filter(Boolean);
   const activeCountries = Array.isArray(countries) && countries.length > 0
     ? countries.filter(c => c.enabled !== false)
     : COUNTRIES;
@@ -152,33 +153,40 @@ export default function PostAdModal({
 
     setUploadingPhotos(true);
     try {
-      const uploadedUrls = [];
-      const uploadedHashes = [];
-      for (const rawFile of filesToUpload) {
-        if (!rawFile.type.startsWith('image/')) {
-          throw new Error('فقط فایل‌های تصویری مجاز هستند.');
-        }
-        const readyFile = await compressImageForUpload(rawFile, { maxBytes: MAX_FILE_BYTES });
-        if (readyFile.size > MAX_FILE_BYTES) {
-          throw new Error('حجم هر تصویر باید حداکثر ۱ مگابایت باشد.');
-        }
-        const fileHash = await computeFileSha256(readyFile);
-        const { uploadUrl, publicUrl } = await publicApi.presignUpload({
-          fileName: readyFile.name,
-          contentType: readyFile.type,
-          fileSize: readyFile.size,
-        });
-        const putRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': readyFile.type },
-          body: readyFile,
-        });
-        if (!putRes.ok) {
-          throw new Error('خطا در ارسال تصویر به فضای ابری');
-        }
-        uploadedUrls.push(publicUrl);
-        if (fileHash) uploadedHashes.push(fileHash);
-      }
+      const results = await Promise.all(
+        filesToUpload.map(async (rawFile) => {
+          if (!rawFile.type.startsWith('image/')) {
+            throw new Error('فقط فایل‌های تصویری مجاز هستند.');
+          }
+          const readyFile = await compressImageForUpload(rawFile, { maxBytes: MAX_FILE_BYTES });
+          if (readyFile.size > MAX_FILE_BYTES) {
+            throw new Error('حجم هر تصویر باید حداکثر ۱ مگابایت باشد.');
+          }
+          const [fileHash, presignData] = await Promise.all([
+            computeFileSha256(readyFile),
+            publicApi.presignUpload({
+              fileName: readyFile.name,
+              contentType: readyFile.type,
+              fileSize: readyFile.size,
+            }),
+          ]);
+          const putHeaders = { 'Content-Type': readyFile.type };
+          if (presignData.cacheControl) {
+            putHeaders['Cache-Control'] = presignData.cacheControl;
+          }
+          const putRes = await fetch(presignData.uploadUrl, {
+            method: 'PUT',
+            headers: putHeaders,
+            body: readyFile,
+          });
+          if (!putRes.ok) {
+            throw new Error('خطا در ارسال تصویر به فضای ابری');
+          }
+          return { publicUrl: presignData.publicUrl, fileHash };
+        })
+      );
+      const uploadedUrls = results.map((r) => r.publicUrl).filter(Boolean);
+      const uploadedHashes = results.map((r) => r.fileHash).filter(Boolean);
       if (uploadedUrls.length > 0) {
         setImagesList((prev) => [...prev, ...uploadedUrls].slice(0, MAX_PHOTOS));
         if (uploadedHashes.length > 0) {
@@ -378,7 +386,8 @@ export default function PostAdModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 active:scale-95 transition-all cursor-pointer"
+            aria-label="بستن"
+            className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 active:scale-95 transition-all cursor-pointer shrink-0"
           >
             <X size={18} />
           </button>
@@ -389,9 +398,9 @@ export default function PostAdModal({
           <div className="px-4 sm:px-6 pt-3 pb-3.5 bg-white border-b border-slate-100 shrink-0 space-y-2.5">
             <div className="grid grid-cols-3 gap-2">
               {[
-                { num: 1, label: 'دسته و موقعیت', Icon: MapPin },
-                { num: 2, label: 'مشخصات و تصویر', Icon: FileText },
-                { num: 3, label: 'تماس و انتشار', Icon: UserCheck },
+                { num: 1, label: 'موقعیت', Icon: MapPin },
+                { num: 2, label: 'مشخصات', Icon: FileText },
+                { num: 3, label: 'تماس', Icon: UserCheck },
               ].map((s) => {
                 const isDone = step > s.num;
                 const isCurrent = step === s.num;
@@ -410,7 +419,7 @@ export default function PostAdModal({
                     }}
                     className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                       isCurrent
-                        ? 'bg-[#1877F2] text-white shadow-xs'
+                        ? 'bg-[#0066CC] text-white shadow-xs'
                         : isDone
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 cursor-pointer active:scale-95'
                           : 'bg-slate-100/80 text-slate-400 cursor-default'
@@ -428,7 +437,7 @@ export default function PostAdModal({
             </div>
             <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
               <div
-                className="h-full rounded-full bg-[#1877F2] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                className="h-full rounded-full bg-[#0066CC] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 style={{ width: `${(step / 3) * 100}%` }}
               />
             </div>
@@ -447,15 +456,12 @@ export default function PostAdModal({
 
               <div className="space-y-1.5">
                 <h3 className="text-lg font-bold text-slate-900">
-                  آگهی شما ثبت شد و در انتظار تایید مدیر است
+                  آگهی شما ثبت شد و در انتظار تایید است
                 </h3>
-                <p className="text-xs text-slate-600 max-w-md mx-auto">
+                <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
                   {successData.duplicateReviewFlagged
-                    ? 'درخواست بررسی مغایرت با آگهی مشابه ثبت شد و آگهی پس از تایید مدیر منتشر می‌شود.'
-                    : 'پس از بررسی و تایید توسط مدیریت، آگهی شما در سایت منتشر خواهد شد.'}
-                </p>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  {currentT.saveYourCredentials}
+                    ? 'درخواست بررسی آگهی مشابه ثبت شد و پس از تایید مدیر منتشر می‌شود.'
+                    : currentT.saveYourCredentials}
                 </p>
               </div>
 
@@ -699,9 +705,9 @@ export default function PostAdModal({
                 <button
                   type="button"
                   onClick={handleNextStep}
-                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-sm py-3.5 shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
+                  className="w-full h-11 flex items-center justify-center gap-2 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white font-bold text-xs sm:text-sm shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
                 >
-                  <span>مرحله بعدی: جزئیات آگهی</span>
+                  <span>ادامه: مشخصات آگهی</span>
                   <ChevronLeft size={17} />
                 </button>
               </div>
@@ -880,7 +886,7 @@ export default function PostAdModal({
                 <button
                   type="button"
                   onClick={handlePrevStep}
-                  className="h-12 px-5 rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer shrink-0"
+                  className="h-11 px-5 rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer shrink-0"
                 >
                   <ChevronRight size={16} />
                   <span>قبلی</span>
@@ -889,9 +895,9 @@ export default function PostAdModal({
                   type="button"
                   disabled={descriptionHasLink}
                   onClick={handleNextStep}
-                  className="flex-1 h-12 rounded-full bg-[#1877F2] hover:bg-[#166fe5] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-center gap-2 shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
+                  className="flex-1 h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
                 >
-                  <span>مرحله بعدی: اطلاعات تماس و انتشار</span>
+                  <span>ادامه: اطلاعات تماس</span>
                   <ChevronLeft size={17} />
                 </button>
               </div>
@@ -956,10 +962,10 @@ export default function PostAdModal({
                     </label>
                     <input
                       type="text"
-                      placeholder="username@ یا آیدی تلگرام"
+                      placeholder="@username"
                       value={contactTelegram}
                       onChange={(e) => setContactTelegram(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none text-left"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none text-left font-mono"
                       dir="ltr"
                     />
                   </div>
@@ -995,15 +1001,15 @@ export default function PostAdModal({
                 </div>
               </div>
 
-              {/* Auto-generated 6-character security PIN notice (not user-editable) */}
+              {/* Auto-generated 8-digit security manage code notice */}
               <div className="rounded-2xl bg-amber-50/70 p-3.5 flex items-start gap-3">
                 <KeyRound size={17} className="text-[#86868B] shrink-0 mt-0.5" />
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <span className="block text-xs font-bold text-amber-950">
-                    کد امنیتی ۶ کاراکتری مدیریت آگهی (خودکار)
+                    کد مدیریت ۸ رقمی (خودکار)
                   </span>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
-                    برای امنیت بیشتر، یک کد ۶ کاراکتری غیرقابل‌حدس به‌صورت خودکار توسط سیستم تولید و بلافاصله پس از ثبت آگهی به شما نمایش داده می‌شود.
+                    کد مدیریت آگهی بلافاصله پس از ثبت نمایش داده می‌شود و در این مرورگر نیز ذخیره خواهد شد.
                   </p>
                 </div>
               </div>
@@ -1012,7 +1018,7 @@ export default function PostAdModal({
               <label 
                 className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer select-none ${
                   wantVipPromotion 
-                    ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500' 
+                    ? 'bg-blue-50/80 border-[#0066CC] ring-1 ring-[#0066CC]' 
                     : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200'
                 }`}
               >
@@ -1021,26 +1027,26 @@ export default function PostAdModal({
                     type="checkbox"
                     checked={wantVipPromotion}
                     onChange={(e) => setWantVipPromotion(e.target.checked)}
-                    className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="h-4 w-4 rounded text-[#0066CC] focus:ring-[#0066CC] cursor-pointer"
                   />
                   <div>
                     <span className="text-xs font-bold text-slate-900 block">
-                      ارتقا به آگهی ویژه (VIP) در {currentCountryObj.nameFa}
+                      ارتقا به آگهی ویژه (VIP)
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      نمایش در بالای لیست و سایدبار ویژه کشور {currentCountryObj.nameFa}
+                      نمایش در صدر فهرست و بخش ویژه {currentCountryObj.nameFa}
                     </span>
                   </div>
                 </div>
 
                 <div className="text-left shrink-0">
-                  <span className="text-sm font-extrabold text-blue-700">
+                  <span className="text-sm font-extrabold text-[#0066CC]">
                     {currentCountryObj.currency === '€' ? '۹ یورو (€)' : '۹۹ کرون'}
                   </span>
                 </div>
               </label>
 
-              {/* Task 3: Lifecycle, Anti-Duplicate & Free Boost Policy Explanation before submission */}
+              {/* Lifecycle, Anti-Duplicate & Free Boost Policy Explanation */}
               <div className="rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] p-3.5 space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded-lg bg-[#0066CC]/10 text-[#0066CC] flex items-center justify-center shrink-0">
@@ -1050,7 +1056,7 @@ export default function PostAdModal({
                     {currentT.adPolicyTitle}
                   </span>
                 </div>
-                <ul className="space-y-1 text-[11px] text-[#515154] leading-relaxed list-disc list-inside pr-1">
+                <ul className="space-y-1 text-[11px] text-[#515154] leading-relaxed list-disc ps-4">
                   {policyRules.map((rule, idx) => (
                     <li key={idx}>{rule}</li>
                   ))}
@@ -1061,7 +1067,7 @@ export default function PostAdModal({
               {turnstileSettings.enabled !== false && turnstileSettings.protectPostAd !== false && (
                 <div className="pt-2 pb-1 flex flex-col items-center justify-center">
                   <CloudflareTurnstile
-                    theme="light"
+                    theme="auto"
                     mode={turnstileSettings.mode}
                     siteKey={turnstileSettings.siteKey}
                     onVerify={(token) => {
@@ -1084,7 +1090,7 @@ export default function PostAdModal({
                 <button
                   type="button"
                   onClick={handlePrevStep}
-                  className="h-12 px-5 rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer shrink-0"
+                  className="h-11 px-5 rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer shrink-0"
                 >
                   <ChevronRight size={16} />
                   <span>قبلی</span>
@@ -1092,7 +1098,7 @@ export default function PostAdModal({
                 <button
                   type="submit"
                   disabled={loading || descriptionHasLink}
-                  className="flex-1 h-12 flex items-center justify-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#166fe5] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
+                  className="flex-1 h-11 flex items-center justify-center gap-2 rounded-full bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm shadow-xs transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] cursor-pointer"
                 >
                   <PlusCircle size={16} />
                   <span>

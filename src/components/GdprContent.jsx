@@ -3,27 +3,48 @@ import { ShieldCheck, Cookie, SlidersHorizontal, Lock } from 'lucide-react';
 
 export const GDPR_TABS = [
   { id: 'privacy', label: 'حریم خصوصی', icon: ShieldCheck },
-  { id: 'cookies', label: 'سیاست کوکی', icon: Cookie },
-  { id: 'settings', label: 'تنظیمات کوکی', icon: SlidersHorizontal },
+  { id: 'cookies', label: 'کوکی‌ها', icon: Cookie },
+  { id: 'settings', label: 'تنظیمات', icon: SlidersHorizontal },
 ];
 
 export function GdprTabs({ activeTab, onChangeTab }) {
+  const containerRef = useRef(null);
   const tabRefs = useRef({});
   const [pill, setPill] = useState({ left: 0, width: 0, ready: false });
 
   useEffect(() => {
     const el = tabRefs.current[activeTab];
     if (!el) return;
+    let rafId = 0;
     const update = () => {
-      setPill({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
+      const curr = tabRefs.current[activeTab];
+      if (!curr) return;
+      setPill({ left: curr.offsetLeft, width: curr.offsetWidth, ready: true });
     };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    const schedule = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(update);
+    };
+    schedule();
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(schedule);
+      if (containerRef.current) ro.observe(containerRef.current);
+      ro.observe(el);
+    }
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(schedule).catch(() => {});
+    }
+    window.addEventListener('resize', schedule);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', schedule);
+    };
   }, [activeTab]);
 
   return (
-    <div className="relative grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA]">
+    <div ref={containerRef} className="relative grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA]">
       {pill.ready && (
         <div
           aria-hidden="true"
@@ -50,7 +71,7 @@ export function GdprTabs({ activeTab, onChangeTab }) {
                 : 'text-[#6E6E73] hover:text-[#1D1D1F]'
             }`}
           >
-            <Icon size={13.5} className={`transition-colors duration-200 ${active ? 'text-[#1D1D1F]' : 'text-[#86868B]'}`} />
+            <Icon size={14} className={`shrink-0 transition-colors duration-200 ${active ? 'text-[#1D1D1F]' : 'text-[#86868B]'}`} />
             <span className="truncate">{tab.label}</span>
           </button>
         );
@@ -71,27 +92,27 @@ export function GdprTabBody({
         <div className="rounded-2xl border border-[#E5E5EA] bg-[#FBFBFC] divide-y divide-[#E5E5EA] overflow-hidden">
           <div className="p-4 bg-[#F5F5F7]/70 space-y-1">
             <h3 className="font-bold text-[#1D1D1F] text-[13px]">
-              تعهد به حریم خصوصی کاربران
+              حفاظت از حریم خصوصی کاربران
             </h3>
             <p>
-              {siteName} مطابق با مقررات حفاظت از داده‌های اتحادیه اروپا (EU GDPR) فعالیت می‌کند و تنها حداقل اطلاعات لازم برای انتشار و مدیریت آگهی‌های شما را نگهداری می‌کند.
+              {siteName} مطابق با مقررات حفاظت از داده‌های اتحادیه اروپا (GDPR) تنها حداقل اطلاعات لازم برای انتشار و مدیریت آگهی‌های شما را نگهداری می‌کند.
             </p>
           </div>
 
           <div className="p-4 space-y-1.5">
             <h4 className="font-bold text-[#1D1D1F] text-[13px]">اطلاعات جمع‌آوری‌شده</h4>
-            <ul className="space-y-1 text-[#515154]">
-              <li>• اطلاعاتی که خودتان در آگهی ثبت می‌کنید (عنوان، متن، شهر، تصاویر و راه ارتباطی).</li>
-              <li>• بدون نیاز به ساخت حساب کاربری؛ مدیریت و حذف آگهی با کد پیگیری و کد امنیتی اختصاصی شما انجام می‌شود.</li>
-              <li>• اطلاعات بانکی پرداخت‌های اختیاری هرگز در سیستم ما ذخیره نمی‌شود.</li>
+            <ul className="list-disc ps-4 space-y-1 text-[#515154]">
+              <li>اطلاعاتی که خودتان در آگهی ثبت می‌کنید (عنوان، متن، شهر، تصاویر و راه ارتباطی).</li>
+              <li>بدون نیاز به حساب کاربری؛ مدیریت و حذف آگهی با کد آگهی و کد مدیریت اختصاصی شما انجام می‌شود.</li>
+              <li>اطلاعات کارت بانکی پرداخت‌های اختیاری هرگز در سرورهای ما ذخیره نمی‌شود.</li>
             </ul>
           </div>
 
           <div className="p-4 space-y-1.5">
             <h4 className="font-bold text-[#1D1D1F] text-[13px]">حقوق قانونی شما (GDPR)</h4>
-            <ul className="space-y-1 text-[#515154]">
-              <li>• حق مشاهده، ویرایش و حذف فوری آگهی و تصاویر در هر زمان.</li>
-              <li>• حق تغییر یا لغو رضایت کوکی‌های تحلیلی از بخش «تنظیمات کوکی‌ها».</li>
+            <ul className="list-disc ps-4 space-y-1 text-[#515154]">
+              <li>مشاهده، ویرایش و حذف فوری آگهی و تصاویر در هر زمان.</li>
+              <li>تغییر یا لغو رضایت کوکی‌های آماری از بخش «تنظیمات».</li>
             </ul>
           </div>
         </div>
@@ -122,7 +143,7 @@ export function GdprTabBody({
 
           <div className="p-4 space-y-1">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-bold text-[#1D1D1F] text-[13px]">کوکی‌های آمار و بهبود تجربه</span>
+              <span className="font-bold text-[#1D1D1F] text-[13px]">کوکی‌های آماری</span>
               <span className="text-[11px] font-bold text-[#0066CC] bg-[#0066CC]/10 px-2.5 py-0.5 rounded-full">
                 اختیاری
               </span>
@@ -144,8 +165,8 @@ export function GdprTabBody({
             <div className="p-4 bg-[#F5F5F7]/60 flex items-center justify-between gap-4">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5 font-bold text-[#1D1D1F] text-[13px]">
-                  <Lock size={13.5} className="text-[#86868B] shrink-0" />
-                  <span>کوکی‌های ضروری سایت</span>
+                  <Lock size={14} className="text-[#86868B] shrink-0" />
+                  <span>کوکی‌های ضروری</span>
                 </div>
                 <p className="text-[11.5px] text-[#6E6E73]">
                   لازم برای عملکرد اصلی، امنیت و ذخیره تنظیمات شما.
@@ -159,7 +180,7 @@ export function GdprTabBody({
             <label className="p-4 hover:bg-[#F5F5F7]/70 flex items-center justify-between gap-4 cursor-pointer transition-colors">
             <div className="space-y-0.5">
               <div className="font-bold text-[#1D1D1F] text-[13px]">
-                کوکی‌های آمار و بهبود سایت
+                کوکی‌های آماری
               </div>
               <p className="text-[11.5px] text-[#6E6E73]">
                 تحلیل ناشناس بازدیدها برای ارتقای کیفیت پلتفرم.

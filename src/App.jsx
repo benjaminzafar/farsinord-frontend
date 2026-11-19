@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue, lazy, Suspense } from 'react';
 import { 
   Search, 
   MapPin, 
@@ -22,7 +22,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import MobileBottomNav from './components/MobileBottomNav';
 import AdCard from './components/AdCard';
-import { isSafeHttpUrl } from './lib/supabase';
+import { isSafeHttpUrl } from './lib/urlUtils';
 import { publicApi } from './lib/apiClient';
 import { COUNTRIES, CATEGORIES, mergePortalCountries, t } from './lib/translations';
 import { getGdprConsent } from './lib/gdpr';
@@ -66,6 +66,23 @@ const CATEGORY_ICONS = {
 
 
 const FEED_PAGE_SIZE = 16;
+
+const SORT_LABELS = {
+  newest: 'جدیدترین',
+  most_viewed: 'پربازدیدترین',
+  price_asc: 'ارزان‌ترین',
+  price_desc: 'گران‌ترین',
+};
+
+function getInitialAdParamFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const pathMatch = String(window.location.pathname || '').match(/^\/ad\/([A-Za-z0-9_-]+)\/?$/);
+    return params.get('ad') || (pathMatch ? pathMatch[1] : '') || '';
+  } catch {
+    return '';
+  }
+}
 
 export default function App() {
   const lang = 'fa'; // Complete Persian Language
@@ -145,14 +162,19 @@ export default function App() {
   const [selectedCity, setSelectedCity] = useState('all');
   const [sortBy, setSortBy] = useState(null); // null | 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => searchQuery.trim());
+  const [initialAdResolved, setInitialAdResolved] = useState(() => !getInitialAdParamFromUrl());
+  const lastVipFilterKeyRef = useRef('');
+  const lastTrackedPathRef = useRef('');
 
   useEffect(() => {
+    const nextTrimmed = searchQuery.trim();
+    if (nextTrimmed === debouncedSearchQuery) return;
     const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery.trim());
+      setDebouncedSearchQuery(nextTrimmed);
     }, 250);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, debouncedSearchQuery]);
 
   const handleCountryChange = (c) => {
     const valid = portalCountries.some(x => x.id === c) ? c : (portalCountries[0]?.id || 'se');
@@ -477,11 +499,24 @@ export default function App() {
       document.head.appendChild(script);
     }
 
+    const currentTrackKey = `${id}|${window.location.pathname}${window.location.search}`;
+    if (lastTrackedPathRef.current === currentTrackKey) return;
+    lastTrackedPathRef.current = currentTrackKey;
+
     window.gtag('config', id, {
       page_path: window.location.pathname + window.location.search,
       page_title: document.title,
     });
   }, [analyticsSettings.enabled, analyticsSettings.measurementId, gdprConsent?.analytics, selectedCountry, selectedCategory, activeAdDetail?.id]);
+
+  const top20AdIdsKey = useMemo(
+    () => ads.slice(0, 20).map((a) => a.id).join(','),
+    [ads]
+  );
+  const adsForSeoRef = useRef(ads);
+  useEffect(() => {
+    adsForSeoRef.current = ads;
+  }, [ads]);
 
   // Dynamic Country, Category & Ad SEO (Title + Meta + OpenGraph + Clean Canonical + JSON-LD @graph)
   useEffect(() => {
@@ -607,7 +642,7 @@ export default function App() {
       countryObj: cObj,
       categoryId: selectedCategory,
       activeAd: activeAdDetail,
-      adsList: ads,
+      adsList: adsForSeoRef.current,
       pageMode,
       pageTitle,
       pageDesc,
@@ -615,7 +650,7 @@ export default function App() {
       nowMs: renderNow,
     });
     ldEl.textContent = JSON.stringify(ldData);
-  }, [selectedCountry, selectedCategory, selectedCity, seoSettings, activeAdDetail, podcastOpen, websiteBuilderOpen, siteName, logoUrl, socialLinks, portalCountries, ads, renderNow]);
+  }, [selectedCountry, selectedCategory, selectedCity, seoSettings, activeAdDetail, podcastOpen, websiteBuilderOpen, siteName, logoUrl, socialLinks, portalCountries, top20AdIdsKey, renderNow]);
 
   // Success Toast
   const [toastMsg, setToastMsg] = useState('');
@@ -631,39 +666,32 @@ export default function App() {
     document.documentElement.lang = 'fa';
   }, []);
 
-  // Fetch paginated ads + VIP showcase from Secure Public API
+  // Fetch paginated ads + VIP showcase in a single combined request on page 1
   const fetchAds = async () => {
     const reqSeq = ++feedRequestSeqRef.current;
     setLoading(true);
     loadingMoreRef.current = false;
     setLoadingMore(false);
     try {
-      const [mainRes, vipRes] = await Promise.all([
-        publicApi.fetchAdsPage({
-          page: 1,
-          limit: FEED_PAGE_SIZE,
-          country: selectedCountry,
-          category: selectedCategory,
-          city: selectedCity,
-          q: debouncedSearchQuery,
-          sort: sortBy || '',
-        }),
-        publicApi.fetchAdsPage({
-          page: 1,
-          limit: 12,
-          country: selectedCountry,
-          category: selectedCategory,
-          city: selectedCity,
-          q: debouncedSearchQuery,
-          featuredOnly: true,
-        }),
-      ]);
+      const mainRes = await publicApi.fetchAdsPage({
+        page: 1,
+        limit: FEED_PAGE_SIZE,
+        country: selectedCountry,
+        category: selectedCategory,
+        city: selectedCity,
+        q: debouncedSearchQuery,
+        sort: sortBy || '',
+        includeFeatured: true,
+      });
       if (reqSeq !== feedRequestSeqRef.current) return;
       setAds(mainRes.ads || []);
       setTotalAdsCount(mainRes.total || 0);
       setFeedPage(1);
       setHasMoreAds(Boolean(mainRes.hasMore));
-      setFeaturedAdsList(vipRes.ads || []);
+      if (Array.isArray(mainRes.featuredAds)) {
+        setFeaturedAdsList(mainRes.featuredAds);
+      }
+      lastVipFilterKeyRef.current = `${selectedCountry}|${selectedCategory}|${selectedCity}|${debouncedSearchQuery}`;
     } catch (err) {
       console.error('Error fetching ads:', err);
     } finally {
@@ -673,9 +701,14 @@ export default function App() {
     }
   };
 
+  const isFeedActiveView = !activeAdDetail && !podcastOpen && !websiteBuilderOpen && initialAdResolved;
+
   useEffect(() => {
+    if (!isFeedActiveView) return;
     let cancelled = false;
     const reqSeq = ++feedRequestSeqRef.current;
+    const vipFilterKey = `${selectedCountry}|${selectedCategory}|${selectedCity}|${debouncedSearchQuery}`;
+    const shouldIncludeFeatured = lastVipFilterKeyRef.current !== vipFilterKey;
 
     const loadPageOne = async () => {
       await Promise.resolve();
@@ -685,32 +718,25 @@ export default function App() {
       setLoadingMore(false);
 
       try {
-        const [mainRes, vipRes] = await Promise.all([
-          publicApi.fetchAdsPage({
-            page: 1,
-            limit: FEED_PAGE_SIZE,
-            country: selectedCountry,
-            category: selectedCategory,
-            city: selectedCity,
-            q: debouncedSearchQuery,
-            sort: sortBy || '',
-          }),
-          publicApi.fetchAdsPage({
-            page: 1,
-            limit: 12,
-            country: selectedCountry,
-            category: selectedCategory,
-            city: selectedCity,
-            q: debouncedSearchQuery,
-            featuredOnly: true,
-          }),
-        ]);
+        const mainRes = await publicApi.fetchAdsPage({
+          page: 1,
+          limit: FEED_PAGE_SIZE,
+          country: selectedCountry,
+          category: selectedCategory,
+          city: selectedCity,
+          q: debouncedSearchQuery,
+          sort: sortBy || '',
+          includeFeatured: shouldIncludeFeatured,
+        });
         if (cancelled || reqSeq !== feedRequestSeqRef.current) return;
         setAds(mainRes.ads || []);
         setTotalAdsCount(mainRes.total || 0);
         setFeedPage(1);
         setHasMoreAds(Boolean(mainRes.hasMore));
-        setFeaturedAdsList(vipRes.ads || []);
+        if (shouldIncludeFeatured && Array.isArray(mainRes.featuredAds)) {
+          setFeaturedAdsList(mainRes.featuredAds);
+          lastVipFilterKeyRef.current = vipFilterKey;
+        }
       } catch (err) {
         if (!cancelled) {
           console.error('Error fetching paginated ads:', err);
@@ -726,7 +752,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCountry, selectedCategory, selectedCity, debouncedSearchQuery, sortBy]);
+  }, [selectedCountry, selectedCategory, selectedCity, debouncedSearchQuery, sortBy, isFeedActiveView]);
 
   const loadMoreAds = async () => {
     if (loading || loadingMoreRef.current || !hasMoreAds) return;
@@ -789,12 +815,15 @@ export default function App() {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      const pathMatch = String(window.location.pathname || '').match(/^\/ad\/([A-Za-z0-9_-]+)\/?$/);
-      const adParam = params.get('ad') || (pathMatch ? pathMatch[1] : '');
+      const adParam = getInitialAdParamFromUrl();
       if (adParam) {
-        publicApi.fetchAdByParam(adParam).then((data) => {
-          if (data) setActiveAdDetail(data);
-        });
+        publicApi.fetchAdByParam(adParam)
+          .then((data) => {
+            if (data) setActiveAdDetail(data);
+          })
+          .finally(() => {
+            setInitialAdResolved(true);
+          });
       }
       const vipSessionId = params.get('vip_session_id');
       const vipCancelled = params.get('vip_cancelled') === '1';
@@ -803,12 +832,12 @@ export default function App() {
           .then((res) => {
             if (res?.ad) {
               fetchAdsRef.current?.();
-              setToastMsg(`آگهی «${res.ad.title_fa || res.ad.title}» با موفقیت به ویژه (VIP) ارتقا یافت!`);
+              setToastMsg(`آگهی «${res.ad.title_fa || res.ad.title}» ویژه (VIP) شد.`);
               setTimeout(() => setToastMsg(''), 4000);
             }
           })
           .catch((err) => {
-            setToastMsg(err?.message || 'تایید پرداخت ویژه انجام نشد. در صورت کسر وجه با پشتیبانی تماس بگیرید.');
+            setToastMsg(err?.message || 'تایید پرداخت انجام نشد. در صورت کسر وجه با پشتیبانی تماس بگیرید.');
             setTimeout(() => setToastMsg(''), 5000);
           })
           .finally(() => {
@@ -820,7 +849,7 @@ export default function App() {
           });
       } else if (vipCancelled) {
         Promise.resolve().then(() => {
-          setToastMsg('پرداخت لغو شد؛ هر زمان مایل بودید می‌توانید دوباره اقدام کنید.');
+          setToastMsg('پرداخت لغو شد.');
           setTimeout(() => setToastMsg(''), 4000);
         });
         try {
@@ -854,6 +883,13 @@ export default function App() {
           const found = [...featuredAdsList, ...ads].find(a => a.reference_number === adParam || a.id === adParam);
           if (found) {
             setActiveAdDetail(found);
+            if (found._isSummary) {
+              publicApi.fetchAdByParam(found.id).then((fullData) => {
+                if (fullData) {
+                  setActiveAdDetail((curr) => (curr && curr.id === found.id ? { ...curr, ...fullData, _isSummary: false } : curr));
+                }
+              });
+            }
           } else {
             publicApi.fetchAdByParam(adParam).then((data) => {
               if (data) setActiveAdDetail(data);
@@ -1055,8 +1091,8 @@ export default function App() {
     }
   };
 
-  // When clicking an ad, open full page view and update URL history
-  const handleSelectAd = (ad) => {
+  // When clicking an ad, open full page view immediately and hydrate full contact/description details if summary
+  const handleSelectAd = useCallback((ad) => {
     setActiveAdDetail(ad);
     try {
       const url = new URL(window.location.href);
@@ -1065,7 +1101,15 @@ export default function App() {
     } catch {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
     publicApi.incrementView(ad.id, ad.views_count);
-  };
+
+    if (ad?._isSummary) {
+      publicApi.fetchAdByParam(ad.id).then((fullData) => {
+        if (fullData) {
+          setActiveAdDetail((curr) => (curr && curr.id === ad.id ? { ...curr, ...fullData, _isSummary: false } : curr));
+        }
+      });
+    }
+  }, []);
 
   // Back to ads feed
   const handleBackToFeed = () => {
@@ -1111,8 +1155,13 @@ export default function App() {
   const availableCities = currentCountryObj.cities;
 
   // Dynamic Hero Background Photo (Per Country — customizable from Admin Panel)
+  const heroImageSrc = currentCountryObj.heroImage || '/images/cities/stockholm.jpg';
+  const localCityHeroMatch = heroImageSrc.match(/^\/images\/cities\/(stockholm|oslo|copenhagen|helsinki)\.jpg$/);
   const activeHero = {
-    image: currentCountryObj.heroImage || '/images/cities/stockholm.jpg',
+    image: heroImageSrc,
+    srcSet: localCityHeroMatch
+      ? `/images/cities/${localCityHeroMatch[1]}-768.jpg 768w, ${heroImageSrc} 1376w`
+      : undefined,
     cityFa: currentCountryObj.nameFa,
     cityEn: currentCountryObj.nameNative || currentCountryObj.nameFa
   };
@@ -1209,18 +1258,20 @@ export default function App() {
   return (
     <div className={`min-h-screen flex flex-col bg-[#FBFBFC] dark:bg-[#121317] text-[#1D1D1F] dark:text-[#F5F5F7] overflow-x-clip w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
-      {/* Geolocation Country Detection Pop-Up Modal */}
-      <Suspense fallback={null}>
-        <CountryBanner
-          isOpen={countryModalOpen}
-          onClose={handleCloseCountryModal}
-          selectedCountry={selectedCountry}
-          onSelectCountry={handleCountryChange}
-          onConsentSaved={setGdprConsent}
-          siteName={siteName}
-          countries={portalCountries}
-        />
-      </Suspense>
+      {/* Geolocation Country Detection Pop-Up Modal (Only loaded when open) */}
+      {countryModalOpen && (
+        <Suspense fallback={null}>
+          <CountryBanner
+            isOpen={countryModalOpen}
+            onClose={handleCloseCountryModal}
+            selectedCountry={selectedCountry}
+            onSelectCountry={handleCountryChange}
+            onConsentSaved={setGdprConsent}
+            siteName={siteName}
+            countries={portalCountries}
+          />
+        </Suspense>
+      )}
 
       {/* Top Navbar */}
       <Navbar
@@ -1249,9 +1300,9 @@ export default function App() {
       {/* Spacer for Fixed Top Navbar */}
       <div className="h-16 md:h-16 shrink-0" aria-hidden="true" />
 
-      {/* Floating Toast Notification */}
+      {/* Floating Toast Notification (Clears mobile bottom nav on small screens) */}
       {toastMsg && (
-        <div className="fixed bottom-5 end-5 z-50 flex items-center gap-2 rounded-xl bg-stone-900 text-white px-3.5 py-2.5 shadow-lg border border-stone-800 text-xs font-medium animate-in slide-in-from-bottom-2 duration-150">
+        <div className="fixed bottom-20 md:bottom-5 inset-x-4 md:inset-x-auto md:end-5 md:max-w-sm z-50 flex items-center gap-2 rounded-xl bg-stone-900 text-white px-3.5 py-2.5 shadow-lg border border-stone-800 text-xs font-medium animate-in slide-in-from-bottom-2 duration-150">
           <CheckCircle2 size={15} className="text-white/60 shrink-0" />
           <span>{toastMsg}</span>
         </div>
@@ -1289,13 +1340,17 @@ export default function App() {
         <>
           {/* Hero Section - Always visible on Desktop; hidden on Mobile when filtering by category */}
           <section className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-1 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
-          <div className="relative min-h-[200px] sm:min-h-[300px] md:min-h-[350px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-14 md:py-16">
+          <div className="relative min-h-[156px] sm:min-h-[280px] md:min-h-[340px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-12 md:py-16">
             
             {/* Rounded Architectural Cityscape Backdrop */}
             <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#ECEFF4] dark:border-white/[0.04] bg-[#1D1D1F] pointer-events-none select-none">
               <img
                 key={activeHero.image}
                 src={activeHero.image}
+                srcSet={activeHero.srcSet}
+                sizes={activeHero.srcSet ? '(max-width: 768px) 100vw, 1280px' : undefined}
+                width="1376"
+                height="768"
                 alt={activeHero.cityFa}
                 decoding="async"
                 fetchPriority="high"
@@ -1304,7 +1359,7 @@ export default function App() {
               <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/55" />
             </div>
 
-            <div className="relative z-10 w-full max-w-3xl mx-auto text-center space-y-2.5 sm:space-y-4">
+            <div className="relative z-10 w-full max-w-3xl mx-auto text-center space-y-2 sm:space-y-4">
               <h1 className="text-2xl sm:text-4xl md:text-[42px] font-black tracking-tight text-white leading-snug sm:leading-tight px-1 break-words drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]">
                 {heroHeading}
               </h1>
@@ -1329,7 +1384,7 @@ export default function App() {
                       onFocus={() => setHeroSearchFocused(true)}
                       onBlur={() => setTimeout(() => setHeroSearchFocused(false), 150)}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full h-full bg-transparent border-0 text-xs font-medium leading-none text-[#1D1D1F] placeholder-[#86868B] focus:outline-none text-right min-w-0"
+                      className="w-full h-full bg-transparent border-0 text-xs font-medium leading-normal text-[#1D1D1F] placeholder-[#86868B] focus:outline-none text-right min-w-0"
                     />
                     {searchQuery && (
                       <button
@@ -1475,8 +1530,8 @@ export default function App() {
               <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 {currentT.featuredAds}
               </h2>
-              <span className="text-[11px] sm:text-xs font-medium text-slate-500">
-                {featuredAds.length} {lang === 'fa' ? 'آگهی' : 'annonser'}
+              <span className="text-[11px] sm:text-xs font-medium text-slate-500 tabular-nums">
+                {featuredAds.length.toLocaleString('fa-IR')} آگهی
               </span>
             </div>
 
@@ -1502,7 +1557,7 @@ export default function App() {
                 {currentT.recentAds}
               </h2>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.04] text-[#515154] dark:text-[#A1A1A6] text-[11px] font-bold tabular-nums">
-                {searchQuery.trim() === debouncedSearchQuery ? totalAdsCount : sortedAds.length} آگهی
+                {(searchQuery.trim() === debouncedSearchQuery ? totalAdsCount : sortedAds.length).toLocaleString('fa-IR')} آگهی
               </span>
               {selectedCategory !== 'all' && (
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EAF2FB] text-[#0066CC] text-xs font-semibold border border-[#CDE0F5]">
@@ -1528,19 +1583,19 @@ export default function App() {
                   className="text-xs font-semibold text-[#515154] hover:text-[#1D1D1F] flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw size={12} />
-                  <span>حذف فیلترها</span>
+                  <span>پاک‌سازی</span>
                 </button>
               )}
             </div>
 
-            {/* Compact Filter Trigger — Only opens when clicked */}
+            {/* Compact Sort Trigger — Shows active sort option */}
             <div ref={sortMenuRef} className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => setSortMenuOpen((v) => !v)}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] hover:bg-[#ECECEF] dark:hover:bg-white/[0.06] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold transition-colors active:scale-95 cursor-pointer select-none"
               >
-                <span>فیلتر آگهی</span>
+                <span>{SORT_LABELS[sortBy] || 'مرتب‌سازی'}</span>
                 <ChevronDown
                   size={14}
                   className={`text-[#86868B] transition-transform duration-200 ${sortMenuOpen ? 'rotate-180' : ''}`}
@@ -1704,7 +1759,7 @@ export default function App() {
               if (activeAdDetail && activeAdDetail.id === promotedAd.id) {
                 setActiveAdDetail(promotedAd);
               }
-              showToast(`آگهی «${promotedAd.title}» با موفقیت به رتبه ویژه (VIP) ارتقا یافت!`);
+              showToast(`آگهی «${promotedAd.title}» ویژه (VIP) شد.`);
             }}
           />
         )}
@@ -1729,7 +1784,7 @@ export default function App() {
                 handleClosePostAd();
                 handleOpenPayment(newAd);
               } else {
-                showToast(`آگهی با کد مرجع ${newAd.reference_number} ثبت شد و پس از تایید مدیر منتشر می‌شود.`);
+                showToast(`آگهی ثبت شد (کد: ${newAd.reference_number}). پس از تایید منتشر می‌شود.`);
               }
             }}
           />
@@ -1745,16 +1800,16 @@ export default function App() {
             onOpenPromote={handleOpenPayment}
             onDeleted={(deletedId) => {
               setAds(ads.filter(a => a.id !== deletedId));
-              showToast(lang === 'fa' ? 'آگهی حذف شد.' : 'Annonsen har raderats.');
+              showToast('آگهی حذف شد.');
             }}
             onUpdated={(updatedAd) => {
               setAds(ads.map(a => a.id === updatedAd.id ? updatedAd : a));
-              showToast(lang === 'fa' ? 'آگهی به‌روزرسانی شد.' : 'Annonsen har uppdaterats.');
+              showToast('آگهی به‌روزرسانی شد.');
             }}
             onBoosted={(boostedAd) => {
               setAds((prev) => prev.map((a) => (a.id === boostedAd.id ? boostedAd : a)));
               fetchAds();
-              showToast('آگهی شما بوست شد و در صدر آگهی‌های جدید قرار گرفت!');
+              showToast('آگهی بوست شد و به صدر فهرست رفت.');
             }}
           />
         )}

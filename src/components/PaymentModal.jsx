@@ -101,7 +101,7 @@ export default function PaymentModal({
                 ارتقای آگهی به ویژه (VIP)
               </h2>
               <p className="text-[11px] text-[#6E6E73] truncate">
-                پرداخت امن در صفحه رسمی Stripe • نمایش در صدر آگهی‌های کشور
+                نمایش در صدر فهرست و بخش ویژه کشور انتخابی
               </p>
             </div>
           </div>
@@ -109,10 +109,11 @@ export default function PaymentModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-7 w-7 rounded-full hover:bg-[#ECECEF] text-[#6E6E73] hover:text-[#1D1D1F] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            aria-label="بستن"
+            className="h-9 w-9 sm:h-8 sm:w-8 rounded-full hover:bg-[#ECECEF] text-[#6E6E73] hover:text-[#1D1D1F] flex items-center justify-center transition-colors cursor-pointer shrink-0"
             title="بستن"
           >
-            <X size={15} />
+            <X size={16} />
           </button>
         </div>
 
@@ -141,9 +142,9 @@ export default function PaymentModal({
           {/* Country-Specific VIP Target Selector */}
           <div className="space-y-1.5">
             <label className="block text-[11px] font-bold text-[#6E6E73]">
-              کشور هدف برای نمایش در بخش آگهی‌های ویژه (VIP):
+              کشور هدف نمایش ویژه (VIP):
             </label>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {activeCountries.map((c) => {
                 const isSelected = targetCountry === c.id;
                 return (
@@ -196,10 +197,10 @@ export default function PaymentModal({
             <div className="rounded-xl bg-[#F5F5F7] border border-[#E5E5EA] p-3 text-xs text-[#515154] leading-relaxed space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-[#1D1D1F]">
                 <Lock size={13} className="text-[#0066CC]" />
-                <span>پرداخت امن از طریق Stripe Checkout</span>
+                <span>درگاه رسمی Stripe</span>
               </div>
               <p className="text-[11px] text-[#6E6E73]">
-                اطلاعات کارت بانکی شما فقط در درگاه رمزنگاری‌شده رسمی Stripe وارد می‌شود و در سرورهای سایت ذخیره نمی‌گردد. بلافاصله پس از تایید، نشان ویژه (VIP) برای {durationDays} روز فعال می‌شود.
+                پرداخت در صفحه رمزنگاری‌شده Stripe انجام می‌شود و بلافاصله پس از تایید، نشان ویژه (VIP) برای {durationDays} روز فعال خواهد شد.
               </p>
             </div>
 
@@ -211,8 +212,8 @@ export default function PaymentModal({
               <Lock size={14} />
               <span>
                 {loading
-                  ? 'در حال انتقال به درگاه Stripe...'
-                  : `پرداخت امن ${displayPrice} ${resolvedCurrency} در Stripe Checkout`}
+                  ? 'در حال انتقال به درگاه...'
+                  : `پرداخت ${displayPrice} ${resolvedCurrency}`}
               </span>
               {!loading && <ExternalLink size={13} />}
             </button>

@@ -7,6 +7,7 @@ import {
   AlertCircle,
   ShieldAlert,
   ArrowRight,
+  ArrowLeft,
   Save,
   Sparkles,
   Rocket,
@@ -60,9 +61,9 @@ function getStatusBadge(ad) {
   }
   switch (ad?.status) {
     case 'active':
-      return { label: 'فعال و منتشرشده', cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+      return { label: 'منتشرشده', cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
     case 'pending':
-      return { label: 'در انتظار تایید مدیر', cls: 'bg-amber-100 text-amber-900 border-amber-200' };
+      return { label: 'در انتظار تایید', cls: 'bg-amber-100 text-amber-900 border-amber-200' };
     case 'rejected':
       return { label: 'رد شده', cls: 'bg-rose-100 text-rose-800 border-rose-200' };
     case 'hidden':
@@ -74,6 +75,18 @@ function getStatusBadge(ad) {
     default:
       return { label: ad?.status || 'نامشخص', cls: 'bg-stone-200 text-stone-700 border-stone-300' };
   }
+}
+
+const CURRENCY_UNITS = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
+function formatManageAdPrice(ad) {
+  const rawType = String(ad?.price_type || '').trim();
+  if (ad?.price) {
+    return `${Number(ad.price).toLocaleString('fa-IR')} ${!rawType || rawType === 'kr' ? 'کرون' : rawType}`;
+  }
+  if (rawType && !CURRENCY_UNITS.has(rawType.toLowerCase())) {
+    return rawType;
+  }
+  return '';
 }
 
 export default function ManageAdModal({
@@ -348,12 +361,12 @@ export default function ManageAdModal({
             </div>
             <div>
               <h4 className="text-xs sm:text-[13px] font-black text-[#1D1D1F]">
-                {isActiveVip ? 'بوست و تازه‌سازی آگهی ویژه (VIP)' : `بوست رایگان آگهی (هر ${freeBoostDaysFa} روز یک‌بار)`}
+                {isActiveVip ? 'بوست آگهی ویژه (VIP)' : `بوست رایگان (هر ${freeBoostDaysFa} روز)`}
               </h4>
               <p className="text-[11px] text-[#6E6E73]">
                 {isActiveVip
-                  ? 'آگهی‌های پرداختی و ویژه مشمول محدودیت زمانی بوست نیستند و اولویت ویژه خود را حفظ می‌کنند.'
-                  : 'بدون تغییر تاریخ انتشار اصلی، آگهی خود را در کنار آگهی‌های تازه منتشرشده قرار دهید.'}
+                  ? 'آگهی‌های ویژه محدودیت زمانی بوست ندارند.'
+                  : 'انتقال رایگان آگهی به صدر فهرست جدیدترین‌ها.'}
               </p>
             </div>
           </div>
@@ -418,7 +431,7 @@ export default function ManageAdModal({
           disabled={!canBoostNow || boostLoading || loading}
           onClick={() => handleFreeBoost(matchedAd, matchedPin)}
           aria-label="بوست رایگان آگهی"
-          className={`w-full h-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`w-full h-10 rounded-full font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
             canBoostNow && !boostLoading
               ? 'bg-[#0066CC] hover:bg-[#0055AA] text-white shadow-xs active:scale-[0.98]'
               : 'bg-[#E5E5EA] text-[#86868B] cursor-not-allowed'
@@ -429,10 +442,10 @@ export default function ManageAdModal({
             {boostLoading
               ? 'در حال ثبت بوست...'
               : isActiveVip
-                ? 'بوست فوری آگهی ویژه (VIP)'
+                ? 'بوست فوری آگهی ویژه'
                 : cooldownSeconds > 0
                   ? `بوست بعدی در ${formatRemainingCountdown(cooldownSeconds)}`
-                  : 'بوست رایگان آگهی (انتقال به صدر لیست جدید)'}
+                  : 'بوست رایگان آگهی'}
           </span>
         </button>
       </div>
@@ -450,15 +463,15 @@ export default function ManageAdModal({
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-stone-100 bg-stone-50/80 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73] shrink-0">
               <KeyRound size={18} />
             </div>
             <div>
               <h2 className="text-base font-extrabold text-stone-900">
-                {matchedAd ? 'مدیریت و بوست آگهی' : 'پنل آگهی‌های من'}
+                {matchedAd ? 'مدیریت آگهی' : 'آگهی‌های من'}
               </h2>
               <span className="text-[11px] font-medium text-stone-500">
-                داشبورد وضعیت، بوست رایگان {freeBoostDaysFa} روزه، ویرایش و حذف
+                بوست رایگان، ویرایش و مدیریت وضعیت
               </span>
             </div>
           </div>
@@ -466,8 +479,8 @@ export default function ManageAdModal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="بستن پنجره"
-            className="p-1.5 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-200/60 active:scale-95 transition-all cursor-pointer"
+            aria-label="بستن"
+            className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-full text-stone-400 hover:text-stone-800 hover:bg-stone-200/60 active:scale-95 transition-all cursor-pointer shrink-0"
           >
             <X size={18} />
           </button>
@@ -655,10 +668,10 @@ export default function ManageAdModal({
                       </label>
                       <input
                         type="password"
-                        maxLength={6}
+                        maxLength={10}
                         required
                         dir="ltr"
-                        placeholder="••••••"
+                        placeholder="••••••••"
                         value={pinInput}
                         onChange={(e) => setPinInput(e.target.value)}
                         className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 font-mono text-sm font-bold text-stone-900 tracking-widest focus:border-[#0066CC] focus:outline-none text-left"
@@ -669,10 +682,10 @@ export default function ManageAdModal({
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-black text-white font-bold text-xs py-3 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                    className="w-full h-11 flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-black text-white font-bold text-xs active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                   >
-                    <span>{loading ? 'در حال بررسی...' : 'یافتن و ورود به مدیریت آگهی'}</span>
-                    <ArrowRight size={15} />
+                    <span>{loading ? 'در حال بررسی...' : 'ورود به مدیریت آگهی'}</span>
+                    <ArrowLeft size={15} />
                   </button>
                 </form>
               )}
@@ -705,10 +718,14 @@ export default function ManageAdModal({
                   </h3>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-stone-500 tabular-nums">
                     <span>{matchedAd.city}</span>
+                    {formatManageAdPrice(matchedAd) && (
+                      <>
+                        <span>•</span>
+                        <span><bdi>{formatManageAdPrice(matchedAd)}</bdi></span>
+                      </>
+                    )}
                     <span>•</span>
-                    <span><bdi>{matchedAd.price ? `${matchedAd.price} ${matchedAd.price_type}` : 'توافقی'}</bdi></span>
-                    <span>•</span>
-                    <span>{matchedAd.views_count || 1} بازدید</span>
+                    <span>{(matchedAd.views_count || 1).toLocaleString('fa-IR')} بازدید</span>
                   </div>
                   <div className="mt-2 pt-2 border-t border-[#E5E5EA] flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-[#6E6E73]">
                     <span>تاریخ ثبت اولیه: <strong className="text-[#1D1D1F]">{formatFaDateTime(matchedAd.created_at)}</strong></span>
@@ -785,12 +802,12 @@ export default function ManageAdModal({
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1">قیمت</label>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">قیمت (اختیاری)</label>
                       <input
                         type="number"
                         value={editPrice}
                         onChange={(e) => setEditPrice(e.target.value)}
-                        placeholder="توافقی"
+                        placeholder="مثال: 12000"
                         className="w-full rounded-xl border border-stone-300 px-3 py-2 text-xs focus:border-[#0066CC] focus:outline-none"
                       />
                     </div>
@@ -951,9 +968,10 @@ export default function ManageAdModal({
                       setConfirmDelete(false);
                       setIsEditing(false);
                     }}
-                    className="w-full text-center text-xs text-stone-500 hover:text-stone-800 pt-1 cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-800 pt-1.5 cursor-pointer"
                   >
-                    ← بازگشت به پنل آگهی‌های من و ورود با کد دیگر
+                    <ArrowRight size={14} className="shrink-0" />
+                    <span>بازگشت به آگهی‌های من</span>
                   </button>
                 </div>
               )}

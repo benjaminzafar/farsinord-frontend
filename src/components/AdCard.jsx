@@ -2,25 +2,30 @@ import React from 'react';
 import { MapPin, Eye, Clock } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
+const CURRENCY_UNITS = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
+const CATEGORY_MAP = new Map(CATEGORIES.map((c) => [c.id, c]));
+const FA_DATE_FMT = new Intl.DateTimeFormat('fa-IR', { month: 'short', day: 'numeric' });
+const SV_DATE_FMT = new Intl.DateTimeFormat('sv-SE', { month: 'short', day: 'numeric' });
+const FA_NUM_FMT = new Intl.NumberFormat('fa-IR');
+
 export default React.memo(function AdCard({ ad, lang, onSelect, priority = false }) {
-  const catObj = CATEGORIES.find(c => c.id === ad.category);
+  const catObj = CATEGORY_MAP.get(ad.category);
   const catName = catObj ? (lang === 'fa' ? catObj.fa : catObj.sv) : ad.category;
   
   // Format price only if specified (or if user explicitly entered a non-currency label like توافقی)
-  const currencyUnits = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
   const rawPriceType = String(ad.price_type || '').trim();
   const displayPrice = ad.price
-    ? `${Number(ad.price).toLocaleString('fa-IR')} ${!rawPriceType || rawPriceType === 'kr' ? 'کرون' : rawPriceType}`
-    : (rawPriceType && !currencyUnits.has(rawPriceType.toLowerCase()) ? rawPriceType : '');
+    ? `${FA_NUM_FMT.format(Number(ad.price))} ${!rawPriceType || rawPriceType === 'kr' ? 'کرون' : rawPriceType}`
+    : (rawPriceType && !CURRENCY_UNITS.has(rawPriceType.toLowerCase()) ? rawPriceType : '');
 
   const coverImage = (ad.images && ad.images.length > 0 && ad.images[0])
     ? ad.images[0]
     : 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=800&q=80';
 
-  const dateStr = new Date(ad.created_at).toLocaleDateString(lang === 'fa' ? 'fa-IR' : 'sv-SE', {
-    month: 'short',
-    day: 'numeric'
-  });
+  const createdTs = Date.parse(ad.created_at || '');
+  const dateStr = Number.isFinite(createdTs)
+    ? (lang === 'fa' ? FA_DATE_FMT : SV_DATE_FMT).format(new Date(createdTs))
+    : '';
 
   const [renderNow] = React.useState(() => Date.now());
   const isVipActive = Boolean(
@@ -39,22 +44,23 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
         <img
           src={coverImage}
           alt={ad.title}
+          width="400"
+          height="300"
           className="h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
-          fetchPriority={priority ? 'high' : 'auto'}
         />
 
         {/* Featured pill (Apple Calibrated Blue "ویژه") */}
         {isVipActive && (
-          <div className="absolute top-1.5 start-1.5 sm:top-2 sm:start-2 rounded-lg bg-[#0066CC] text-[#FBFBFC] px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-bold shadow-2xs">
+          <div className="absolute top-2 start-2 sm:top-2.5 sm:start-2.5 h-5 sm:h-6 inline-flex items-center rounded-full bg-[#0066CC] text-[#FBFBFC] px-2 sm:px-2.5 text-[9.5px] sm:text-[10.5px] font-bold leading-none shadow-2xs">
             {lang === 'fa' ? 'ویژه' : 'Utvald'}
           </div>
         )}
 
         {/* Category Pill */}
-        <div className="absolute top-1.5 end-1.5 sm:top-2.5 sm:end-2.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10.5px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] shadow-none border border-[#ECEFF4] dark:border-white/[0.06] max-w-[85px] sm:max-w-none truncate">
-          {catName}
+        <div className="absolute top-2 end-2 sm:top-2.5 sm:end-2.5 h-5 sm:h-6 inline-flex items-center rounded-full bg-[#FBFBFC] dark:bg-[#171920] px-2 sm:px-2.5 text-[9.5px] sm:text-[10.5px] font-semibold leading-none text-[#1D1D1F] dark:text-[#F5F5F7] shadow-none border border-[#ECEFF4] dark:border-white/[0.06] max-w-[92px] sm:max-w-none truncate">
+          <span className="truncate">{catName}</span>
         </div>
 
         {/* City Pill */}
@@ -90,8 +96,8 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
         </div>
 
         {/* Footer info */}
-        <div className="pt-2 sm:pt-2.5 border-t border-[#F0F2F5] dark:border-white/[0.03] flex items-center justify-between text-[9.5px] sm:text-[11px] leading-none text-[#6E6E73] dark:text-[#98989F] tabular-nums">
-          <div className="inline-flex items-center gap-1 font-medium truncate">
+        <div className="pt-2 sm:pt-2.5 border-t border-[#F0F2F5] dark:border-white/[0.03] flex items-center justify-between gap-2 text-[9.5px] sm:text-[11px] leading-none text-[#6E6E73] dark:text-[#98989F] tabular-nums">
+          <div className="inline-flex items-center gap-1 font-medium min-w-0 truncate">
             <span className="flex h-3.5 w-3.5 items-center justify-center shrink-0">
               <Clock size={11} strokeWidth={2} className="block text-[#86868B]" />
             </span>
@@ -101,7 +107,7 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
             <span className="flex h-3.5 w-3.5 items-center justify-center shrink-0">
               <Eye size={11} strokeWidth={2} className="block text-[#86868B]" />
             </span>
-            <span className="leading-none">{ad.views_count || 1} {lang === 'fa' ? 'بازدید' : 'visningar'}</span>
+            <span className="leading-none">{FA_NUM_FMT.format(ad.views_count || 1)} {lang === 'fa' ? 'بازدید' : 'visningar'}</span>
           </div>
         </div>
       </div>

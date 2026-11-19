@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   ArrowRight, 
   MapPin, 
@@ -24,6 +24,20 @@ import {
 import CloudflareTurnstile from './CloudflareTurnstile';
 import { publicApi } from '../lib/apiClient';
 import { CATEGORIES, COUNTRIES, t } from '../lib/translations';
+
+const CURRENCY_UNITS = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
+const FA_NUM_FMT = new Intl.NumberFormat('fa-IR');
+
+function formatOptionalPrice(item) {
+  const rawType = String(item?.price_type || '').trim();
+  if (item?.price) {
+    return `${FA_NUM_FMT.format(Number(item.price))} ${!rawType || rawType === 'kr' ? 'کرون' : rawType}`;
+  }
+  if (rawType && !CURRENCY_UNITS.has(rawType.toLowerCase())) {
+    return rawType;
+  }
+  return '';
+}
 
 export default function AdDetailPage({ 
   ad, 
@@ -178,6 +192,26 @@ export default function AdDetailPage({
     };
   }, [zoomOpen, imagesCount, applyPhotoTransform, resetPhotoZoom]);
 
+  // Find 4 VIP Promoted ads strictly within the same country (memoized before early return)
+  const adId = ad?.id || '';
+  const adCountryCode = ad?.country || 'se';
+  const adCountryObj = COUNTRIES.find(c => c.id === adCountryCode) || COUNTRIES[0];
+  const adCountryName = adCountryObj?.nameFa || 'سوئد';
+  const displayVipAds = useMemo(() => {
+    if (!adId) return [];
+    const sameCountryAds = allAds.filter(a => a.id !== adId && (a.country || 'se') === adCountryCode);
+    const checkVip = (a) => Boolean(
+      a.is_active_vip !== undefined
+        ? a.is_active_vip
+        : (a.is_featured && (!a.promotion_expires_at || Date.parse(a.promotion_expires_at) > renderNow))
+    );
+    const vipAds = sameCountryAds.filter(checkVip);
+    const fallbackAds = sameCountryAds
+      .filter(a => !checkVip(a))
+      .sort((a, b) => (Date.parse(b.sort_timestamp || b.created_at || 0) || 0) - (Date.parse(a.sort_timestamp || a.created_at || 0) || 0));
+    return [...vipAds, ...fallbackAds].slice(0, 4);
+  }, [allAds, adId, adCountryCode, renderNow]);
+
   if (!ad) return null;
 
   const images = (ad.images && ad.images.length > 0)
@@ -186,18 +220,6 @@ export default function AdDetailPage({
 
   const catObj = CATEGORIES.find(c => c.id === ad.category);
   const catName = catObj ? (lang === 'fa' ? catObj.fa : catObj.sv) : ad.category;
-
-  const currencyUnits = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
-  const formatOptionalPrice = (item) => {
-    const rawType = String(item?.price_type || '').trim();
-    if (item?.price) {
-      return `${Number(item.price).toLocaleString('sv-SE')} ${rawType || 'kr'}`;
-    }
-    if (rawType && !currencyUnits.has(rawType.toLowerCase())) {
-      return rawType;
-    }
-    return '';
-  };
 
   const displayPrice = formatOptionalPrice(ad);
 
@@ -223,33 +245,16 @@ export default function AdDetailPage({
     }
   };
 
-  // Find 4 VIP Promoted ads strictly within the same country
-  const adCountryCode = ad.country || 'se';
-  const adCountryObj = COUNTRIES.find(c => c.id === adCountryCode) || COUNTRIES[0];
-  const adCountryName = adCountryObj?.nameFa || 'سوئد';
-  const sameCountryAds = allAds.filter(a => a.id !== ad.id && (a.country || 'se') === adCountryCode);
-  const checkVip = (a) => Boolean(
-    a.is_active_vip !== undefined
-      ? a.is_active_vip
-      : (a.is_featured && (!a.promotion_expires_at || Date.parse(a.promotion_expires_at) > renderNow))
-  );
-  const vipAds = sameCountryAds.filter(checkVip);
-  const fallbackAds = sameCountryAds
-    .filter(a => !checkVip(a))
-    .sort((a, b) => (Date.parse(b.sort_timestamp || b.created_at || 0) || 0) - (Date.parse(a.sort_timestamp || a.created_at || 0) || 0));
-  // Guarantee up to 4 VIP slots from the same country (featured ads first, then recent ads of that country)
-  const displayVipAds = [...vipAds, ...fallbackAds].slice(0, 4);
-
   return (
     <div className="min-h-screen bg-[#FBFBFC] dark:bg-[#121317] text-[#1D1D1F] dark:text-[#F5F5F7] pb-20 font-vazir" dir="rtl">
       
       {/* Inline quiet navigation (no bar / no menu look) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 leading-none">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 -ms-1 px-1 h-8 text-[13px] font-semibold leading-none text-[#0066CC] hover:text-[#0055AA] transition-colors active:opacity-60 cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 -ms-1 px-1.5 h-10 sm:h-8 text-[13px] font-semibold leading-none text-[#0066CC] hover:text-[#0055AA] transition-colors active:opacity-60 cursor-pointer shrink-0"
           >
             <ArrowRight size={15} strokeWidth={2} className="block shrink-0" />
             <span className="leading-none">بازگشت</span>
@@ -267,7 +272,7 @@ export default function AdDetailPage({
           type="button"
           onClick={shareAd}
           aria-label="اشتراک‌گذاری"
-          className="inline-flex items-center gap-1.5 px-1 h-8 text-[13px] font-semibold leading-none text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white transition-colors active:opacity-60 cursor-pointer shrink-0"
+          className="inline-flex items-center gap-1.5 px-1.5 h-10 sm:h-8 text-[13px] font-semibold leading-none text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white transition-colors active:opacity-60 cursor-pointer shrink-0"
         >
           {copiedLink ? (
             <Check size={15} strokeWidth={2} className="block shrink-0" />
@@ -292,6 +297,10 @@ export default function AdDetailPage({
                 <img
                   src={images[activeImageIdx]}
                   alt={ad.title}
+                  width="960"
+                  height="540"
+                  fetchPriority="high"
+                  decoding="async"
                   onClick={() => {
                     zoomStateRef.current = { scale: 1, x: 0, y: 0 };
                     setZoomed(false);
@@ -362,7 +371,7 @@ export default function AdDetailPage({
                           : 'opacity-65 hover:opacity-100'
                       }`}
                     >
-                      <img src={img} alt={`thumbnail-${idx}`} className="w-full h-full object-cover" />
+                      <img src={img} alt={`thumbnail-${idx}`} width="80" height="60" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -404,9 +413,9 @@ export default function AdDetailPage({
                     </span>
                   </span>
 
-                  <span className="inline-flex items-center gap-1.5 leading-none">
+                  <span className="inline-flex items-center gap-1.5 leading-none tabular-nums">
                     <Eye size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
-                    <span className="leading-none">{ad.views_count || 1} بازدید</span>
+                    <span className="leading-none">{FA_NUM_FMT.format(ad.views_count || 1)} بازدید</span>
                   </span>
 
                   {ad.reference_number && (
@@ -421,7 +430,7 @@ export default function AdDetailPage({
               {/* Description Section (Integrated Smoothly on Exact Same Visual Plane) */}
               <div className="space-y-2.5">
                 <h3 className="text-xs font-bold text-[#86868B] dark:text-[#98989F]">
-                  توضیحات و مشخصات
+                  توضیحات
                 </h3>
                 <div className="text-sm sm:text-[15px] text-[#1D1D1F] dark:text-[#E5E5EA] leading-relaxed sm:leading-loose whitespace-pre-wrap">
                   {ad.description}
@@ -431,10 +440,10 @@ export default function AdDetailPage({
               {/* Contact Seller Section (Flat, Integrated Flow — No "Card on Card") */}
               <div className="pt-6 border-t border-[#F0F2F5] dark:border-white/[0.025] flex flex-col items-center text-center space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">اطلاعات تماس با آگهی‌دهنده</h3>
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">راه‌های ارتباطی</h3>
                   {ad.contact_name && (
                     <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
-                      ثبت‌شده توسط <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{ad.contact_name}</span>
+                      آگهی‌دهنده: <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{ad.contact_name}</span>
                     </p>
                   )}
                 </div>
@@ -444,7 +453,7 @@ export default function AdDetailPage({
                     {!showTurnstileGate ? (
                       <>
                         <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
-                          برای جلوگیری از ربات‌ها، راه‌های ارتباطی پس از کلیک نمایش داده می‌شود
+                          برای جلوگیری از اسپم، اطلاعات تماس پس از کلیک نمایش داده می‌شود.
                         </p>
 
                         <button
@@ -475,6 +484,10 @@ export default function AdDetailPage({
                         />
                       </div>
                     )}
+                  </div>
+                ) : ad._isSummary ? (
+                  <div className="py-2 text-xs text-[#6E6E73] dark:text-[#98989F] animate-pulse">
+                    در حال دریافت اطلاعات تماس...
                   </div>
                 ) : (
                   <div className="w-full flex flex-col items-center justify-center space-y-3.5 animate-in fade-in duration-200">
@@ -640,24 +653,21 @@ export default function AdDetailPage({
           </main>
 
           {/* SIDEBAR: 4 VIP PROMOTED ADS & MONETIZATION SLOTS (4 cols on Desktop) */}
-          <aside className="lg:col-span-4 lg:sticky lg:top-32 space-y-5">
+          <aside className="lg:col-span-4 lg:sticky lg:top-20 space-y-5">
             
             {/* VIP Sponsored Ads List (Flat Unified Card, Hairline Dividers) */}
             <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] overflow-hidden shadow-none">
               
               <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#F0F2F5] dark:border-white/[0.025]">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F] shrink-0">
                     <Crown size={15} />
                   </div>
-                  <div>
-                    <h2 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">آگهی‌های ویژه {adCountryName}</h2>
-                    <p className="text-[10px] text-[#86868B] dark:text-[#98989F] font-medium">برگزیده‌های ویژه در {adCountryName}</p>
-                  </div>
+                  <h2 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">آگهی‌های ویژه {adCountryName}</h2>
                 </div>
 
                 <span className="px-2 py-0.5 rounded-full bg-[#0066CC]/10 text-[#0066CC] text-[10px] font-bold">
-                  VIP {adCountryName}
+                  VIP
                 </span>
               </div>
 
@@ -681,6 +691,10 @@ export default function AdDetailPage({
                         <img
                           src={vipCover}
                           alt={vipAd.title}
+                          width="80"
+                          height="64"
+                          loading="lazy"
+                          decoding="async"
                           className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -696,15 +710,15 @@ export default function AdDetailPage({
                           </h4>
                         </div>
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           {vipPrice && (
-                            <span className="text-xs font-black text-[#1D1D1F] dark:text-[#F5F5F7] tabular-nums">
+                            <span className="text-xs font-black text-[#1D1D1F] dark:text-[#F5F5F7] tabular-nums truncate">
                               {vipPrice}
                             </span>
                           )}
-                          <span className="text-[10px] text-[#86868B] dark:text-[#98989F] flex items-center gap-0.5">
-                            <MapPin size={9} className="text-[#86868B]" />
-                            {vipAd.city}
+                          <span className="text-[10.5px] text-[#86868B] dark:text-[#98989F] inline-flex items-center gap-1 min-w-0 truncate">
+                            <MapPin size={11} className="text-[#86868B] shrink-0" />
+                            <span className="truncate">{vipAd.city}</span>
                           </span>
                         </div>
                       </div>
@@ -718,17 +732,17 @@ export default function AdDetailPage({
             {/* Monetization Promotion CTA Card (Unified Surface, Zero Box Shadow) */}
             <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] p-5 space-y-3.5 shadow-none">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F] shrink-0">
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">آگهی شما در صدر {adCountryName} دیده شود!</h3>
-                  <p className="text-[10px] text-[#86868B] dark:text-[#98989F]">جذب ۳ برابری مشتریان و بازدیدکنندگان در {adCountryName}</p>
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">ارتقا به آگهی ویژه (VIP)</h3>
+                  <p className="text-[10.5px] text-[#86868B] dark:text-[#98989F]">۳ برابر بازدید بیشتر در صدر فهرست</p>
                 </div>
               </div>
 
               <p className="text-xs text-[#6E6E73] dark:text-[#98989F] leading-relaxed">
-                با ارتقا به آگهی ویژه (VIP)، آگهی شما در بخش ویژه و بالای فهرست جستجوی فارسی‌زبانان در سراسر {adCountryName} نمایش داده می‌شود.
+                آگهی شما با نشان ویژه در بالای نتایج جستجوی {adCountryName} نمایش داده می‌شود.
               </p>
 
               <button
@@ -737,7 +751,7 @@ export default function AdDetailPage({
                 className="w-full h-10 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold active:scale-[0.97] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-none"
               >
                 <Crown size={15} className="text-white/90" />
-                <span>{isVipActive ? `تمدید یا تغییر کشور ویژه (${adCountryName})` : `ارتقا و ویژه کردن در ${adCountryName}`}</span>
+                <span>{isVipActive ? 'تمدید یا تغییر کشور ویژه' : 'ارتقا به آگهی ویژه'}</span>
               </button>
             </div>
 
@@ -827,7 +841,7 @@ export default function AdDetailPage({
                     setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
                     resetPhotoZoom();
                   }}
-                  className="flex fixed start-3 sm:start-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
+                  className="flex absolute start-3 sm:start-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -837,7 +851,7 @@ export default function AdDetailPage({
                     setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
                     resetPhotoZoom();
                   }}
-                  className="flex fixed end-3 sm:end-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
+                  className="flex absolute end-3 sm:end-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={20} />
                 </button>

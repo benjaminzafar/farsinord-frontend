@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
 
 export const MAX_FILE_BYTES = 1048576; // Strict 1 MB limit per photo
+const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 const ALLOWED_MIME_TYPES = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
@@ -10,16 +10,65 @@ const ALLOWED_MIME_TYPES = {
   'image/avif': 'avif',
 };
 
+const DEFAULT_ORIGINS = [
+  'https://www.linksho.eu',
+  'https://linksho.eu',
+  'https://www.swedpersiska.se',
+  'https://swedpersiska.se',
+  'https://farsinord-frontend.vercel.app',
+  'https://farsinord-admin.vercel.app',
+];
+
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  const envRaw = process.env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGIN || '';
+  const extra = envRaw
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => o && o !== '*');
+  const allowList = [...DEFAULT_ORIGINS, ...extra];
+  if (allowList.includes(origin)) return true;
+  if (process.env.VERCEL_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+    return true;
+  }
+  return false;
+}
+
 function setCorsHeaders(req, res) {
-  const origin = req.headers.origin;
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
-  if (allowedOrigin === '*') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  } else if (origin && allowedOrigin.split(',').map((o) => o.trim()).includes(origin)) {
+  const origin = req.headers?.origin || '';
+  if (isAllowedOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cache-Control', 'no-store');
+}
+
+const uploadRateMap = new Map();
+function checkUploadRateLimit(req) {
+  const ip = String(
+    req.headers?.['x-real-ip'] ||
+      req.headers?.['x-vercel-forwarded-for'] ||
+      req.headers?.['x-forwarded-for']?.split(',').pop() ||
+      'unknown'
+  ).trim();
+  const now = Date.now();
+  const windowMs = 10 * 60 * 1000;
+  const maxReqs = 24;
+  let entry = uploadRateMap.get(ip);
+  if (!entry || now - entry.start > windowMs) {
+    entry = { count: 1, start: now };
+  } else {
+    entry.count += 1;
+  }
+  uploadRateMap.set(ip, entry);
+  if (uploadRateMap.size > 500) {
+    for (const [k, v] of uploadRateMap.entries()) {
+      if (now - v.start > windowMs) uploadRateMap.delete(k);
+    }
+  }
+  return entry.count <= maxReqs;
 }
 
 function hmacSha256(key, data) {
@@ -46,6 +95,7 @@ export function createR2PresignedPutUrl({
   objectKey,
   contentType,
   contentLength,
+  cacheControl,
   expiresSeconds = 300,
 }) {
   const host = `${accountId}.r2.cloudflarestorage.com`;
@@ -64,6 +114,9 @@ export function createR2PresignedPutUrl({
   const parsedLen = Number(contentLength);
   if (Number.isInteger(parsedLen) && parsedLen > 0) {
     headerPairs.push(['content-length', String(parsedLen)]);
+  }
+  if (cacheControl && typeof cacheControl === 'string') {
+    headerPairs.push(['cache-control', cacheControl.trim()]);
   }
   headerPairs.sort((a, b) => a[0].localeCompare(b[0]));
 
@@ -108,6 +161,10 @@ export function createR2PresignedPutUrl({
   return `https://${host}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
 }
 
+let cachedR2Config = null;
+let cachedR2At = 0;
+const R2_CACHE_TTL_MS = 5 * 60 * 1000;
+
 async function resolveR2Config() {
   if (
     process.env.R2_ACCOUNT_ID &&
@@ -126,10 +183,15 @@ async function resolveR2Config() {
     };
   }
 
+  if (cachedR2Config && Date.now() - cachedR2At < R2_CACHE_TTL_MS) {
+    return cachedR2Config;
+  }
+
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) return null;
 
+  const { createClient } = await import('@supabase/supabase-js');
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const { data } = await supabase
     .from('swedpersiska_settings')
@@ -138,7 +200,9 @@ async function resolveR2Config() {
     .maybeSingle();
 
   if (!data || !data.value || !data.value.enabled) return null;
-  return data.value;
+  cachedR2Config = data.value;
+  cachedR2At = Date.now();
+  return cachedR2Config;
 }
 
 export default async function handler(req, res) {
@@ -146,6 +210,15 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
+  }
+
+  const origin = req.headers?.origin || '';
+  if (origin && !isAllowedOrigin(origin)) {
+    return res.status(403).json({ ok: false, error: 'Origin not allowed' });
+  }
+
+  if (!checkUploadRateLimit(req)) {
+    return res.status(429).json({ ok: false, error: 'تعداد درخواست‌های آپلود بیش از حد مجاز است. لطفاً کمی بعد دوباره تلاش کنید.' });
   }
 
   try {
@@ -181,12 +254,21 @@ export default async function handler(req, res) {
       objectKey,
       contentType,
       contentLength: fileSize,
+      cacheControl: IMMUTABLE_CACHE_CONTROL,
       expiresSeconds: 300,
     });
 
     const publicUrl = `${r2.publicUrl.replace(/\/+$/, '')}/${objectKey}`;
-    return res.status(200).json({ ok: true, uploadUrl, publicUrl, key: objectKey, maxBytes: MAX_FILE_BYTES });
+    return res.status(200).json({
+      ok: true,
+      uploadUrl,
+      publicUrl,
+      key: objectKey,
+      maxBytes: MAX_FILE_BYTES,
+      cacheControl: IMMUTABLE_CACHE_CONTROL,
+    });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message || 'خطا در آماده‌سازی آپلود تصویر' });
+    console.error('[upload] error:', err?.message || err);
+    return res.status(500).json({ ok: false, error: 'خطا در آماده‌سازی آپلود تصویر' });
   }
 }

@@ -114,14 +114,14 @@ export default function Navbar({
                 onFocus={() => setMobileSearchFocused(true)}
                 onBlur={() => setTimeout(() => setMobileSearchFocused(false), 150)}
                 onChange={(e) => onSearchChange?.(e.target.value)}
-                placeholder="جستجو در نیازمندی‌ها..."
-                className="w-full h-full bg-transparent text-[13px] leading-none text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none min-w-0"
+                placeholder="جستجو در آگهی‌ها..."
+                className="w-full h-full bg-transparent text-[13px] leading-normal text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none min-w-0"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => onSearchChange?.('')}
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] active:scale-95 shrink-0"
+                  className="flex h-9 w-9 -me-1.5 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] active:scale-95 shrink-0 cursor-pointer"
                   aria-label="پاک کردن متن جستجو"
                 >
                   <X size={14} strokeWidth={2} className="block" />
@@ -134,11 +134,11 @@ export default function Navbar({
 
             {/* City Selector on Left (Flat, aligned on exact same horizontal axis) */}
             <div className="relative shrink-0 flex items-center h-full">
-              <div className="inline-flex items-center gap-1.5 h-8 px-2 rounded-xl text-[#1D1D1F] text-xs font-bold leading-none">
+              <div className="inline-flex items-center gap-1.5 h-8 px-1.5 rounded-xl text-[#1D1D1F] text-xs font-bold leading-none">
                 <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
                   <MapPin size={14} strokeWidth={2} className="block" />
                 </span>
-                <span className="truncate max-w-[72px] leading-none">
+                <span className="truncate max-w-[92px] leading-none">
                   {cityLabel}
                 </span>
                 <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
@@ -213,8 +213,7 @@ export default function Navbar({
                   src={logoUrl}
                   alt=""
                   loading="eager"
-                  decoding="sync"
-                  fetchPriority="high"
+                  decoding="async"
                   onError={() => setFailedLogoUrl(logoUrl)}
                   className="h-7 w-auto max-w-[120px] object-contain shrink-0"
                 />
@@ -236,7 +235,7 @@ export default function Navbar({
                     onClick={() => {
                       if (onSelectCategory) onSelectCategory(item.id);
                     }}
-                    className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer ${
+                    className={`h-9 inline-flex items-center justify-center px-3.5 rounded-full text-[13px] font-semibold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.94] cursor-pointer ${
                       isCurr
                         ? 'bg-slate-950 text-white shadow-2xs dark:bg-white dark:text-slate-950'
                         : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 dark:text-[#A1A1A6] dark:hover:text-white dark:hover:bg-white/[0.06]'
@@ -297,13 +296,13 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-                className={`inline-flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-full border text-[13px] font-semibold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer active:scale-[0.94] ${
+                className={`inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-semibold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer active:scale-[0.94] ${
                   moreDropdownOpen
                     ? 'bg-[#ECECEF] border-[#D2D2D7] text-[#1D1D1F] dark:bg-[#252833] dark:border-white/[0.12] dark:text-white'
                     : 'bg-[#F5F5F7] hover:bg-[#ECECEF] border-[#E5E5EA] text-[#1D1D1F] dark:bg-[#171920] dark:hover:bg-white/[0.06] dark:border-white/[0.08] dark:text-[#E5E5EA]'
                 }`}
                 aria-expanded={moreDropdownOpen}
-                title="امکانات بیشتر"
+                title="تنظیمات و امکانات"
               >
                 <MoreHorizontal size={15} strokeWidth={2} className="block text-[#515154] dark:text-[#A1A1A6] shrink-0" />
                 <span className="leading-none">بیشتر</span>
@@ -324,9 +323,9 @@ export default function Navbar({
                           {theme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
                         </div>
                         <div>
-                          <span className="block font-bold">حالت شب / روز</span>
+                          <span className="block font-bold">حالت تیره</span>
                           <span className="text-[10.5px] text-[#6E6E73] dark:text-[#86868B]">
-                            {theme === 'dark' ? 'حالت تاریک فعال است' : 'حالت روشن فعال است'}
+                            {theme === 'dark' ? 'فعال' : 'غیرفعال'}
                           </span>
                         </div>
                       </div>
@@ -357,9 +356,9 @@ export default function Navbar({
                           <Globe size={15} />
                         </div>
                         <div>
-                          <span className="block font-bold">تغییر کشور</span>
+                          <span className="block font-bold">کشور</span>
                           <span className="text-[10.5px] text-[#6E6E73] dark:text-[#86868B]">
-                            کشور فعلی: {selectedCountryObj?.nameFa || 'سوئد'}
+                            {selectedCountryObj?.nameFa || 'سوئد'}
                           </span>
                         </div>
                       </div>
@@ -380,14 +379,14 @@ export default function Navbar({
                         </div>
                         <div>
                           <span className="block font-bold">حریم خصوصی و کوکی‌ها</span>
-                          <span className="text-[10.5px] text-[#6E6E73] dark:text-[#86868B]">تنظیمات GDPR و کوکی‌ها</span>
+                          <span className="text-[10.5px] text-[#6E6E73] dark:text-[#86868B]">تنظیمات GDPR</span>
                         </div>
                       </div>
                       <ChevronLeft size={14} className="text-[#6E6E73] dark:text-[#86868B]" />
                     </button>
 
                     <div className="pt-1.5 mt-1 border-t border-[#E5E5EA] dark:border-white/[0.06] space-y-1">
-                      <span className="block px-2.5 pt-0.5 text-[10.5px] font-bold text-[#6E6E73] dark:text-[#86868B]">سرویس‌های آینده</span>
+                      <span className="block px-2.5 pt-0.5 text-[10.5px] font-bold text-[#6E6E73] dark:text-[#86868B]">رسانه</span>
 
                       <button
                         type="button"
@@ -403,7 +402,7 @@ export default function Navbar({
                           </div>
                           <div>
                             <span className="block text-xs font-bold text-[#1D1D1F] dark:text-rose-100">پادکست خبری</span>
-                            <span className="block text-[10.5px] text-[#6E6E73] dark:text-rose-300/70">فید خبری و ویدیوهای یوتیوب</span>
+                            <span className="block text-[10.5px] text-[#6E6E73] dark:text-rose-300/70">خبرها و ویدیوهای یوتیوب</span>
                           </div>
                         </div>
                         <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
@@ -420,7 +419,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setAdDropdownOpen(!adDropdownOpen)}
-                className={`inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-full text-[13px] font-bold leading-none text-[#FBFBFC] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shadow-xs active:scale-[0.94] ${
+                className={`inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-bold leading-none text-[#FBFBFC] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shadow-xs active:scale-[0.94] ${
                   adDropdownOpen 
                     ? 'bg-[#0055AA] ring-2 ring-[#0066CC]/30' 
                     : 'bg-[#0066CC] hover:bg-[#0055AA]'
