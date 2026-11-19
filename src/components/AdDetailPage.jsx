@@ -107,30 +107,82 @@ export default function AdDetailPage({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [ad?.id]);
 
-  const imagesCount = (ad?.images && ad.images.length > 0) ? ad.images.length : 1;
+  // Compute gallery slides (ad photos + Google Map as the final gallery item)
+  const adId = ad?.id || '';
+  const adCountryCode = ad?.country || 'se';
+  const availableCountries = useMemo(
+    () => (Array.isArray(countries) && countries.length > 0 ? countries : COUNTRIES),
+    [countries]
+  );
+  const adCountryObj =
+    availableCountries.find((c) => c.id === adCountryCode) ||
+    COUNTRIES.find((c) => c.id === adCountryCode) ||
+    COUNTRIES[0];
+  const adCountryName = adCountryObj?.nameFa || 'سوئد';
 
-  // Keyboard navigation & Escape in light photo modal
+  const cleanArea = sanitizeLocationPart(ad?.area, 120);
+  const cityFa = resolveDisplayCityFa({
+    city: ad?.city || '',
+    country: adCountryCode,
+    countries: availableCountries,
+  });
+  const mapQuery = buildGoogleMapsQuery({
+    area: cleanArea,
+    city: ad?.city || '',
+    country: adCountryCode,
+    countries: availableCountries,
+  });
+  const mapEmbedUrl = buildGoogleMapsEmbedUrl({
+    query: mapQuery,
+    country: adCountryCode,
+    hasArea: Boolean(cleanArea),
+    settings: googleMapsSettings,
+  });
+  const mapSearchUrl = buildGoogleMapsSearchUrl(mapQuery);
+  const canShowMap = Boolean(mapEmbedUrl && mapQuery);
+
+  const galleryItems = useMemo(() => {
+    const rawImages = Array.isArray(ad?.images) && ad.images.length > 0 ? ad.images : [];
+    const items = rawImages.map((src) => ({ type: 'image', src }));
+    if (canShowMap) {
+      items.push({ type: 'map' });
+    } else if (items.length === 0) {
+      items.push({
+        type: 'image',
+        src: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80',
+      });
+    }
+    return items;
+  }, [ad?.images, canShowMap]);
+
+  const totalSlides = galleryItems.length;
+  const safeSlideIdx = Math.min(activeImageIdx, Math.max(0, totalSlides - 1));
+  const activeSlide = galleryItems[safeSlideIdx] || galleryItems[0];
+  const mapSlideIdx = galleryItems.findIndex((item) => item.type === 'map');
+  const isMapSlideActive = activeSlide?.type === 'map';
+
+  // Keyboard navigation & Escape in fullscreen gallery modal
   useEffect(() => {
     if (!zoomOpen) return;
     const handleKey = (e) => {
       if (e.key === 'Escape') {
         setZoomOpen(false);
-      } else if (e.key === 'ArrowLeft' && imagesCount > 1) {
-        setActiveImageIdx((prev) => (prev < imagesCount - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowLeft' && totalSlides > 1) {
+        setActiveImageIdx((prev) => (prev < totalSlides - 1 ? prev + 1 : 0));
         resetPhotoZoom();
-      } else if (e.key === 'ArrowRight' && imagesCount > 1) {
-        setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : imagesCount - 1));
+      } else if (e.key === 'ArrowRight' && totalSlides > 1) {
+        setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : totalSlides - 1));
         resetPhotoZoom();
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [zoomOpen, imagesCount, resetPhotoZoom]);
+  }, [zoomOpen, totalSlides, resetPhotoZoom]);
 
-  // Non-passive 60fps two-finger pinch-to-zoom & pan ONLY on the photo
+  // Non-passive 60fps two-finger pinch-to-zoom & pan ONLY on photo slides (never hijack map gestures)
   useEffect(() => {
     const stage = stageRef.current;
-    if (!zoomOpen || !stage) return;
+    if (!zoomOpen || !stage || isMapSlideActive) return;
 
     let mode = null; // 'pinch' | 'pan' | 'swipe'
     let startDist = 0;
@@ -187,13 +239,13 @@ export default function AdDetailPage({
     const onTouchEnd = (e) => {
       if (mode === 'pinch' && zoomStateRef.current.scale < 1.08) {
         resetPhotoZoom();
-      } else if (mode === 'swipe' && imagesCount > 1 && e.changedTouches.length === 1 && moved) {
+      } else if (mode === 'swipe' && totalSlides > 1 && e.changedTouches.length === 1 && moved) {
         const dx = e.changedTouches[0].clientX - startX;
         if (dx > 45) {
-          setActiveImageIdx((prev) => (prev < imagesCount - 1 ? prev + 1 : 0));
+          setActiveImageIdx((prev) => (prev < totalSlides - 1 ? prev + 1 : 0));
           resetPhotoZoom();
         } else if (dx < -45) {
-          setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : imagesCount - 1));
+          setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : totalSlides - 1));
           resetPhotoZoom();
         }
       }
@@ -208,14 +260,9 @@ export default function AdDetailPage({
       stage.removeEventListener('touchmove', onTouchMove);
       stage.removeEventListener('touchend', onTouchEnd);
     };
-  }, [zoomOpen, imagesCount, applyPhotoTransform, resetPhotoZoom]);
+  }, [zoomOpen, totalSlides, isMapSlideActive, applyPhotoTransform, resetPhotoZoom]);
 
   // Find 4 VIP Promoted ads strictly within the same country (memoized before early return)
-  const adId = ad?.id || '';
-  const adCountryCode = ad?.country || 'se';
-  const availableCountries = Array.isArray(countries) && countries.length > 0 ? countries : COUNTRIES;
-  const adCountryObj = availableCountries.find(c => c.id === adCountryCode) || COUNTRIES.find(c => c.id === adCountryCode) || COUNTRIES[0];
-  const adCountryName = adCountryObj?.nameFa || 'سوئد';
   const displayVipAds = useMemo(() => {
     if (!adId) return [];
     const sameCountryAds = allAds.filter(a => a.id !== adId && (a.country || 'se') === adCountryCode);
@@ -231,41 +278,23 @@ export default function AdDetailPage({
     return [...vipAds, ...fallbackAds].slice(0, 4);
   }, [allAds, adId, adCountryCode, renderNow]);
 
-  const cleanArea = sanitizeLocationPart(ad?.area, 120);
-  const cityFa = resolveDisplayCityFa({
-    city: ad?.city || '',
-    country: adCountryCode,
-    countries: availableCountries,
-  });
-  const mapQuery = buildGoogleMapsQuery({
-    area: cleanArea,
-    city: ad?.city || '',
-    country: adCountryCode,
-    countries: availableCountries,
-  });
-  const mapEmbedUrl = buildGoogleMapsEmbedUrl({
-    query: mapQuery,
-    country: adCountryCode,
-    hasArea: Boolean(cleanArea),
-    settings: googleMapsSettings,
-  });
-  const mapSearchUrl = buildGoogleMapsSearchUrl(mapQuery);
-  const canShowMap = Boolean(mapEmbedUrl && mapQuery);
-
   if (!ad) return null;
 
-  const hasRealPhotos = Array.isArray(ad.images) && ad.images.length > 0;
-  const images = hasRealPhotos
-    ? ad.images
-    : ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80'];
-  const showSidebarMap = canShowMap && hasRealPhotos;
-  const showHeroMap = canShowMap && !hasRealPhotos;
   const displayLocationLine = cleanArea
     ? `${cityFa || ad.city} • ${cleanArea}`
     : `${cityFa || ad.city}${adCountryName ? `، ${adCountryName}` : ''}`;
 
-  const scrollToLocationMap = () => {
-    const el = document.getElementById('ad-location-map');
+  const openGalleryFullscreen = (idx = safeSlideIdx) => {
+    setActiveImageIdx(idx);
+    zoomStateRef.current = { scale: 1, x: 0, y: 0 };
+    setZoomed(false);
+    setZoomOpen(true);
+  };
+
+  const openMapInGallery = () => {
+    if (mapSlideIdx === -1) return;
+    setActiveImageIdx(mapSlideIdx);
+    const el = document.getElementById('ad-media-gallery');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -343,128 +372,107 @@ export default function AdDetailPage({
           {/* MAIN CONTENT COLUMN (8 cols on Desktop) */}
           <main className="lg:col-span-8 space-y-5">
             
-            {/* Hero Stage: Photo Gallery (or Frameless Rounded Gallery Map when ad has no photos) */}
-            {showHeroMap ? (
-              <section
-                id="ad-location-map"
-                className="scroll-mt-20 relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden isolate [transform:translateZ(0)] border border-[#F0F2F5] dark:border-white/[0.06] bg-[#ECECEF]"
-              >
-                <GoogleMapEmbed
-                  embedUrl={mapEmbedUrl}
-                  title={`نقشه ${displayLocationLine}`}
-                  heightClass="h-full"
-                  deferForLcp={false}
-                  mobileScrollGuard={true}
-                  className="rounded-2xl sm:rounded-3xl"
-                />
+            {/* Unified Frameless Gallery Stage (Photos + Google Map as the final slide) */}
+            <div id="ad-media-gallery" className="scroll-mt-20 space-y-2.5">
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden isolate [transform:translateZ(0)] bg-[#ECECEF] border border-[#F0F2F5] dark:border-white/[0.04] shadow-none group">
+                {isMapSlideActive ? (
+                  <>
+                    <GoogleMapEmbed
+                      embedUrl={mapEmbedUrl}
+                      title={`نقشه ${displayLocationLine}`}
+                      heightClass="h-full"
+                      deferForLcp={false}
+                      mobileScrollGuard={false}
+                      className="rounded-2xl sm:rounded-3xl"
+                    />
 
-                {/* Top-Start VIP Badge (Identical to Photo Gallery) */}
-                {isVipActive && (
-                  <div className="pointer-events-none absolute top-3 start-3 z-20 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0066CC] text-white text-xs font-bold backdrop-blur-xs">
-                    <Crown size={13} strokeWidth={1.75} className="block shrink-0 text-white/90" />
-                    <span className="leading-none">ویژه</span>
-                  </div>
-                )}
+                    {/* Floating Bottom Frosted Glass Dock (Location + Directions + Expand Bigger) */}
+                    <div className="absolute bottom-3 inset-x-3 z-20 h-11 px-3 rounded-2xl bg-[#FBFBFC]/90 border border-[#ECEFF4]/60 backdrop-blur-md shadow-[0_6px_20px_rgba(15,23,42,0.12)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.45)] flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <MapPin size={14} strokeWidth={1.75} className="block shrink-0 text-[#0066CC]" />
+                        <span className="text-xs font-bold text-[#1D1D1F] leading-none truncate">
+                          {displayLocationLine}
+                        </span>
+                      </div>
 
-                {/* Top-End Category Badge (Identical to Photo Gallery) */}
-                <div className="pointer-events-none absolute top-3 end-3 z-20 px-3 py-1 rounded-full bg-[#FBFBFC]/90 border border-[#ECEFF4]/60 backdrop-blur-md text-[#1D1D1F] text-xs font-bold leading-none">
-                  {catName}
-                </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {mapSearchUrl && (
+                          <a
+                            href={mapSearchUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-7 px-3 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-[11px] font-bold leading-none inline-flex items-center gap-1 transition-all active:scale-95"
+                          >
+                            <Navigation size={11} strokeWidth={2} className="block shrink-0" />
+                            <span className="leading-none">مسیریابی</span>
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openGalleryFullscreen(safeSlideIdx)}
+                          className="h-7 w-7 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] text-[#1D1D1F] flex items-center justify-center active:scale-95 transition-colors cursor-pointer"
+                          title="مشاهده تمام‌صفحه نقشه"
+                          aria-label="مشاهده تمام‌صفحه نقشه"
+                        >
+                          <ZoomIn size={14} strokeWidth={1.75} className="block" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <img
+                      src={activeSlide.src}
+                      alt={ad.title}
+                      width="960"
+                      height="540"
+                      fetchPriority="high"
+                      decoding="async"
+                      onClick={() => openGalleryFullscreen(safeSlideIdx)}
+                      className="w-full h-full object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
+                    />
 
-                {/* Floating Bottom Frosted Glass Location Dock */}
-                <div className="absolute bottom-3 inset-x-3 z-20 h-11 px-3.5 rounded-2xl bg-[#FBFBFC]/90 border border-[#ECEFF4]/60 backdrop-blur-md shadow-[0_6px_20px_rgba(15,23,42,0.10)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.45)] flex items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <MapPin size={14} strokeWidth={1.75} className="block shrink-0 text-[#0066CC]" />
-                    <span className="text-xs font-bold text-[#1D1D1F] leading-none truncate">
-                      {displayLocationLine}
-                    </span>
-                  </div>
-
-                  {mapSearchUrl && (
-                    <a
-                      href={mapSearchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="h-7 px-3 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-[11px] font-bold leading-none inline-flex items-center gap-1 transition-all active:scale-95 shrink-0"
+                    {/* Subtle Circular Zoom Button */}
+                    <button
+                      type="button"
+                      onClick={() => openGalleryFullscreen(safeSlideIdx)}
+                      className="absolute bottom-3 end-3 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer"
+                      title="مشاهده تمام‌صفحه"
                     >
-                      <Navigation size={11} strokeWidth={2} className="block shrink-0" />
-                      <span className="leading-none">مسیریابی</span>
-                    </a>
-                  )}
-                </div>
-              </section>
-            ) : (
-            <div className="space-y-2.5">
-              {/* Big Stage Image (click to zoom) */}
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#F5F5F7] dark:bg-[#14161C] border border-[#F0F2F5] dark:border-white/[0.025] shadow-none group">
-                <img
-                  src={images[activeImageIdx]}
-                  alt={ad.title}
-                  width="960"
-                  height="540"
-                  fetchPriority="high"
-                  decoding="async"
-                  onClick={() => {
-                    zoomStateRef.current = { scale: 1, x: 0, y: 0 };
-                    setZoomed(false);
-                    setZoomOpen(true);
-                  }}
-                  className="w-full h-full object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
-                />
+                      <ZoomIn size={16} />
+                    </button>
 
-                {/* Mobile-only Quick Jump to Map Pill (unused bottom-start corner) */}
-                {showSidebarMap && (
-                  <button
-                    type="button"
-                    onClick={scrollToLocationMap}
-                    className="lg:hidden absolute bottom-3 start-3 h-9 px-3 rounded-full bg-[#1D1D1F]/70 hover:bg-[#1D1D1F]/85 text-white text-xs font-bold leading-none inline-flex items-center gap-1.5 backdrop-blur-xs transition-all active:scale-95 cursor-pointer"
-                  >
-                    <MapPin className="w-3.5 h-3.5 block shrink-0" strokeWidth={2} aria-hidden="true" />
-                    <span className="leading-none">نقشه</span>
-                  </button>
+                    {/* VIP / Featured Badge */}
+                    {isVipActive && (
+                      <div className="pointer-events-none absolute top-3 start-3 z-20 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0066CC] text-white text-xs font-bold backdrop-blur-xs">
+                        <Crown size={13} className="text-white/90" />
+                        <span>ویژه</span>
+                      </div>
+                    )}
+
+                    {/* Category Badge */}
+                    <div className="pointer-events-none absolute top-3 end-3 z-20 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#171920]/90 border border-[#ECEFF4]/60 dark:border-white/[0.08] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
+                      {catName}
+                    </div>
+                  </>
                 )}
 
-                {/* Subtle Circular Zoom Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    zoomStateRef.current = { scale: 1, x: 0, y: 0 };
-                    setZoomed(false);
-                    setZoomOpen(true);
-                  }}
-                  className="absolute bottom-3 end-3 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer"
-                  title="مشاهده تمام‌صفحه"
-                >
-                  <ZoomIn size={16} />
-                </button>
-
-                {/* VIP / Featured Badge */}
-                {isVipActive && (
-                  <div className="absolute top-3 start-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0066CC] text-white text-xs font-bold backdrop-blur-xs">
-                    <Crown size={13} className="text-white/90" />
-                    <span>ویژه</span>
-                  </div>
-                )}
-
-                {/* Category Badge */}
-                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#171920]/90 border border-[#ECEFF4]/60 dark:border-white/[0.08] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
-                  {catName}
-                </div>
-
-                {/* Arrow navigation if multiple images */}
-                {images.length > 1 && (
+                {/* Arrow navigation across all gallery slides (photos + map) */}
+                {totalSlides > 1 && (
                   <>
                     <button
                       type="button"
-                      onClick={() => setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
-                      className="absolute start-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+                      onClick={() => setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : totalSlides - 1))}
+                      className="absolute start-3 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+                      aria-label="اسلاید قبلی"
                     >
                       <ChevronRight size={18} />
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
-                      className="absolute end-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+                      onClick={() => setActiveImageIdx((prev) => (prev < totalSlides - 1 ? prev + 1 : 0))}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+                      aria-label="اسلاید بعدی"
                     >
                       <ChevronLeft size={18} />
                     </button>
@@ -472,27 +480,70 @@ export default function AdDetailPage({
                 )}
               </div>
 
-              {/* Thumbnails row */}
-              {images.length > 1 && (
+              {/* Gallery Thumbnails Strip (Photos + Rounded Map Thumbnail as Last Item) */}
+              {totalSlides > 1 && (
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setActiveImageIdx(idx)}
-                      className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#F0F2F5] dark:border-white/[0.025] ${
-                        activeImageIdx === idx 
-                          ? 'ring-2 ring-[#0066CC] opacity-100' 
-                          : 'opacity-65 hover:opacity-100'
-                      }`}
-                    >
-                      <img src={img} alt={`thumbnail-${idx}`} width="80" height="60" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
+                  {galleryItems.map((item, idx) => {
+                    const isActive = safeSlideIdx === idx;
+                    if (item.type === 'map') {
+                      return (
+                        <button
+                          key="gallery-map-thumb"
+                          type="button"
+                          onClick={() => {
+                            if (isActive) {
+                              openGalleryFullscreen(idx);
+                            } else {
+                              setActiveImageIdx(idx);
+                            }
+                          }}
+                          title="نمایش نقشه در گالری (کلیک مجدد برای تمام‌صفحه)"
+                          className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#ECEFF4] bg-[#EAF2FB] flex flex-col items-center justify-center gap-0.5 ${
+                            isActive
+                              ? 'ring-2 ring-[#0066CC] opacity-100'
+                              : 'opacity-80 hover:opacity-100'
+                          }`}
+                        >
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 80 60"
+                            className="absolute inset-0 w-full h-full opacity-30 pointer-events-none"
+                          >
+                            <path d="M0 18 L80 28 M0 42 L80 34 M26 0 L20 60 M54 0 L62 60" stroke="#0066CC" strokeWidth="1.5" fill="none" />
+                          </svg>
+                          <MapPin size={16} strokeWidth={2} className="relative z-10 block text-[#0066CC] shrink-0" />
+                          <span className="relative z-10 text-[10px] font-extrabold text-[#0066CC] leading-none">
+                            نقشه
+                          </span>
+                        </button>
+                      );
+                    }
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveImageIdx(idx)}
+                        className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#F0F2F5] dark:border-white/[0.025] ${
+                          isActive
+                            ? 'ring-2 ring-[#0066CC] opacity-100'
+                            : 'opacity-65 hover:opacity-100'
+                        }`}
+                      >
+                        <img
+                          src={item.src}
+                          alt={`thumbnail-${idx}`}
+                          width="80"
+                          height="60"
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
-            )}
 
             {/* Title, Price & Details Card (Unified Flat Surface, No Heavy Shadows) */}
             <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] p-5 sm:p-8 space-y-6 shadow-none">
@@ -519,7 +570,7 @@ export default function AdDetailPage({
                   {canShowMap ? (
                     <button
                       type="button"
-                      onClick={scrollToLocationMap}
+                      onClick={openMapInGallery}
                       className="inline-flex items-center gap-1.5 font-semibold leading-none text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0066CC] transition-colors cursor-pointer"
                       title="نمایش روی نقشه"
                     >
@@ -832,55 +883,8 @@ export default function AdDetailPage({
 
           </main>
 
-          {/* SIDEBAR: GOOGLE MAP BESIDE AD PHOTO + STICKY VIP & MONETIZATION SLOTS (4 cols on Desktop) */}
-          <aside className="lg:col-span-4 lg:self-stretch space-y-5">
-
-            {/* 1. Frameless Rounded Gallery Map Card (Visual twin of Photo Gallery, directly beside Hero Photo on Desktop) */}
-            {showSidebarMap && (
-              <section
-                id="ad-location-map"
-                className="scroll-mt-20 relative rounded-2xl sm:rounded-3xl overflow-hidden isolate [transform:translateZ(0)] border border-[#F0F2F5] dark:border-white/[0.06] bg-[#ECECEF]"
-              >
-                <GoogleMapEmbed
-                  embedUrl={mapEmbedUrl}
-                  title={`نقشه ${displayLocationLine}`}
-                  heightClass="h-[240px] sm:h-[260px] lg:h-[300px] xl:h-[330px]"
-                  deferForLcp={true}
-                  mobileScrollGuard={true}
-                  className="rounded-2xl sm:rounded-3xl"
-                />
-
-                {/* Top-End Precision Glass Pill (Matches Photo Gallery Category Pill) */}
-                <span className="pointer-events-none absolute top-3 end-3 z-20 h-7 px-3 rounded-full bg-[#FBFBFC]/90 border border-[#ECEFF4]/60 backdrop-blur-md text-[#1D1D1F] text-[11px] font-bold leading-none inline-flex items-center">
-                  {cleanArea ? 'آدرس' : 'تقریبی'}
-                </span>
-
-                {/* Floating Bottom Frosted Glass Location Dock */}
-                <div className="absolute bottom-2.5 inset-x-2.5 z-20 h-10 px-3 rounded-2xl bg-[#FBFBFC]/90 border border-[#ECEFF4]/60 backdrop-blur-md shadow-[0_6px_20px_rgba(15,23,42,0.10)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.45)] flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <MapPin size={13} strokeWidth={1.75} className="block shrink-0 text-[#0066CC]" />
-                    <span className="text-xs font-bold text-[#1D1D1F] leading-none truncate">
-                      {displayLocationLine}
-                    </span>
-                  </div>
-
-                  {mapSearchUrl && (
-                    <a
-                      href={mapSearchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="h-7 px-2.5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-[11px] font-bold leading-none inline-flex items-center gap-1 transition-all active:scale-95 shrink-0"
-                    >
-                      <Navigation size={11} strokeWidth={2} className="block shrink-0" />
-                      <span className="leading-none">مسیریابی</span>
-                    </a>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {/* 2. Sticky VIP Sponsored Ads + Promote CTA */}
-            <div className="lg:sticky lg:top-20 space-y-5">
+          {/* SIDEBAR: 4 VIP PROMOTED ADS & MONETIZATION SLOTS (4 cols on Desktop) */}
+          <aside className="lg:col-span-4 lg:sticky lg:top-20 space-y-5">
             {/* VIP Sponsored Ads List (Flat Unified Card, Hairline Dividers) */}
             <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] overflow-hidden shadow-none">
               
@@ -980,14 +984,13 @@ export default function AdDetailPage({
                 <span>{isVipActive ? 'تمدید یا تغییر کشور ویژه' : 'ارتقا به آگهی ویژه'}</span>
               </button>
             </div>
-            </div>
 
           </aside>
 
         </div>
       </div>
 
-      {/* Light Apple-Style Clean Photo Modal (Native Pinch-Zoom & Scroll) */}
+      {/* Fullscreen Lightbox Modal (Supports Photos with Pinch-Zoom AND Fullscreen Interactive Google Map) */}
       {zoomOpen && (
         <div
           className="fixed inset-0 z-[70] bg-[#F5F5F7] dark:bg-[#121317] flex flex-col select-none font-vazir"
@@ -1004,81 +1007,118 @@ export default function AdDetailPage({
               <span>بستن</span>
             </button>
 
-            {images.length > 1 ? (
+            {totalSlides > 1 ? (
               <span className="px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] border border-[#E5E5EA] dark:border-white/[0.08] text-[#515154] dark:text-[#A1A1A6] text-xs font-semibold font-mono">
-                {activeImageIdx + 1} / {images.length}
+                {safeSlideIdx + 1} / {totalSlides}
               </span>
             ) : (
-              <span className="text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6]">نمای کامل تصویر</span>
+              <span className="text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6]">
+                {isMapSlideActive ? displayLocationLine : 'نمای کامل تصویر'}
+              </span>
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                if (zoomed) {
-                  resetPhotoZoom();
-                } else {
-                  applyPhotoTransform(2.2, 0, 0, true);
-                }
-              }}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold transition-colors cursor-pointer"
-            >
-              <ZoomIn size={14} />
-              <span>{zoomed ? 'نمای عادی' : 'بزرگنمایی'}</span>
-            </button>
+            {isMapSlideActive ? (
+              mapSearchUrl ? (
+                <a
+                  href={mapSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold transition-colors"
+                >
+                  <Navigation size={13} strokeWidth={2} className="block shrink-0" />
+                  <span>مسیریابی</span>
+                </a>
+              ) : (
+                <span className="w-16" />
+              )
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (zoomed) {
+                    resetPhotoZoom();
+                  } else {
+                    applyPhotoTransform(2.2, 0, 0, true);
+                  }
+                }}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold transition-colors cursor-pointer"
+              >
+                <ZoomIn size={14} />
+                <span>{zoomed ? 'نمای عادی' : 'بزرگنمایی'}</span>
+              </button>
+            )}
           </div>
 
-          {/* Photo-Only Pinch-Zoom & Pan Stage (Site UI never zooms) */}
+          {/* Stage: Photo Pinch-Zoom OR Big Interactive Fullscreen Map */}
           <div
             ref={stageRef}
-            onWheel={(e) => {
-              e.preventDefault();
-              const delta = e.deltaY < 0 ? 0.3 : -0.3;
-              applyPhotoTransform(
-                zoomStateRef.current.scale + delta,
-                zoomStateRef.current.x,
-                zoomStateRef.current.y,
-                false
-              );
-            }}
-            className="relative flex-1 overflow-hidden flex items-center justify-center p-3 sm:p-6 touch-none"
+            onWheel={
+              isMapSlideActive
+                ? undefined
+                : (e) => {
+                    e.preventDefault();
+                    const delta = e.deltaY < 0 ? 0.3 : -0.3;
+                    applyPhotoTransform(
+                      zoomStateRef.current.scale + delta,
+                      zoomStateRef.current.x,
+                      zoomStateRef.current.y,
+                      false
+                    );
+                  }
+            }
+            className={`relative flex-1 overflow-hidden flex items-center justify-center p-3 sm:p-6 ${
+              isMapSlideActive ? '' : 'touch-none'
+            }`}
           >
-            <img
-              ref={zoomImgRef}
-              src={images[activeImageIdx]}
-              alt={ad.title}
-              draggable={false}
-              onClick={() => {
-                if (zoomStateRef.current.scale > 1.05) {
-                  resetPhotoZoom();
-                } else {
-                  applyPhotoTransform(2.2, 0, 0, true);
-                }
-              }}
-              className={`max-h-[78vh] max-w-[94vw] object-contain rounded-2xl will-change-transform ${
-                zoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
-              }`}
-            />
+            {isMapSlideActive ? (
+              <div className="w-full h-full max-w-5xl rounded-2xl sm:rounded-3xl overflow-hidden isolate [transform:translateZ(0)] border border-[#ECEFF4] bg-[#ECECEF] shadow-lg">
+                <GoogleMapEmbed
+                  embedUrl={mapEmbedUrl}
+                  title={`نقشه کامل ${displayLocationLine}`}
+                  heightClass="w-full h-full"
+                  deferForLcp={false}
+                  mobileScrollGuard={false}
+                  className="rounded-2xl sm:rounded-3xl"
+                />
+              </div>
+            ) : (
+              <img
+                ref={zoomImgRef}
+                src={activeSlide.src}
+                alt={ad.title}
+                draggable={false}
+                onClick={() => {
+                  if (zoomStateRef.current.scale > 1.05) {
+                    resetPhotoZoom();
+                  } else {
+                    applyPhotoTransform(2.2, 0, 0, true);
+                  }
+                }}
+                className={`max-h-[78vh] max-w-[94vw] object-contain rounded-2xl will-change-transform ${
+                  zoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
+                }`}
+              />
+            )}
 
-            {images.length > 1 && !zoomed && (
+            {totalSlides > 1 && !zoomed && (
               <>
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                    setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : totalSlides - 1));
                     resetPhotoZoom();
                   }}
-                  className="flex absolute start-3 sm:start-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] dark:bg-[#171920] dark:hover:bg-white/[0.1] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#E5E5EA] dark:border-white/[0.1] shadow-md items-center justify-center transition-colors cursor-pointer"
+                  className="flex absolute start-3 sm:start-6 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] dark:bg-[#171920] dark:hover:bg-white/[0.1] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#E5E5EA] dark:border-white/[0.1] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
                   <ChevronRight size={20} />
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                    setActiveImageIdx((prev) => (prev < totalSlides - 1 ? prev + 1 : 0));
                     resetPhotoZoom();
                   }}
-                  className="flex absolute end-3 sm:end-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] dark:bg-[#171920] dark:hover:bg-white/[0.1] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#E5E5EA] dark:border-white/[0.1] shadow-md items-center justify-center transition-colors cursor-pointer"
+                  className="flex absolute end-3 sm:end-6 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] dark:bg-[#171920] dark:hover:bg-white/[0.1] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#E5E5EA] dark:border-white/[0.1] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -1086,26 +1126,51 @@ export default function AdDetailPage({
             )}
           </div>
 
-          {/* Clean Bottom Thumbnail Strip */}
-          {images.length > 1 && (
+          {/* Clean Bottom Thumbnail Strip (Photos + Map Tile) */}
+          {totalSlides > 1 && (
             <div className="px-4 py-3 bg-[#FBFBFC] dark:bg-[#171920] border-t border-[#E5E5EA] dark:border-white/[0.08] flex items-center justify-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-              {images.map((img, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setActiveImageIdx(idx);
-                    resetPhotoZoom();
-                  }}
-                  className={`h-12 w-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
-                    activeImageIdx === idx
-                      ? 'border-[#0066CC] ring-2 ring-[#0066CC]/20 scale-105 opacity-100'
-                      : 'border-[#E5E5EA] dark:border-white/[0.1] opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
+              {galleryItems.map((item, idx) => {
+                const isActive = safeSlideIdx === idx;
+                if (item.type === 'map') {
+                  return (
+                    <button
+                      key="lightbox-map-thumb"
+                      type="button"
+                      onClick={() => {
+                        setActiveImageIdx(idx);
+                        resetPhotoZoom();
+                      }}
+                      className={`h-12 w-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer bg-[#EAF2FB] flex flex-col items-center justify-center gap-0.5 ${
+                        isActive
+                          ? 'border-[#0066CC] ring-2 ring-[#0066CC]/20 scale-105 opacity-100'
+                          : 'border-[#E5E5EA] dark:border-white/[0.1] opacity-75 hover:opacity-100'
+                      }`}
+                    >
+                      <MapPin size={14} strokeWidth={2} className="block text-[#0066CC] shrink-0" />
+                      <span className="text-[9.5px] font-extrabold text-[#0066CC] leading-none">
+                        نقشه
+                      </span>
+                    </button>
+                  );
+                }
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setActiveImageIdx(idx);
+                      resetPhotoZoom();
+                    }}
+                    className={`h-12 w-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                      isActive
+                        ? 'border-[#0066CC] ring-2 ring-[#0066CC]/20 scale-105 opacity-100'
+                        : 'border-[#E5E5EA] dark:border-white/[0.1] opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={item.src} alt={`thumb-${idx}`} className="w-full h-full object-cover" />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
