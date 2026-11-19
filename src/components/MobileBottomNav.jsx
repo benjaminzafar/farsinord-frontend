@@ -50,7 +50,6 @@ export default function MobileBottomNav({
   onOpenManageAd,
   onOpenLegal,
   onOpenPodcast,
-  onOpenWebsiteBuilder,
 }) {
   const [collectionSheetOpen, setCollectionSheetOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -390,31 +389,9 @@ export default function MobileBottomNav({
               <ChevronLeft size={16} className="text-[#6E6E73] dark:text-[#A1A1A6]" />
             </button>
 
-            {/* Services & Media Section */}
+            {/* Media Section */}
             <div className="pt-2 space-y-2">
-              <span className="block text-[11px] font-bold text-[#6E6E73] dark:text-[#A1A1A6] px-1">خدمات و رسانه</span>
-
-              {onOpenWebsiteBuilder && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreSheetOpen(false);
-                    onOpenWebsiteBuilder?.();
-                  }}
-                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-white/[0.04] hover:bg-[#ECECEF] dark:hover:bg-white/[0.08] border border-[#ECEFF4] dark:border-white/[0.05] transition-all active:scale-[0.98] cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-[#EAF2FB] dark:bg-[#0066CC]/20 text-[#0066CC] dark:text-[#58A6FF] flex items-center justify-center shrink-0">
-                      <Laptop size={18} />
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-[13px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">سفارش طراحی سایت</span>
-                      <span className="block text-[11px] text-[#6E6E73] dark:text-[#A1A1A6]">طراحی سایت و سئو در اروپا</span>
-                    </div>
-                  </div>
-                  <ChevronLeft size={16} className="text-[#6E6E73] dark:text-[#A1A1A6]" />
-                </button>
-              )}
+              <span className="block text-[11px] font-bold text-[#6E6E73] dark:text-[#A1A1A6] px-1">رسانه</span>
 
               <button
                 type="button"

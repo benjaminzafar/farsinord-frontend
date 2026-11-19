@@ -7,7 +7,6 @@ import {
   MessageCircle,
   Mail,
   Headphones,
-  Laptop,
 } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
@@ -77,7 +76,6 @@ export default function Footer({
   onOpenManageAd,
   onOpenLegal,
   onOpenPodcast,
-  onOpenWebsiteBuilder,
 }) {
   const [failedLogoUrl, setFailedLogoUrl] = useState('');
 
@@ -248,18 +246,6 @@ export default function Footer({
                   >
                     <KeyRound size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
                     <span className="leading-none">مدیریت آگهی</span>
-                  </button>
-                </li>
-              )}
-              {onOpenWebsiteBuilder && (
-                <li>
-                  <button
-                    type="button"
-                    onClick={onOpenWebsiteBuilder}
-                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
-                  >
-                    <Laptop size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
-                    <span className="leading-none">سفارش طراحی سایت</span>
                   </button>
                 </li>
               )}

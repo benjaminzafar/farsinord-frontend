@@ -1388,11 +1388,11 @@ export default function App() {
       ) : (
         <>
           {/* Hero Section - Always visible on Desktop; hidden on Mobile when filtering by category */}
-          <section className={`relative z-[35] w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2.5 sm:pt-3.5 pb-1 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
-          <div className="group relative min-h-[128px] sm:min-h-[196px] md:min-h-[224px] lg:min-h-[236px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-4 sm:py-6 md:py-7">
+          <section className={`relative z-[35] w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-1 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
+          <div className="group relative min-h-[190px] sm:min-h-[290px] md:min-h-[350px] lg:min-h-[370px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-12 md:py-16">
             
-            {/* Rounded Architectural Cityscape Backdrop with Smooth Hover Zoom & Multi-Layer Contrast Scrim */}
-            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#ECEFF4] dark:border-white/[0.06] bg-[#121317] pointer-events-none select-none">
+            {/* Rounded Architectural Cityscape Backdrop with Smooth Hover Zoom & Balanced Contrast Scrim */}
+            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#ECEFF4] dark:border-white/[0.06] bg-[#1D1D1F] pointer-events-none select-none">
               <img
                 key={activeHero.image}
                 src={activeHero.image}
@@ -1403,27 +1403,24 @@ export default function App() {
                 alt={activeHero.cityFa}
                 decoding="async"
                 fetchPriority="high"
-                className="w-full h-full object-cover object-center opacity-95 scale-100 group-hover:scale-[1.03] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+                className="w-full h-full object-cover object-center opacity-95 scale-100 group-hover:scale-[1.025] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
               />
-              {/* Layer 1: Rich vertical architectural gradient (eliminates weak middle opacity) */}
-              <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/55 to-slate-950/75" />
-              {/* Layer 2: Centered radial dark scrim directly behind header & subtitle text */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_42%,rgba(9,13,22,0.56)_0%,rgba(9,13,22,0.22)_65%,transparent_100%)]" />
-              {/* Layer 3: Interactive hover darkening so header text pops even more on hover */}
-              <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/20 transition-colors duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_65%_55%_at_50%_42%,rgba(0,0,0,0.38)_0%,transparent_100%)]" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-300" />
             </div>
 
-            <div className="relative z-20 w-full max-w-3xl mx-auto text-center space-y-1.5 sm:space-y-2.5">
-              <h1 className="text-xl sm:text-3xl md:text-[33px] lg:text-[36px] font-black tracking-tight text-white leading-snug sm:leading-tight px-2 break-words [text-shadow:0_2px_16px_rgba(0,0,0,0.65),0_1px_3px_rgba(0,0,0,0.85)]">
+            <div className="relative z-20 w-full max-w-3xl mx-auto text-center space-y-2 sm:space-y-4">
+              <h1 className="text-2xl sm:text-4xl md:text-[42px] font-black tracking-tight text-white leading-snug sm:leading-tight px-2 break-words [text-shadow:0_2px_14px_rgba(0,0,0,0.6),0_1px_3px_rgba(0,0,0,0.8)]">
                 {heroHeading}
               </h1>
 
-              <p className="text-xs sm:text-[14px] text-white/95 max-w-lg mx-auto leading-relaxed px-2 font-semibold [text-shadow:0_1px_10px_rgba(0,0,0,0.75),0_1px_2px_rgba(0,0,0,0.9)]">
+              <p className="text-xs sm:text-[15px] text-white/95 max-w-lg mx-auto leading-relaxed px-2 font-semibold [text-shadow:0_1px_10px_rgba(0,0,0,0.7),0_1px_2px_rgba(0,0,0,0.85)]">
                 {heroSubheading}
               </p>
 
               {/* Flat Unified Search Capsule — Hairline-Divided (No Box-in-Box) */}
-              <div className="pt-1.5 sm:pt-2.5 px-1 hidden md:block">
+              <div className="pt-2 sm:pt-3 px-1 hidden md:block">
                 <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.24)] border border-white/50 dark:border-white/[0.08] max-w-2xl mx-auto flex items-center gap-1.5 transition-all focus-within:ring-2 focus-within:ring-[#0066CC]/30">
                   
                   {/* Keyword Input with Google-style Smart Autocomplete (Right side in RTL) */}
