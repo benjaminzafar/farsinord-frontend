@@ -231,7 +231,7 @@ export default function AdDetailPage({
   const displayVipAds = [...vipAds, ...fallbackAds].slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] pb-20 font-vazir" dir="rtl">
+    <div className="min-h-screen bg-[#FBFBFC] dark:bg-[#0B0C10] text-[#1D1D1F] dark:text-[#F5F5F7] pb-20 font-vazir" dir="rtl">
       
       {/* Inline quiet navigation (no bar / no menu look) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex items-center justify-between gap-3">
@@ -249,7 +249,7 @@ export default function AdDetailPage({
             <span>/</span>
             <span>خانه</span>
             <span>/</span>
-            <span className="text-[#1D1D1F] font-semibold">{catName}</span>
+            <span className="text-[#1D1D1F] dark:text-[#F5F5F7] font-semibold">{catName}</span>
           </div>
         </div>
 
@@ -257,7 +257,7 @@ export default function AdDetailPage({
           type="button"
           onClick={shareAd}
           aria-label="اشتراک‌گذاری"
-          className="inline-flex items-center gap-1.5 px-1 h-8 text-[13px] font-semibold leading-none text-[#6E6E73] hover:text-[#1D1D1F] transition-colors active:opacity-60 cursor-pointer shrink-0"
+          className="inline-flex items-center gap-1.5 px-1 h-8 text-[13px] font-semibold leading-none text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white transition-colors active:opacity-60 cursor-pointer shrink-0"
         >
           {copiedLink ? (
             <Check size={15} strokeWidth={2} className="block shrink-0" />
@@ -275,10 +275,10 @@ export default function AdDetailPage({
           {/* MAIN CONTENT COLUMN (8 cols on Desktop) */}
           <main className="lg:col-span-8 space-y-5">
             
-            {/* Frameless Image Gallery (No outer box around photo) */}
+            {/* Frameless Image Gallery (Unified with page plane) */}
             <div className="space-y-2.5">
               {/* Big Stage Image (click to zoom) */}
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#ECECEF] group">
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#F0F2F5] dark:bg-[#1C202A] border border-[#ECEFF4] dark:border-white/[0.06] shadow-none group">
                 <img
                   src={images[activeImageIdx]}
                   alt={ad.title}
@@ -313,7 +313,7 @@ export default function AdDetailPage({
                 )}
 
                 {/* Category Badge */}
-                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC]/90 backdrop-blur-md text-[#1D1D1F] text-xs font-bold">
+                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#16181D]/90 border border-[#ECEFF4]/60 dark:border-white/[0.08] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
                   {catName}
                 </div>
 
@@ -346,10 +346,10 @@ export default function AdDetailPage({
                       key={idx}
                       type="button"
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer ${
+                      className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#ECEFF4] dark:border-white/[0.06] ${
                         activeImageIdx === idx 
                           ? 'ring-2 ring-[#0066CC] opacity-100' 
-                          : 'opacity-55 hover:opacity-90'
+                          : 'opacity-65 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt={`thumbnail-${idx}`} className="w-full h-full object-cover" />
@@ -359,13 +359,13 @@ export default function AdDetailPage({
               )}
             </div>
 
-            {/* Title, Price & Details Card */}
-            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-5 sm:p-8 space-y-6">
+            {/* Title, Price & Details Card (Unified Flat Surface, No Heavy Shadows) */}
+            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.06] p-5 sm:p-8 space-y-6 shadow-none">
               
               {/* Header: Title, Price & Unified Meta Row */}
-              <div className="space-y-3.5 pb-6 border-b border-[#E5E5EA]">
+              <div className="space-y-3.5 pb-6 border-b border-[#F0F2F5] dark:border-white/[0.05]">
                 <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 sm:gap-4">
-                  <h1 className="text-xl sm:text-2xl font-black text-[#1D1D1F] leading-snug">
+                  <h1 className="text-xl sm:text-2xl font-black text-[#1D1D1F] dark:text-white leading-snug">
                     {lang === 'fa' && ad.title_fa ? ad.title_fa : ad.title}
                   </h1>
                   
@@ -377,9 +377,9 @@ export default function AdDetailPage({
                   </div>
                 </div>
 
-                {/* Clean Inline Meta Row (No mismatched pills, uniform 14px icons on exact same baseline) */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs leading-none text-[#6E6E73]">
-                  <span className="inline-flex items-center gap-1.5 font-semibold leading-none text-[#1D1D1F]">
+                {/* Clean Inline Meta Row */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs leading-none text-[#6E6E73] dark:text-[#98989F]">
+                  <span className="inline-flex items-center gap-1.5 font-semibold leading-none text-[#1D1D1F] dark:text-[#F5F5F7]">
                     <MapPin size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
                     <span className="leading-none">{ad.city}{ad.area ? `، ${ad.area}` : ''}</span>
                   </span>
@@ -400,29 +400,29 @@ export default function AdDetailPage({
                   {ad.reference_number && (
                     <span className="inline-flex items-center gap-1 leading-none text-[#86868B]">
                       <span className="leading-none">کد:</span>
-                      <bdi className="font-mono font-semibold leading-none text-[#6E6E73]">{ad.reference_number}</bdi>
+                      <bdi className="font-mono font-semibold leading-none text-[#6E6E73] dark:text-[#98989F]">{ad.reference_number}</bdi>
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Description Section */}
+              {/* Description Section (Integrated Smoothly on Exact Same Visual Plane) */}
               <div className="space-y-2.5">
-                <h3 className="text-xs font-bold text-[#86868B]">
+                <h3 className="text-xs font-bold text-[#86868B] dark:text-[#98989F]">
                   توضیحات و مشخصات
                 </h3>
-                <div className="text-sm sm:text-[15px] text-[#1D1D1F] leading-relaxed sm:leading-loose whitespace-pre-wrap">
+                <div className="text-sm sm:text-[15px] text-[#1D1D1F] dark:text-[#E5E5EA] leading-relaxed sm:leading-loose whitespace-pre-wrap">
                   {ad.description}
                 </div>
               </div>
 
-              {/* Contact Seller Section — Centered UX */}
-              <div className="pt-6 border-t border-[#E5E5EA] flex flex-col items-center text-center space-y-4">
+              {/* Contact Seller Section (Flat, Integrated Flow — No "Card on Card") */}
+              <div className="pt-6 border-t border-[#F0F2F5] dark:border-white/[0.05] flex flex-col items-center text-center space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-extrabold text-[#1D1D1F]">اطلاعات تماس با آگهی‌دهنده</h3>
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">اطلاعات تماس با آگهی‌دهنده</h3>
                   {ad.contact_name && (
-                    <p className="text-xs text-[#6E6E73]">
-                      ثبت‌شده توسط <span className="font-bold text-[#1D1D1F]">{ad.contact_name}</span>
+                    <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
+                      ثبت‌شده توسط <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{ad.contact_name}</span>
                     </p>
                   )}
                 </div>
@@ -431,7 +431,7 @@ export default function AdDetailPage({
                   <div className="w-full max-w-md flex flex-col items-center text-center space-y-3.5 pt-1">
                     {!showTurnstileGate ? (
                       <>
-                        <p className="text-xs text-[#6E6E73]">
+                        <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
                           برای جلوگیری از ربات‌ها، راه‌های ارتباطی پس از کلیک نمایش داده می‌شود
                         </p>
 
@@ -444,7 +444,7 @@ export default function AdDetailPage({
                               setShowTurnstileGate(true);
                             }
                           }}
-                          className="h-11 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-[13px] font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer"
+                          className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-[13px] font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] shadow-none cursor-pointer"
                         >
                           <Lock size={15} />
                           <span>نمایش اطلاعات تماس</span>
@@ -452,7 +452,7 @@ export default function AdDetailPage({
                       </>
                     ) : (
                       <div className="flex flex-col items-center justify-center space-y-2.5 py-1 animate-in fade-in duration-200">
-                        <p className="text-xs font-bold text-[#1D1D1F]">
+                        <p className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
                           تایید امنیتی جهت نمایش اطلاعات تماس
                         </p>
                         <CloudflareTurnstile
@@ -466,13 +466,13 @@ export default function AdDetailPage({
                   </div>
                 ) : (
                   <div className="w-full flex flex-col items-center justify-center space-y-3.5 animate-in fade-in duration-200">
-                    <div className="flex flex-wrap items-center justify-center gap-3">
+                    <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
                       {/* Phone */}
                       {ad.contact_phone && (
                         <a
                           href={`tel:${ad.contact_phone.replace(/[^0-9+]/g, '')}`}
                           title="تماس تلفنی"
-                          className="h-11 px-4 rounded-full bg-[#1D1D1F] hover:bg-[#3A3A3C] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
+                          className="h-10 px-4 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                         >
                           <Phone size={15} />
                           <bdi className="font-mono tracking-wide">{ad.contact_phone}</bdi>
@@ -486,9 +486,9 @@ export default function AdDetailPage({
                           target="_blank"
                           rel="noopener noreferrer"
                           title="پیام در واتساپ"
-                          className="h-11 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
+                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                         >
-                          <MessageSquare size={15} className="text-[#6E6E73]" />
+                          <MessageSquare size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
                           <span>واتساپ</span>
                         </a>
                       )}
@@ -500,9 +500,9 @@ export default function AdDetailPage({
                           target="_blank"
                           rel="noopener noreferrer"
                           title="گفتگو در تلگرام"
-                          className="h-11 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
+                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                         >
-                          <Send size={15} className="text-[#6E6E73]" />
+                          <Send size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
                           <span>تلگرام</span>
                         </a>
                       )}
@@ -512,9 +512,9 @@ export default function AdDetailPage({
                         <a
                           href={`mailto:${ad.contact_email}?subject=پرسش درباره آگهی ${ad.reference_number}`}
                           title="ارسال ایمیل"
-                          className="h-11 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
+                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                         >
-                          <Mail size={15} className="text-[#6E6E73]" />
+                          <Mail size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
                           <span>ایمیل</span>
                         </a>
                       )}
@@ -530,9 +530,9 @@ export default function AdDetailPage({
                             target="_blank"
                             rel="noopener noreferrer"
                             title="مشاهده وب‌سایت"
-                            className="h-11 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.95]"
+                            className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                           >
-                            <Globe size={15} className="text-[#6E6E73]" />
+                            <Globe size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
                             <span>وب‌سایت</span>
                           </a>
                         );
@@ -543,9 +543,9 @@ export default function AdDetailPage({
               </div>
 
               {/* Safety Notice & Report Abuse Section */}
-              <div className="pt-5 border-t border-[#E5E5EA] space-y-3">
+              <div className="pt-5 border-t border-[#F0F2F5] dark:border-white/[0.05] space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-xs text-[#6E6E73]">
+                  <div className="flex items-center gap-2 text-xs text-[#6E6E73] dark:text-[#98989F]">
                     <ShieldCheck size={16} className="text-[#86868B] shrink-0" />
                     <span>قبل از هرگونه پرداخت، کالا یا مسکن را حضوری بررسی کنید.</span>
                   </div>
@@ -553,7 +553,7 @@ export default function AdDetailPage({
                   <button
                     type="button"
                     onClick={() => setReportOpen((v) => !v)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] text-[#6E6E73] hover:text-[#1D1D1F] text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white text-[11px] font-bold shrink-0 transition-colors cursor-pointer border border-[#ECEFF4] dark:border-white/[0.06] shadow-none"
                   >
                     <Flag size={12} className="text-[#86868B]" />
                     <span>گزارش آگهی</span>
@@ -561,9 +561,9 @@ export default function AdDetailPage({
                 </div>
 
                 {reportOpen && (
-                  <div className="pt-3 border-t border-[#E5E5EA] space-y-2.5">
+                  <div className="pt-3 border-t border-[#F0F2F5] dark:border-white/[0.05] space-y-2.5">
                     {reportSent ? (
-                      <p className="text-xs font-bold text-emerald-700">
+                      <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
                         گزارش شما با موفقیت برای بررسی مدیر ارسال شد. با تشکر از همکاری شما.
                       </p>
                     ) : (
@@ -572,7 +572,7 @@ export default function AdDetailPage({
                           <select
                             value={reportReason}
                             onChange={(e) => setReportReason(e.target.value)}
-                            className="h-9 rounded-xl border border-[#E5E5EA] bg-white px-3 text-xs font-semibold text-[#1D1D1F] focus:outline-none"
+                            className="h-9 rounded-xl border border-[#ECEFF4] dark:border-white/[0.08] bg-[#FBFBFC] dark:bg-[#1C202A] px-3 text-xs font-semibold text-[#1D1D1F] dark:text-white focus:outline-none"
                           >
                             <option value="محتوای غیرمجاز یا نامناسب">محتوای غیرمجاز یا نامناسب</option>
                             <option value="کلاهبرداری یا آگهی جعلی">کلاهبرداری یا آگهی جعلی</option>
@@ -584,14 +584,14 @@ export default function AdDetailPage({
                             value={reportDetails}
                             onChange={(e) => setReportDetails(e.target.value)}
                             placeholder="توضیح کوتاه (اختیاری)..."
-                            className="h-9 rounded-xl border border-[#E5E5EA] bg-white px-3 text-xs text-[#1D1D1F] focus:outline-none"
+                            className="h-9 rounded-xl border border-[#ECEFF4] dark:border-white/[0.08] bg-[#FBFBFC] dark:bg-[#1C202A] px-3 text-xs text-[#1D1D1F] dark:text-white focus:outline-none"
                           />
                         </div>
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => setReportOpen(false)}
-                            className="h-8 px-3 rounded-full text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] cursor-pointer"
+                            className="h-8 px-3 rounded-full text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white cursor-pointer"
                           >
                             انصراف
                           </button>
@@ -612,7 +612,7 @@ export default function AdDetailPage({
                               } catch {}
                               setReportSending(false);
                             }}
-                            className="h-8 px-4 rounded-full bg-[#1D1D1F] hover:bg-[#3A3A3C] disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+                            className="h-8 px-4 rounded-full bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer shadow-none"
                           >
                             {reportSending ? 'در حال ارسال...' : 'ارسال گزارش'}
                           </button>
@@ -630,17 +630,17 @@ export default function AdDetailPage({
           {/* SIDEBAR: 4 VIP PROMOTED ADS & MONETIZATION SLOTS (4 cols on Desktop) */}
           <aside className="lg:col-span-4 lg:sticky lg:top-32 space-y-5">
             
-            {/* VIP Sponsored Ads List */}
-            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] overflow-hidden">
+            {/* VIP Sponsored Ads List (Flat Unified Card, Hairline Dividers) */}
+            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.06] overflow-hidden shadow-none">
               
-              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#E5E5EA]">
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#F0F2F5] dark:border-white/[0.05]">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F5F5F7] text-[#6E6E73]">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
                     <Crown size={15} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-extrabold text-[#1D1D1F]">آگهی‌های ویژه {adCountryName}</h2>
-                    <p className="text-[10px] text-[#86868B] font-medium">برگزیده‌های ویژه در {adCountryName}</p>
+                    <h2 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">آگهی‌های ویژه {adCountryName}</h2>
+                    <p className="text-[10px] text-[#86868B] dark:text-[#98989F] font-medium">برگزیده‌های ویژه در {adCountryName}</p>
                   </div>
                 </div>
 
@@ -650,7 +650,7 @@ export default function AdDetailPage({
               </div>
 
               {/* Flat Hairline-Divided Rows */}
-              <div className="divide-y divide-[#E5E5EA]">
+              <div className="divide-y divide-[#F0F2F5] dark:divide-white/[0.05]">
                 {displayVipAds.map((vipAd) => {
                   const vipCat = CATEGORIES.find(c => c.id === vipAd.category);
                   const vipCover = (vipAd.images && vipAd.images.length > 0)
@@ -664,10 +664,10 @@ export default function AdDetailPage({
                     <article
                       key={vipAd.id}
                       onClick={() => onSelectAd?.(vipAd)}
-                      className="group flex items-center gap-3.5 px-4 sm:px-5 py-3.5 hover:bg-[#F5F5F7] active:bg-[#EBEBF0] transition-colors cursor-pointer"
+                      className="group flex items-center gap-3.5 px-4 sm:px-5 py-3.5 hover:bg-[#F5F5F7]/80 dark:hover:bg-white/[0.04] active:bg-[#EBEBF0] transition-colors cursor-pointer"
                     >
                       {/* Clean Thumbnail */}
-                      <div className="relative h-16 w-20 rounded-xl overflow-hidden shrink-0 bg-[#F5F5F7]">
+                      <div className="relative h-16 w-20 rounded-xl overflow-hidden shrink-0 bg-[#F5F5F7] dark:bg-white/[0.05] border border-[#ECEFF4] dark:border-white/[0.06]">
                         <img
                           src={vipCover}
                           alt={vipAd.title}
@@ -678,19 +678,19 @@ export default function AdDetailPage({
                       {/* Content */}
                       <div className="flex-1 flex flex-col justify-between min-w-0 gap-1.5">
                         <div className="space-y-0.5">
-                          <span className="text-[10px] font-semibold text-[#86868B] block truncate">
+                          <span className="text-[10px] font-semibold text-[#86868B] dark:text-[#98989F] block truncate">
                             {vipCat?.fa || vipAd.category}
                           </span>
-                          <h4 className="text-xs font-bold text-[#1D1D1F] group-hover:text-[#0066CC] transition-colors line-clamp-1 leading-snug">
+                          <h4 className="text-xs font-bold text-[#1D1D1F] dark:text-white group-hover:text-[#0066CC] transition-colors line-clamp-1 leading-snug">
                             {vipAd.title_fa || vipAd.title}
                           </h4>
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-[#1D1D1F] tabular-nums">
+                          <span className="text-xs font-black text-[#1D1D1F] dark:text-[#F5F5F7] tabular-nums">
                             {vipPrice}
                           </span>
-                          <span className="text-[10px] text-[#86868B] flex items-center gap-0.5">
+                          <span className="text-[10px] text-[#86868B] dark:text-[#98989F] flex items-center gap-0.5">
                             <MapPin size={9} className="text-[#86868B]" />
                             {vipAd.city}
                           </span>
@@ -703,26 +703,26 @@ export default function AdDetailPage({
 
             </div>
 
-            {/* Monetization Promotion CTA Card */}
-            <div className="bg-[#FBFBFC] rounded-2xl sm:rounded-3xl border border-[#E5E5EA] p-5 space-y-3.5">
+            {/* Monetization Promotion CTA Card (Unified Surface, Zero Box Shadow) */}
+            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.06] p-5 space-y-3.5 shadow-none">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] text-[#6E6E73]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-[#1D1D1F]">آگهی شما در صدر {adCountryName} دیده شود!</h3>
-                  <p className="text-[10px] text-[#86868B]">جذب ۳ برابری مشتریان و بازدیدکنندگان در {adCountryName}</p>
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">آگهی شما در صدر {adCountryName} دیده شود!</h3>
+                  <p className="text-[10px] text-[#86868B] dark:text-[#98989F]">جذب ۳ برابری مشتریان و بازدیدکنندگان در {adCountryName}</p>
                 </div>
               </div>
 
-              <p className="text-xs text-[#6E6E73] leading-relaxed">
+              <p className="text-xs text-[#6E6E73] dark:text-[#98989F] leading-relaxed">
                 با ارتقا به آگهی ویژه (VIP)، آگهی شما در بخش ویژه و بالای فهرست جستجوی فارسی‌زبانان در سراسر {adCountryName} نمایش داده می‌شود.
               </p>
 
               <button
                 type="button"
                 onClick={() => onOpenPromote?.(ad)}
-                className="w-full h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold active:scale-[0.97] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-10 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold active:scale-[0.97] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-none"
               >
                 <Crown size={15} className="text-white/90" />
                 <span>{isVipActive ? `تمدید یا تغییر کشور ویژه (${adCountryName})` : `ارتقا و ویژه کردن در ${adCountryName}`}</span>

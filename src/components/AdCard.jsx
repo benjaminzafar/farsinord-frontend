@@ -30,7 +30,7 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
   return (
     <article
       onClick={() => onSelect(ad)}
-      className="ad-card-perf group relative flex flex-col bg-[#FBFBFC] rounded-xl sm:rounded-2xl border border-[#E5E5EA] shadow-[0_1px_3px_rgba(29,29,31,0.04)] sm:hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(29,29,31,0.08)] hover:border-[#D2D2D7] transition-all duration-200 cursor-pointer overflow-hidden active:scale-[0.99]"
+      className="ad-card-perf group relative flex flex-col bg-[#FBFBFC] dark:bg-[#16181D] rounded-xl sm:rounded-2xl border border-[#ECEFF4] dark:border-white/[0.06] shadow-none hover:border-[#D2D2D7] dark:hover:border-white/[0.12] transition-all duration-200 cursor-pointer overflow-hidden active:scale-[0.99]"
     >
       {/* Thumbnail */}
       <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-[#ECECEF]">

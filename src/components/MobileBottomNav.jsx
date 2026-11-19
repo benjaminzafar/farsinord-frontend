@@ -78,7 +78,7 @@ export default function MobileBottomNav({
     <>
       {/* 1. Sleek Compact Mobile Bottom Navigation Bar (Apple Frosted Spring Feel) */}
       <nav 
-        className="fixed bottom-0 inset-x-0 z-40 md:hidden rounded-t-[22px] bg-white/95 dark:bg-[#16181D]/95 backdrop-blur-md border-t border-x border-[#E5E5EA] dark:border-[#2A2D36] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)] px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.25rem)] font-vazir select-none overflow-hidden"
+        className="fixed bottom-0 inset-x-0 z-40 md:hidden rounded-t-[22px] bg-[#FBFBFC]/95 dark:bg-[#16181D]/95 backdrop-blur-md border-t border-x border-[#ECEFF4] dark:border-white/[0.06] shadow-none px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.25rem)] font-vazir select-none overflow-hidden"
         dir="rtl"
         aria-label="منوی دسترسی موبایل"
       >

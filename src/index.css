@@ -163,6 +163,8 @@ html.dark body {
 
 .dark .border-\[\#E5E5EA\],
 .dark .border-\[\#ECECEF\],
+.dark .border-\[\#ECEFF4\],
+.dark .border-\[\#F0F2F5\],
 .dark .border-\[\#D2D2D7\],
 .dark .border-slate-200,
 .dark .border-slate-200\/80,
@@ -172,7 +174,8 @@ html.dark body {
   border-color: #2A2D36;
 }
 
-.dark .divide-\[\#E5E5EA\] > :not([hidden]) ~ :not([hidden]) {
+.dark .divide-\[\#E5E5EA\] > :not([hidden]) ~ :not([hidden]),
+.dark .divide-\[\#F0F2F5\] > :not([hidden]) ~ :not([hidden]) {
   border-color: #2A2D36;
 }
 
