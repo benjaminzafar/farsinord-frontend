@@ -16,54 +16,94 @@ const supabaseKey =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlemJueW1qY25tYXpkb25memt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2OTM1NjksImV4cCI6MjExMDI2OTU2OX0.ylsHBAZ1zo1z_aKpHx7hgl-yZu2yt2puFNhR8jBm6S4';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+function withTimeout(promise, ms = 4500) {
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((resolve) => {
+      timer = setTimeout(() => resolve({ data: null, timedOut: true }), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 export default async function handler(req, res) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', 'GET, HEAD');
+    return res.status(405).end('Method Not Allowed');
+  }
+
   const baseUrl = CANONICAL_ORIGIN;
   const todayIso = new Date().toISOString().slice(0, 10);
+  const mode = String(req.query?.mode || '').trim().toLowerCase();
+
+  if (mode === 'index') {
+    const indexXml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${escapeXml(`${baseUrl}/sitemap.xml`)}</loc>
+    <lastmod>${todayIso}</lastmod>
+  </sitemap>
+</sitemapindex>`;
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (req.method === 'HEAD') {
+      res.setHeader('Content-Length', String(Buffer.byteLength(indexXml, 'utf8')));
+      return res.status(200).end();
+    }
+    return res.status(200).send(indexXml);
+  }
 
   let countryIds = SEO_COUNTRIES.map((c) => c.id);
-  try {
-    const { data: settingsRow } = await supabase
-      .from('swedpersiska_settings')
-      .select('value')
-      .eq('key', 'portal_countries')
-      .maybeSingle();
+  const latestByCountry = new Map();
+  const latestByCountryCategory = new Map();
+  const adUrlEntries = [];
 
+  try {
+    const [settingsResult, adsResult] = await Promise.all([
+      withTimeout(
+        supabase
+          .from('swedpersiska_settings')
+          .select('value')
+          .eq('key', 'portal_countries')
+          .maybeSingle(),
+        4500
+      ).catch(() => ({ data: null })),
+      withTimeout(
+        supabase
+          .from('swedpersiska_ads')
+          .select('id, reference_number, country, category, images, updated_at, sort_timestamp, created_at')
+          .eq('status', 'active')
+          .is('deleted_at', null)
+          .order('sort_timestamp', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(2500),
+        4500
+      ).catch(() => ({ data: null })),
+    ]);
+
+    const settingsRow = settingsResult?.data;
     if (Array.isArray(settingsRow?.value) && settingsRow.value.length > 0) {
       const enabledMap = new Map(SEO_COUNTRIES.map((c) => [c.id, true]));
       for (const item of settingsRow.value) {
         if (!item?.id) continue;
         enabledMap.set(item.id, item.enabled !== false);
       }
-      countryIds = Array.from(enabledMap.entries())
+      const enabledIds = Array.from(enabledMap.entries())
         .filter(([, enabled]) => enabled)
         .map(([id]) => id);
+      if (enabledIds.length > 0) {
+        countryIds = enabledIds;
+      }
     }
-  } catch {}
 
-  const urls = [
-    { loc: `${baseUrl}/`, lastmod: todayIso, changefreq: 'hourly', priority: '1.0', alternates: true },
-    { loc: `${baseUrl}/?page=podcast`, lastmod: todayIso, changefreq: 'daily', priority: '0.8' },
-    { loc: `${baseUrl}/?page=website-builder`, lastmod: todayIso, changefreq: 'weekly', priority: '0.9' },
-  ];
-
-  const latestByCountry = new Map();
-  const latestByCountryCategory = new Map();
-  const adUrlEntries = [];
-
-  try {
-    const { data: ads } = await supabase
-      .from('swedpersiska_ads')
-      .select('id, reference_number, country, category, title, title_fa, images, updated_at, sort_timestamp, created_at')
-      .eq('status', 'active')
-      .is('deleted_at', null)
-      .order('sort_timestamp', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(2500);
-
+    const ads = adsResult?.data;
     if (Array.isArray(ads)) {
       for (const ad of ads) {
         const slug = encodeURIComponent(ad.reference_number || ad.id);
-        const mod = String(ad.updated_at || ad.sort_timestamp || ad.created_at || todayIso).slice(0, 10);
+        const rawMod = String(ad.updated_at || ad.sort_timestamp || ad.created_at || todayIso).slice(0, 10);
+        const mod = /^\d{4}-\d{2}-\d{2}$/.test(rawMod) ? rawMod : todayIso;
         const cid = normalizeCanonicalCountry(ad.country) || 'se';
 
         if (!latestByCountry.has(cid) || mod > latestByCountry.get(cid)) {
@@ -85,12 +125,17 @@ export default async function handler(req, res) {
           lastmod: mod,
           changefreq: 'weekly',
           priority: '0.7',
-          title: String(ad.title_fa || ad.title || '').trim(),
           images: safeImages,
         });
       }
     }
   } catch {}
+
+  const urls = [
+    { loc: `${baseUrl}/`, lastmod: todayIso, changefreq: 'hourly', priority: '1.0', alternates: true },
+    { loc: `${baseUrl}/?page=podcast`, lastmod: todayIso, changefreq: 'daily', priority: '0.8' },
+    { loc: `${baseUrl}/?page=website-builder`, lastmod: todayIso, changefreq: 'weekly', priority: '0.9' },
+  ];
 
   for (const cid of countryIds) {
     urls.push({
@@ -141,7 +186,7 @@ ${urls
         u.images
           .map(
             (imgUrl) => `    <image:image>
-      <image:loc>${escapeXml(imgUrl)}</image:loc>${u.title ? `\n      <image:title>${escapeXml(u.title)}</image:title>` : ''}
+      <image:loc>${escapeXml(imgUrl)}</image:loc>
     </image:image>`
           )
           .join('\n')
@@ -157,6 +202,11 @@ ${urls
 </urlset>`;
 
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  if (req.method === 'HEAD') {
+    res.setHeader('Content-Length', String(Buffer.byteLength(xml, 'utf8')));
+    return res.status(200).end();
+  }
   return res.status(200).send(xml);
 }

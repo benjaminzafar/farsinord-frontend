@@ -46,13 +46,13 @@ test('vercel.json bot rewrites compile as pure JS RegExp and route search/AI bot
   for (const rule of botRewrites) {
     const pattern = rule.has.find((h) => h.key === 'user-agent')?.value;
     assert.ok(pattern && !pattern.includes('(?i)'), 'Vercel header regex must not use (?i)');
-    const re = new RegExp(pattern);
+    const re = new RegExp(`^${pattern}$`);
 
     for (const ua of botUas) {
-      assert.equal(re.test(ua), true, `Expected pattern to match bot UA: ${ua}`);
+      assert.equal(re.test(ua), true, `Expected full-string pattern to match bot UA: ${ua}`);
     }
     for (const ua of humanUas) {
-      assert.equal(re.test(ua), false, `Expected pattern NOT to match human browser UA: ${ua}`);
+      assert.equal(re.test(ua), false, `Expected full-string pattern NOT to match human browser UA: ${ua}`);
     }
   }
 });
@@ -188,4 +188,42 @@ test('buildIndexNowPayload deduplicates valid canonical URLs and rejects foreign
     `${CANONICAL_ORIGIN}/?c=se`,
     `${CANONICAL_ORIGIN}/ad/LS-100`,
   ]);
+});
+
+test('api/seo.js selects only valid swedpersiska_ads columns and sitemap.js supports index & HEAD', async () => {
+  const seoSrc = fs.readFileSync(new URL('../api/seo.js', import.meta.url), 'utf8');
+  assert.equal(seoSrc.includes("'currency'"), false, 'swedpersiska_ads does not have a currency column');
+
+  const { default: sitemapHandler } = await import('../api/sitemap.js');
+  const makeRes = () => {
+    const headers = {};
+    let statusCode = 200;
+    let body = '';
+    return {
+      headers,
+      get statusCode() { return statusCode; },
+      get body() { return body; },
+      setHeader(k, v) { headers[k.toLowerCase()] = v; },
+      status(c) { statusCode = c; return this; },
+      send(b) { body = b; return this; },
+      end(b) { if (b) body = b; return this; },
+    };
+  };
+
+  const resIndex = makeRes();
+  await sitemapHandler({ method: 'GET', query: { mode: 'index' } }, resIndex);
+  assert.equal(resIndex.statusCode, 200);
+  assert.equal(resIndex.headers['content-type'], 'application/xml; charset=utf-8');
+  assert.ok(resIndex.body.includes('<sitemapindex'));
+  assert.ok(resIndex.body.includes(`${CANONICAL_ORIGIN}/sitemap.xml`));
+
+  const resHead = makeRes();
+  await sitemapHandler({ method: 'HEAD', query: { mode: 'index' } }, resHead);
+  assert.equal(resHead.statusCode, 200);
+  assert.equal(resHead.body, '');
+  assert.ok(Number(resHead.headers['content-length']) > 100);
+
+  const resPost = makeRes();
+  await sitemapHandler({ method: 'POST', query: {} }, resPost);
+  assert.equal(resPost.statusCode, 405);
 });

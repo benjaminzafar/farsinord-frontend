@@ -36,7 +36,6 @@ const SAFE_PUBLIC_SEO_COLUMNS = [
   'area',
   'price',
   'price_type',
-  'currency',
   'images',
   'is_featured',
   'promotion_expires_at',
