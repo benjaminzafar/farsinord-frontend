@@ -26,8 +26,20 @@ import { isSafeHttpUrl } from './lib/supabase';
 import { publicApi } from './lib/apiClient';
 import { COUNTRIES, CATEGORIES, mergePortalCountries, t } from './lib/translations';
 import { getGdprConsent } from './lib/gdpr';
+import { getInitialTheme, applyThemeToDocument } from './lib/theme';
 import { matchesSmartSearch, getSearchSuggestions } from './lib/smartSearch';
 import { CANONICAL_SITE_ORIGIN, buildClientCanonicalUrl, buildClientSeoGraph } from './lib/seoSchema';
+
+function readCachedBranding() {
+  try {
+    const raw = localStorage.getItem('swedpersiska_site_branding');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 const CountryBanner = lazy(() => import('./components/CountryBanner'));
 const LegalModal = lazy(() => import('./components/LegalModal'));
@@ -58,6 +70,13 @@ const FEED_PAGE_SIZE = 16;
 export default function App() {
   const lang = 'fa'; // Complete Persian Language
   const currentT = t.fa;
+
+  const [theme, setTheme] = useState(() => getInitialTheme());
+  const handleToggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+
+  useEffect(() => {
+    applyThemeToDocument(theme);
+  }, [theme]);
 
   // Paginated ads state
   const [ads, setAds] = useState([]);
@@ -257,9 +276,13 @@ export default function App() {
       return '';
     }
   });
-  const [siteName, setSiteName] = useState('لینک شو');
-  const [logoUrl, setLogoUrl] = useState('');
-  const [socialLinks, setSocialLinks] = useState({
+  const [siteName, setSiteName] = useState(() => readCachedBranding()?.siteName || 'لینک شو');
+  const [logoUrl, setLogoUrl] = useState(() => {
+    const cachedUrl = readCachedBranding()?.logoUrl;
+    return cachedUrl && isSafeHttpUrl(cachedUrl) ? cachedUrl : '';
+  });
+  const [brandingReady, setBrandingReady] = useState(() => Boolean(readCachedBranding()?.logoUrl));
+  const [socialLinks, setSocialLinks] = useState(() => readCachedBranding()?.socialLinks || {
     instagram: 'https://instagram.com',
     telegram: 'https://t.me',
     whatsapp: '',
@@ -309,16 +332,25 @@ export default function App() {
         if (branding) {
           const rawName = (branding.siteName || '').trim();
           const isLegacyName = !rawName || /سوئد\s*پرشیا|سوید\s*پرشیا|پرشیا\s*سو|فارسی\s*نور|swedpersiska|farsi\s*nord|faris\s*nord/i.test(rawName);
-          setSiteName(isLegacyName ? 'لینک شو' : rawName);
-          if (branding.logoUrl && isSafeHttpUrl(branding.logoUrl)) setLogoUrl(branding.logoUrl);
-          setSocialLinks({
+          const nextSiteName = isLegacyName ? 'لینک شو' : rawName;
+          const nextLogoUrl = (branding.logoUrl && isSafeHttpUrl(branding.logoUrl)) ? branding.logoUrl : '';
+          const nextSocialLinks = {
             instagram: branding.socialInstagram ?? 'https://instagram.com',
             telegram: branding.socialTelegram || branding.supportTelegram || 'https://t.me',
             whatsapp: branding.socialWhatsapp || branding.supportPhone || '',
             youtube: branding.socialYoutube || '',
             linkedin: branding.socialLinkedin || '',
             email: branding.supportEmail || ''
-          });
+          };
+          setSiteName(nextSiteName);
+          setLogoUrl(nextLogoUrl);
+          setSocialLinks(nextSocialLinks);
+          try {
+            localStorage.setItem(
+              'swedpersiska_site_branding',
+              JSON.stringify({ siteName: nextSiteName, logoUrl: nextLogoUrl, socialLinks: nextSocialLinks })
+            );
+          } catch {}
           if (branding.faviconUrl && isSafeHttpUrl(branding.faviconUrl)) {
             let link = document.querySelector("link[rel~='icon']");
             if (!link) {
@@ -398,7 +430,9 @@ export default function App() {
           setLifecycleSettings(settings.ad_lifecycle_settings);
         }
       }
-    } catch {}
+    } catch {} finally {
+      setBrandingReady(true);
+    }
   };
 
   useEffect(() => {
@@ -957,18 +991,47 @@ export default function App() {
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (activeAdDetail || podcastOpen || websiteBuilderOpen) return;
     const el = categoryPillRefs.current[selectedCategory];
     if (!el) return;
-    const updatePill = () => {
-      setPillStyle({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
+
+    let cancelled = false;
+    let rafId = 0;
+
+    const measurePill = () => {
+      if (cancelled) return;
+      const currentEl = categoryPillRefs.current[selectedCategory];
+      if (!currentEl) return;
+      setPillStyle({ left: currentEl.offsetLeft, width: currentEl.offsetWidth, ready: true });
     };
-    updatePill();
+
+    const scheduleMeasure = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(measurePill);
+    };
+
+    scheduleMeasure();
     try {
       el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     } catch {}
-    window.addEventListener('resize', updatePill);
-    return () => window.removeEventListener('resize', updatePill);
-  }, [selectedCategory, activeAdDetail]);
+
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(scheduleMeasure);
+      if (categoryStripRef.current) ro.observe(categoryStripRef.current);
+      ro.observe(el);
+    }
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(scheduleMeasure).catch(() => {});
+    }
+    window.addEventListener('resize', scheduleMeasure);
+    return () => {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', scheduleMeasure);
+    };
+  }, [selectedCategory, activeAdDetail, podcastOpen, websiteBuilderOpen]);
 
   const handleFeedTouchStart = (e) => {
     if (e.touches && e.touches.length === 1) {
@@ -1161,6 +1224,9 @@ export default function App() {
       <Navbar
         siteName={siteName}
         logoUrl={logoUrl}
+        brandingReady={brandingReady}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         selectedCity={selectedCity}
         onSelectCity={handleCityChange}
         availableCities={availableCities}
@@ -1590,6 +1656,7 @@ export default function App() {
       <Footer
         siteName={siteName}
         logoUrl={logoUrl}
+        brandingReady={brandingReady}
         socialLinks={socialLinks}
         selectedCountryObj={currentCountryObj}
         onOpenCountryModal={handleOpenCountryModal}
@@ -1605,6 +1672,8 @@ export default function App() {
       <MobileBottomNav
         selectedCategory={selectedCategory}
         selectedCountry={selectedCountry}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         onSelectCategory={handleCategoryChange}
         onOpenCountryModal={handleOpenCountryModal}
         onOpenPostAd={() => handleOpenPostAd('bostad')}

@@ -66,6 +66,7 @@ function buildSocialHref(type, raw) {
 export default function Footer({ 
   siteName = 'لینک شو',
   logoUrl = '',
+  brandingReady = true,
   socialLinks = {},
   selectedCountryObj = null,
   onOpenCountryModal,
@@ -129,16 +130,20 @@ export default function Footer({
           {/* Column 1 (4 cols on desktop): Brand Logo + Slogan + Social Media Icons Under Logo */}
           <div className="col-span-2 md:col-span-4 space-y-3.5">
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5" aria-label={siteName}>
                 {logoUrl && failedLogoUrl !== logoUrl ? (
                   <img 
                     src={logoUrl} 
-                    alt={siteName} 
-                    className="h-9 w-auto max-w-[155px] object-contain"
+                    alt="" 
+                    loading="lazy"
+                    decoding="async"
+                    className="h-7 w-auto max-w-[115px] object-contain"
                     onError={() => setFailedLogoUrl(logoUrl)}
                   />
-                ) : (
+                ) : brandingReady ? (
                   <span className="font-black text-lg text-[#1D1D1F] tracking-tight">{siteName}</span>
+                ) : (
+                  <span className="inline-block h-7 w-24 rounded-lg bg-[#ECECEF]/80 animate-pulse" aria-hidden="true" />
                 )}
               </div>
               <p className="text-xs font-medium text-[#6E6E73]">

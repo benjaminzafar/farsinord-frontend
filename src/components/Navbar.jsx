@@ -19,7 +19,9 @@ import {
   MoreHorizontal,
   Headphones,
   ShieldCheck,
-  Globe
+  Globe,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
@@ -34,6 +36,9 @@ const DROPDOWN_ICON_MAP = {
 export default function Navbar({ 
   siteName = 'لینک شو',
   logoUrl,
+  brandingReady = true,
+  theme = 'light',
+  onToggleTheme,
   selectedCity = 'all',
   onSelectCity,
   availableCities = [],
@@ -195,6 +200,7 @@ export default function Navbar({
           <div className="flex items-center gap-6 shrink-0">
             <a
               href="/"
+              aria-label={siteName}
               onClick={(e) => {
                 e.preventDefault();
                 if (onSelectCategory) onSelectCategory('all');
@@ -205,12 +211,17 @@ export default function Navbar({
               {logoUrl && failedLogoUrl !== logoUrl ? (
                 <img
                   src={logoUrl}
-                  alt={siteName}
+                  alt=""
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority="high"
                   onError={() => setFailedLogoUrl(logoUrl)}
-                  className="h-10 w-auto max-w-[165px] object-contain shrink-0"
+                  className="h-7 w-auto max-w-[120px] object-contain shrink-0"
                 />
-              ) : (
+              ) : brandingReady ? (
                 <span className="font-black text-lg text-[#1D1D1F] tracking-tight">{siteName}</span>
+              ) : (
+                <span className="inline-block h-7 w-24 rounded-lg bg-[#ECECEF]/80 animate-pulse" aria-hidden="true" />
               )}
             </a>
 
@@ -302,6 +313,37 @@ export default function Navbar({
               {moreDropdownOpen && (
                 <div className="absolute end-0 top-full mt-2 w-72 rounded-2xl bg-[#FBFBFC] border border-[#E5E5EA] shadow-[0_14px_40px_rgba(29,29,31,0.14)] p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
                   <div className="space-y-1">
+                    <button
+                      type="button"
+                      aria-pressed={theme === 'dark'}
+                      onClick={() => onToggleTheme?.()}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl text-right text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-[#F5F5F7] text-[#0066CC] flex items-center justify-center shrink-0">
+                          {theme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
+                        </div>
+                        <div>
+                          <span className="block font-bold">حالت شب / روز</span>
+                          <span className="text-[10.5px] text-[#6E6E73]">
+                            {theme === 'dark' ? 'حالت تاریک فعال است' : 'حالت روشن فعال است'}
+                          </span>
+                        </div>
+                      </div>
+                      <span
+                        aria-hidden="true"
+                        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+                          theme === 'dark' ? 'bg-[#0066CC]' : 'bg-[#D2D2D7]'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 rounded-full bg-[#ffffff] shadow-2xs transition-transform ${
+                            theme === 'dark' ? '-translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {

@@ -19,7 +19,9 @@ import {
   Check,
   MoreHorizontal,
   Headphones,
-  ShieldCheck
+  ShieldCheck,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { CATEGORIES, COUNTRIES } from '../lib/translations';
 
@@ -40,6 +42,8 @@ const CATEGORY_META = {
 export default function MobileBottomNav({
   selectedCategory = 'all',
   selectedCountry = 'se',
+  theme = 'light',
+  onToggleTheme,
   onSelectCategory,
   onOpenCountryModal,
   onOpenPostAd,
@@ -309,6 +313,38 @@ export default function MobileBottomNav({
           </div>
 
           <div className="space-y-2">
+            {/* Dark / Light Mode Toggle */}
+            <button
+              type="button"
+              aria-pressed={theme === 'dark'}
+              onClick={() => onToggleTheme?.()}
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-[#FBFBFC] text-[#0066CC] border border-[#E5E5EA] flex items-center justify-center shrink-0">
+                  {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+                </div>
+                <div className="text-right">
+                  <span className="block text-[13px] font-bold text-[#1D1D1F]">حالت تاریک / روشن</span>
+                  <span className="block text-[11px] text-[#6E6E73]">
+                    {theme === 'dark' ? 'ظاهر تاریک فعال است' : 'ظاهر روشن فعال است'}
+                  </span>
+                </div>
+              </div>
+              <span
+                aria-hidden="true"
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+                  theme === 'dark' ? 'bg-[#0066CC]' : 'bg-[#D2D2D7]'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 rounded-full bg-[#ffffff] shadow-2xs transition-transform ${
+                    theme === 'dark' ? '-translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </span>
+            </button>
+
             {/* Country Switcher */}
             <button
               type="button"
