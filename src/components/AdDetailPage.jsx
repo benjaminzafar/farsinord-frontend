@@ -141,8 +141,9 @@ export default function AdDetailPage({
   const mapSearchUrl = buildGoogleMapsSearchUrl(mapQuery);
   const canShowMap = Boolean(mapEmbedUrl && mapQuery);
 
+  const adImages = ad?.images;
   const galleryItems = useMemo(() => {
-    const rawImages = Array.isArray(ad?.images) && ad.images.length > 0 ? ad.images : [];
+    const rawImages = Array.isArray(adImages) && adImages.length > 0 ? adImages : [];
     const items = rawImages.map((src) => ({ type: 'image', src }));
     if (canShowMap) {
       items.push({ type: 'map' });
@@ -153,7 +154,7 @@ export default function AdDetailPage({
       });
     }
     return items;
-  }, [ad?.images, canShowMap]);
+  }, [adImages, canShowMap]);
 
   const totalSlides = galleryItems.length;
   const safeSlideIdx = Math.min(activeImageIdx, Math.max(0, totalSlides - 1));
@@ -372,176 +373,149 @@ export default function AdDetailPage({
           {/* MAIN CONTENT COLUMN (8 cols on Desktop) */}
           <main className="lg:col-span-8 space-y-5">
             
-            {/* Unified Frameless Gallery Stage (Photos + Google Map as the final slide) */}
-            <div id="ad-media-gallery" className="scroll-mt-20 space-y-2.5">
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden isolate [transform:translateZ(0)] bg-[#ECECEF] border border-[#F0F2F5] dark:border-white/[0.04] shadow-none group">
-                {isMapSlideActive ? (
-                  <>
-                    <GoogleMapEmbed
-                      embedUrl={mapEmbedUrl}
-                      title={`نقشه ${displayLocationLine}`}
-                      heightClass="h-full"
-                      deferForLcp={false}
-                      mobileScrollGuard={false}
-                      className="rounded-2xl sm:rounded-3xl"
-                    />
+            {/* Unified Frameless Gallery Stage (Photos + Google Map as the final slide — zero dangling thumbnails underneath) */}
+            <div
+              id="ad-media-gallery"
+              className="scroll-mt-20 relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden isolate [transform:translateZ(0)] bg-[#ECECEF] border border-[#F0F2F5] dark:border-white/[0.04] shadow-none group"
+            >
+              {isMapSlideActive ? (
+                <>
+                  <GoogleMapEmbed
+                    embedUrl={mapEmbedUrl}
+                    title={`نقشه ${displayLocationLine}`}
+                    heightClass="h-full"
+                    deferForLcp={false}
+                    mobileScrollGuard={false}
+                    className="rounded-2xl sm:rounded-3xl"
+                  />
 
-                    {/* Floating Bottom Frosted Glass Dock (Location + Directions + Expand Bigger) */}
-                    <div className="absolute bottom-3 inset-x-3 z-20 h-11 px-3 rounded-2xl bg-[#FBFBFC]/90 border border-[#ECEFF4]/60 backdrop-blur-md shadow-[0_6px_20px_rgba(15,23,42,0.12)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.45)] flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <MapPin size={14} strokeWidth={1.75} className="block shrink-0 text-[#0066CC]" />
-                        <span className="text-xs font-bold text-[#1D1D1F] leading-none truncate">
-                          {displayLocationLine}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {mapSearchUrl && (
-                          <a
-                            href={mapSearchUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="h-7 px-3 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-[11px] font-bold leading-none inline-flex items-center gap-1 transition-all active:scale-95"
-                          >
-                            <Navigation size={11} strokeWidth={2} className="block shrink-0" />
-                            <span className="leading-none">مسیریابی</span>
-                          </a>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => openGalleryFullscreen(safeSlideIdx)}
-                          className="h-7 w-7 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] text-[#1D1D1F] flex items-center justify-center active:scale-95 transition-colors cursor-pointer"
-                          title="مشاهده تمام‌صفحه نقشه"
-                          aria-label="مشاهده تمام‌صفحه نقشه"
-                        >
-                          <ZoomIn size={14} strokeWidth={1.75} className="block" />
-                        </button>
-                      </div>
+                  {/* Floating Bottom Frosted Glass Dock (Location + Directions + Expand Bigger) */}
+                  <div className="absolute bottom-3 inset-x-3 z-20 h-11 px-3 rounded-2xl bg-[#FBFBFC]/90 border border-[#ECEFF4]/60 backdrop-blur-md shadow-[0_6px_20px_rgba(15,23,42,0.12)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.45)] flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <MapPin size={14} strokeWidth={1.75} className="block shrink-0 text-[#0066CC]" />
+                      <span className="text-xs font-bold text-[#1D1D1F] leading-none truncate">
+                        {displayLocationLine}
+                      </span>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <img
-                      src={activeSlide.src}
-                      alt={ad.title}
-                      width="960"
-                      height="540"
-                      fetchPriority="high"
-                      decoding="async"
-                      onClick={() => openGalleryFullscreen(safeSlideIdx)}
-                      className="w-full h-full object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
-                    />
 
-                    {/* Subtle Circular Zoom Button */}
-                    <button
-                      type="button"
-                      onClick={() => openGalleryFullscreen(safeSlideIdx)}
-                      className="absolute bottom-3 end-3 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer"
-                      title="مشاهده تمام‌صفحه"
-                    >
-                      <ZoomIn size={16} />
-                    </button>
-
-                    {/* VIP / Featured Badge */}
-                    {isVipActive && (
-                      <div className="pointer-events-none absolute top-3 start-3 z-20 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0066CC] text-white text-xs font-bold backdrop-blur-xs">
-                        <Crown size={13} className="text-white/90" />
-                        <span>ویژه</span>
-                      </div>
-                    )}
-
-                    {/* Category Badge */}
-                    <div className="pointer-events-none absolute top-3 end-3 z-20 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#171920]/90 border border-[#ECEFF4]/60 dark:border-white/[0.08] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
-                      {catName}
-                    </div>
-                  </>
-                )}
-
-                {/* Arrow navigation across all gallery slides (photos + map) */}
-                {totalSlides > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : totalSlides - 1))}
-                      className="absolute start-3 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
-                      aria-label="اسلاید قبلی"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveImageIdx((prev) => (prev < totalSlides - 1 ? prev + 1 : 0))}
-                      className="absolute end-3 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
-                      aria-label="اسلاید بعدی"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Gallery Thumbnails Strip (Photos + Rounded Map Thumbnail as Last Item) */}
-              {totalSlides > 1 && (
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {galleryItems.map((item, idx) => {
-                    const isActive = safeSlideIdx === idx;
-                    if (item.type === 'map') {
-                      return (
-                        <button
-                          key="gallery-map-thumb"
-                          type="button"
-                          onClick={() => {
-                            if (isActive) {
-                              openGalleryFullscreen(idx);
-                            } else {
-                              setActiveImageIdx(idx);
-                            }
-                          }}
-                          title="نمایش نقشه در گالری (کلیک مجدد برای تمام‌صفحه)"
-                          className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#ECEFF4] bg-[#EAF2FB] flex flex-col items-center justify-center gap-0.5 ${
-                            isActive
-                              ? 'ring-2 ring-[#0066CC] opacity-100'
-                              : 'opacity-80 hover:opacity-100'
-                          }`}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {mapSearchUrl && (
+                        <a
+                          href={mapSearchUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-7 px-3 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-[11px] font-bold leading-none inline-flex items-center gap-1 transition-all active:scale-95"
                         >
-                          <svg
-                            aria-hidden="true"
-                            viewBox="0 0 80 60"
-                            className="absolute inset-0 w-full h-full opacity-30 pointer-events-none"
-                          >
-                            <path d="M0 18 L80 28 M0 42 L80 34 M26 0 L20 60 M54 0 L62 60" stroke="#0066CC" strokeWidth="1.5" fill="none" />
-                          </svg>
-                          <MapPin size={16} strokeWidth={2} className="relative z-10 block text-[#0066CC] shrink-0" />
-                          <span className="relative z-10 text-[10px] font-extrabold text-[#0066CC] leading-none">
-                            نقشه
-                          </span>
-                        </button>
-                      );
-                    }
-                    return (
+                          <Navigation size={11} strokeWidth={2} className="block shrink-0" />
+                          <span className="leading-none">مسیریابی</span>
+                        </a>
+                      )}
                       <button
-                        key={idx}
                         type="button"
-                        onClick={() => setActiveImageIdx(idx)}
-                        className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#F0F2F5] dark:border-white/[0.025] ${
-                          isActive
-                            ? 'ring-2 ring-[#0066CC] opacity-100'
-                            : 'opacity-65 hover:opacity-100'
-                        }`}
+                        onClick={() => openGalleryFullscreen(safeSlideIdx)}
+                        className="h-7 w-7 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] text-[#1D1D1F] flex items-center justify-center active:scale-95 transition-colors cursor-pointer"
+                        title="مشاهده تمام‌صفحه نقشه"
+                        aria-label="مشاهده تمام‌صفحه نقشه"
                       >
-                        <img
-                          src={item.src}
-                          alt={`thumbnail-${idx}`}
-                          width="80"
-                          height="60"
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover"
-                        />
+                        <ZoomIn size={14} strokeWidth={1.75} className="block" />
                       </button>
-                    );
-                  })}
-                </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <img
+                    src={activeSlide.src}
+                    alt={ad.title}
+                    width="960"
+                    height="540"
+                    fetchPriority="high"
+                    decoding="async"
+                    onClick={() => openGalleryFullscreen(safeSlideIdx)}
+                    className="w-full h-full object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
+                  />
+
+                  {/* Matching Dark-Glass Map Switch Pill at Bottom-Start (inside image, zero external boxes) */}
+                  {mapSlideIdx !== -1 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveImageIdx(mapSlideIdx)}
+                      className="absolute bottom-3 start-3 z-20 h-9 px-3 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white text-xs font-bold leading-none inline-flex items-center gap-1.5 backdrop-blur-xs transition-all active:scale-95 cursor-pointer"
+                      title="نمایش نقشه"
+                    >
+                      <MapPin size={14} strokeWidth={2} className="block shrink-0" />
+                      <span className="leading-none">نقشه</span>
+                    </button>
+                  )}
+
+                  {/* Minimal Inside-Image Pagination Dots (Center Bottom) */}
+                  {totalSlides > 1 && (
+                    <div
+                      aria-label="اسلایدهای گالری"
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#1D1D1F]/45 backdrop-blur-xs"
+                    >
+                      {galleryItems.map((item, idx) => {
+                        const isActive = safeSlideIdx === idx;
+                        return (
+                          <button
+                            key={item.type === 'map' ? 'dot-map' : `dot-${idx}`}
+                            type="button"
+                            onClick={() => setActiveImageIdx(idx)}
+                            aria-label={item.type === 'map' ? 'نقشه' : `تصویر ${idx + 1}`}
+                            className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                              isActive ? 'w-4 bg-white' : 'w-1.5 bg-white/55 hover:bg-white/85'
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Subtle Circular Zoom Button */}
+                  <button
+                    type="button"
+                    onClick={() => openGalleryFullscreen(safeSlideIdx)}
+                    className="absolute bottom-3 end-3 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer"
+                    title="مشاهده تمام‌صفحه"
+                  >
+                    <ZoomIn size={16} />
+                  </button>
+
+                  {/* VIP / Featured Badge */}
+                  {isVipActive && (
+                    <div className="pointer-events-none absolute top-3 start-3 z-20 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0066CC] text-white text-xs font-bold backdrop-blur-xs">
+                      <Crown size={13} className="text-white/90" />
+                      <span>ویژه</span>
+                    </div>
+                  )}
+
+                  {/* Category Badge */}
+                  <div className="pointer-events-none absolute top-3 end-3 z-20 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#171920]/90 border border-[#ECEFF4]/60 dark:border-white/[0.08] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
+                    {catName}
+                  </div>
+                </>
+              )}
+
+              {/* Arrow navigation across all gallery slides (photos + map) */}
+              {totalSlides > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : totalSlides - 1))}
+                    className="absolute start-3 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+                    aria-label="اسلاید قبلی"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveImageIdx((prev) => (prev < totalSlides - 1 ? prev + 1 : 0))}
+                    className="absolute end-3 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+                    aria-label="اسلاید بعدی"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                </>
               )}
             </div>
 
