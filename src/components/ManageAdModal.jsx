@@ -918,7 +918,7 @@ export default function ManageAdModal({
                       <span>ویرایش اطلاعات آگهی</span>
                     </button>
 
-                    {onOpenPromote && !matchedAd.deleted_at && (
+                    {onOpenPromote && matchedAd.status === 'active' && !matchedAd.deleted_at && (
                       <button
                         type="button"
                         onClick={() => {

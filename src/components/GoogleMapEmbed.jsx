@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Hand } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 export default function GoogleMapEmbed({
   embedUrl,
-  title = 'موقعیت مکانی روی نقشه گوگل',
-  heightClass = 'h-[210px] sm:h-[220px]',
+  title = 'نقشه',
+  heightClass = 'h-[240px] sm:h-[260px]',
   deferForLcp = false,
   mobileScrollGuard = false,
   className = '',
@@ -29,18 +29,16 @@ export default function GoogleMapEmbed({
 
   return (
     <div
-      className={`relative w-full ${heightClass} bg-[#F5F5F7] dark:!bg-[#1A1D25] overflow-hidden ${className}`}
+      className={`relative w-full ${heightClass} bg-[#ECECEF] overflow-hidden isolate [transform:translateZ(0)] ${className}`}
     >
-      {/* Fixed-height skeleton prevents layout shift (CLS = 0) */}
+      {/* Calm flat skeleton prevents layout shift (CLS = 0) */}
       {!isLoaded && (
         <div
           aria-hidden="true"
-          className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#86868B] dark:!text-[#98989F] animate-pulse pointer-events-none"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-[#86868B] animate-pulse pointer-events-none"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ECECEF] dark:!bg-white/[0.06]">
-            <MapPin className="w-4 h-4 block shrink-0 text-[#0066CC]" strokeWidth={2} />
-          </div>
-          <span className="text-[11px] font-semibold leading-none">در حال بارگذاری نقشه گوگل...</span>
+          <MapPin size={16} strokeWidth={1.75} className="block shrink-0" />
+          <span className="text-[11px] font-semibold leading-none">بارگذاری نقشه...</span>
         </div>
       )}
 
@@ -53,23 +51,22 @@ export default function GoogleMapEmbed({
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
           onLoad={() => setLoadedUrl(embedUrl)}
-          className={`w-full h-full border-0 transition-opacity duration-300 ${
-            isLoaded ? 'opacity-100 dark:opacity-95' : 'opacity-0'
+          className={`w-full h-full border-0 rounded-[inherit] transition-opacity duration-300 ${
+            isLoaded ? 'opacity-100 dark:brightness-[0.9] dark:contrast-[1.05]' : 'opacity-0'
           }`}
         />
       )}
 
-      {/* Mobile Scroll-Trap Guard: prevents iframe hijacking vertical page swipes until tapped */}
+      {/* Mobile Scroll-Trap Guard: positioned top-start so it never collides with bottom floating dock */}
       {mobileScrollGuard && !mobileInteractive && (
         <button
           type="button"
           onClick={() => setMobileInteractive(true)}
-          aria-label="فعال‌سازی جابه‌جایی نقشه"
-          className="lg:hidden absolute inset-0 z-10 flex items-end justify-start p-2.5 bg-transparent cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066CC]"
+          aria-label="جابه‌جایی نقشه"
+          className="lg:hidden absolute inset-0 z-10 flex items-start justify-start p-3 bg-transparent cursor-pointer focus-visible:outline-none"
         >
-          <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-[#1D1D1F]/75 backdrop-blur-xs text-white text-[10.5px] font-bold leading-none shadow-xs">
-            <Hand className="w-3 h-3 block shrink-0" strokeWidth={2} aria-hidden="true" />
-            <span className="leading-none">لمس برای جابه‌جایی نقشه</span>
+          <span className="inline-flex items-center px-3 h-7 rounded-full bg-[#1D1D1F]/70 backdrop-blur-md text-white text-[11px] font-semibold leading-none">
+            لمس برای حرکت
           </span>
         </button>
       )}

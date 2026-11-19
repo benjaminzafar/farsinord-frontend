@@ -40,7 +40,9 @@ export function resolveSafeRedirectOrigin(req, allowedOrigins = [], defaultOrigi
     return `${parsed.protocol}//${parsed.host}`;
   }
 
-  const isNonProd = process.env.VERCEL_ENV !== 'production';
+  const isNonProd =
+    process.env.NODE_ENV !== 'production' &&
+    process.env.VERCEL_ENV !== 'production';
   if (isNonProd && /^http:\/\/localhost:\d{2,5}$/i.test(canonicalOrigin)) {
     return `${parsed.protocol}//${parsed.host}`;
   }
@@ -48,8 +50,16 @@ export function resolveSafeRedirectOrigin(req, allowedOrigins = [], defaultOrigi
   return fallback;
 }
 
+const EUR_CONVERSION_RATES = {
+  EUR: 1,
+  SEK: 10,
+  NOK: 10,
+  DKK: 7.5,
+};
+
 /**
  * Compute authoritative server-side VIP pricing & duration for a target country.
+ * Supports bidirectional conversion between EUR and Nordic currencies without arbitrage cliffs.
  */
 export function computeVipPrice({ stripeCfg = {}, targetCountry = 'se' } = {}) {
   const cfg = stripeCfg && typeof stripeCfg === 'object' ? stripeCfg : {};
@@ -61,13 +71,19 @@ export function computeVipPrice({ stripeCfg = {}, targetCountry = 'se' } = {}) {
 
   const rawPrice = Number(cfg.vipPrice);
   const basePrice = Number.isFinite(rawPrice) && rawPrice >= 1 ? rawPrice : 99;
-  const cfgCurrency = String(cfg.currency || 'SEK').trim().toUpperCase();
-  const currency = COUNTRY_CURRENCY_MAP[country] || (['SEK', 'NOK', 'DKK', 'EUR'].includes(cfgCurrency) ? cfgCurrency : 'SEK');
+  const rawCfgCur = String(cfg.currency || 'SEK').trim().toUpperCase();
+  const cfgCurrency = EUR_CONVERSION_RATES[rawCfgCur] ? rawCfgCur : 'SEK';
+  const currency = COUNTRY_CURRENCY_MAP[country] || cfgCurrency;
 
-  const amountMajor =
-    currency === 'EUR' && cfgCurrency !== 'EUR' && basePrice >= 50
-      ? Math.max(9, Math.round(basePrice / 10))
-      : basePrice;
+  let amountMajor = basePrice;
+  if (currency !== cfgCurrency) {
+    const inEur = basePrice / EUR_CONVERSION_RATES[cfgCurrency];
+    const converted = inEur * EUR_CONVERSION_RATES[currency];
+    amountMajor =
+      currency === 'EUR'
+        ? Math.max(1, Math.round(converted))
+        : Math.max(10, Math.round(converted));
+  }
 
   const amountMinor = Math.max(100, Math.round(amountMajor * 100));
   return {
@@ -209,8 +225,12 @@ export function verifyVerifiedCheckoutSession(
     return { ok: false, error: 'پرداخت هنوز توسط Stripe تسویه نشده است.' };
   }
 
-  if (session.status && session.status !== 'complete') {
+  if (session.status !== 'complete') {
     return { ok: false, error: 'وضعیت نشست پرداخت تکمیل نشده است.' };
+  }
+
+  if (session.mode && session.mode !== 'payment') {
+    return { ok: false, error: 'نوع نشست پرداخت معتبر نیست.' };
   }
 
   if (expectedType && session.metadata?.type !== expectedType) {
@@ -221,7 +241,7 @@ export function verifyVerifiedCheckoutSession(
     return { ok: false, error: 'تراکنش آزمایشی در حالت عملیاتی پذیرفته نمی‌شود.' };
   }
 
-  if (expectedMode === 'test' && session.livemode === true) {
+  if (expectedMode === 'test' && session.livemode !== false) {
     return { ok: false, error: 'تراکنش عملیاتی با حالت آزمایشی همخوانی ندارد.' };
   }
 

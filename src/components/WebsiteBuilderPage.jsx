@@ -142,6 +142,7 @@ export default function WebsiteBuilderPage({
     }
 
     if (setupSessionId) {
+      cleanUrl();
       setSubmitting(true);
       fetch('/api/public', {
         method: 'POST',
@@ -159,12 +160,12 @@ export default function WebsiteBuilderPage({
         .catch(() => setErrorMsg('خطا در تایید پرداخت Stripe.'))
         .finally(() => {
           setSubmitting(false);
-          cleanUrl();
         });
       return;
     }
 
     if (renewSessionId) {
+      cleanUrl();
       setPageMode('manage');
       setManageLoading(true);
       fetch('/api/public', {
@@ -184,7 +185,6 @@ export default function WebsiteBuilderPage({
         .catch(() => setErrorMsg('خطا در تایید پرداخت تمدید.'))
         .finally(() => {
           setManageLoading(false);
-          cleanUrl();
         });
     }
   }, []);

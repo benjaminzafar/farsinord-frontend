@@ -359,13 +359,8 @@ export const publicApi = {
     }
   },
 
-  async promoteAd(id, country) {
-    const json = await postPublic('promote_ad', { id, country });
-    return normalizeClientAd(json.ad);
-  },
-
-  async createVipCheckout(id, country) {
-    return postPublic('create_vip_checkout', { id, country });
+  async createVipCheckout(id, country, pin_code) {
+    return postPublic('create_vip_checkout', { id, country, pin_code });
   },
 
   async verifyVipCheckout(sessionId) {

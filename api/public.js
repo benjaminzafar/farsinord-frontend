@@ -290,9 +290,23 @@ async function getCachedPublicSettingsMap() {
   return map;
 }
 
-async function getStripeConfig() {
-  const map = await getCachedPublicSettingsMap();
-  const stripeCfg = map.stripe_settings && typeof map.stripe_settings === 'object' ? map.stripe_settings : {};
+async function getStripeConfig({ fresh = false } = {}) {
+  let stripeCfg = {};
+  if (fresh) {
+    const { data } = await supabase
+      .from('swedpersiska_settings')
+      .select('value')
+      .eq('key', 'stripe_settings')
+      .maybeSingle();
+    if (data?.value && typeof data.value === 'object') {
+      stripeCfg = data.value;
+    }
+  } else {
+    const map = await getCachedPublicSettingsMap();
+    if (map.stripe_settings && typeof map.stripe_settings === 'object') {
+      stripeCfg = map.stripe_settings;
+    }
+  }
   const enabled = stripeCfg.enabled !== false;
   const mode = stripeCfg.mode === 'live' ? 'live' : 'test';
   const secretKey = String(process.env.STRIPE_SECRET_KEY || '').trim();
@@ -350,10 +364,22 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://www.linksho.eu,
   .map((o) => o.trim())
   .filter(Boolean);
 
+const CHECKOUT_REDIRECT_ORIGINS = ALLOWED_ORIGINS.filter(
+  (o) => !/admin\./i.test(o) && !/-admin\./i.test(o)
+);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  const isDevLocalhost =
+    process.env.NODE_ENV !== 'production' &&
+    process.env.VERCEL_ENV !== 'production' &&
+    /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+  return ALLOWED_ORIGINS.includes(origin) || isDevLocalhost;
+}
+
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin;
-  const isDevLocalhost = process.env.VERCEL_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin || '');
-  if (origin && (ALLOWED_ORIGINS.includes(origin) || isDevLocalhost)) {
+  if (origin && isAllowedOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
   }
@@ -402,8 +428,7 @@ export default async function handler(req, res) {
               currency: val.currency,
               vipDurationDays: val.vipDurationDays,
               vipBadgeText: val.vipBadgeText,
-              stripeReady: Boolean(String(process.env.STRIPE_SECRET_KEY || '').trim()),
-              stripeKeyMatchesMode: keyCheck.ok,
+              checkoutAvailable: Boolean(val.enabled !== false && keyCheck.ok),
             };
           } else if (key === 'turnstile_settings' && val) {
             settings.turnstile_settings = {
@@ -843,6 +868,14 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       res.setHeader('Cache-Control', 'no-store');
+      const originHeader = String(req.headers?.origin || '').trim();
+      if (originHeader && !isAllowedOrigin(originHeader)) {
+        return res.status(403).json({ ok: false, error: 'درخواست از دامنه غیرمجاز مسدود شد.' });
+      }
+      const contentTypeHeader = String(req.headers?.['content-type'] || '').trim().toLowerCase();
+      if (contentTypeHeader && !contentTypeHeader.startsWith('application/json')) {
+        return res.status(415).json({ ok: false, error: 'نوع محتوای درخواست باید application/json باشد.' });
+      }
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
       const { action } = body;
 
@@ -1473,16 +1506,13 @@ export default async function handler(req, res) {
           .maybeSingle();
         const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
 
-        // Idempotency: return sanitized order + manageCode/email if this session was already redeemed (never leak admin-populated credentials/notes)
+        // Idempotency: return only non-secret summary if this session was already redeemed (never replay manageCode or email)
         const existingOrder = prev.find((item) => item?.stripeSessionId === sessionId);
         if (existingOrder) {
           return res.status(200).json({
             ok: true,
-            order: {
-              ...sanitizePublicSubscription(existingOrder),
-              manageCode: existingOrder.manageCode,
-              email: existingOrder.email,
-            },
+            alreadyRedeemed: true,
+            order: sanitizePublicSubscription(existingOrder),
           });
         }
 
@@ -1731,82 +1761,39 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
 
-      if (action === 'promote_ad') {
-        if (!checkSubRateLimit(req, { bucket: 'stripe_api', maxAttempts: 15, windowMs: 15 * 60 * 1000 })) {
-          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
-        }
-        if (!HAS_SERVICE_ROLE) {
-          return res.status(503).json({ ok: false, error: 'تنظیمات امنیتی سرور پرداخت تکمیل نشده است.' });
-        }
-
-        const { id, country } = body;
-        if (!id || !UUID_RE.test(String(id).trim())) {
-          return res.status(400).json({ ok: false, error: 'شناسه آگهی نامعتبر است.' });
-        }
-
-        const { enabled, mode, secretKey } = await getStripeConfig();
-        if (!enabled) {
-          return res.status(403).json({ ok: false, error: 'درگاه پرداخت ویژه در حال حاضر غیرفعال است.' });
-        }
-        if (
-          mode === 'live' ||
-          Boolean(secretKey) ||
-          (process.env.VERCEL_ENV === 'production' && process.env.ALLOW_SIMULATED_TEST_PAYMENTS !== 'true')
-        ) {
-          return res.status(403).json({
-            ok: false,
-            code: 'STRIPE_CHECKOUT_REQUIRED',
-            error: 'ارتقای ویژه فقط از طریق درگاه پرداخت رسمی Stripe انجام می‌شود.',
-          });
-        }
-
-        const targetCountry = country && /^[a-z0-9_-]{2,10}$/i.test(String(country))
-          ? String(country).toLowerCase()
-          : 'se';
-        const sessionToken = `test_vip_${crypto.randomUUID()}`;
-
-        const { data, error } = await supabase.rpc('activate_ad_promotion_from_payment', {
-          p_ad_id: id,
-          p_target_country: targetCountry,
-          p_provider: 'stripe_test',
-          p_session_id: sessionToken,
-        });
-        if (error) throw error;
-        if (!data?.ok) {
-          const st = data?.error_code === 'LIVE_PAYMENT_REQUIRED' ? 403 : 400;
-          return res.status(st).json({ ok: false, code: data?.error_code, error: data?.error || 'خطا در ارتقای آگهی' });
-        }
-        return res.status(200).json({ ok: true, ad: data.ad, expires_at: data.expires_at });
-      }
-
       if (action === 'create_vip_checkout') {
         if (!checkSubRateLimit(req, { bucket: 'vip_checkout', maxAttempts: 12, windowMs: 15 * 60 * 1000 })) {
-          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌های پرداخت زیاد است. لطفاً کمی بعد تلاش کنید.' });
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌های پرداخت زیاد است. کمی بعد تلاش کنید.' });
         }
         if (!HAS_SERVICE_ROLE) {
           return res.status(503).json({ ok: false, error: 'متغیر امنیتی SUPABASE_SERVICE_ROLE_KEY روی سرور تنظیم نشده است.' });
         }
 
-        const { id, country } = body;
+        const { id, country, pin_code } = body;
         if (!id || !UUID_RE.test(String(id).trim())) {
           return res.status(400).json({ ok: false, error: 'شناسه آگهی نامعتبر است.' });
         }
-
-        const rawCountry = String(country || 'se').trim().toLowerCase();
-        const targetCountry = ALLOWED_VIP_COUNTRIES.has(rawCountry) ? rawCountry : 'se';
+        const cleanPin = normalizeAsciiDigits(pin_code || '').trim();
+        if (!cleanPin) {
+          return res.status(401).json({
+            ok: false,
+            code: 'OWNER_PIN_REQUIRED',
+            error: 'برای ارتقای آگهی، کد مدیریت اختصاصی الزامی است.',
+          });
+        }
 
         const [{ enabled, mode, secretKey, stripeCfg }, { data: adRow }] = await Promise.all([
-          getStripeConfig(),
+          getStripeConfig({ fresh: true }),
           supabase
             .from('swedpersiska_ads')
-            .select('id, reference_number, title, title_fa, status')
+            .select('id, reference_number, title, title_fa, status, country')
             .eq('id', String(id).trim())
             .is('deleted_at', null)
             .maybeSingle(),
         ]);
 
         if (!enabled) {
-          return res.status(403).json({ ok: false, error: 'درگاه پرداخت ویژه در حال حاضر غیرفعال است.' });
+          return res.status(403).json({ ok: false, error: 'درگاه پرداخت غیرفعال است.' });
         }
         const keyCheck = validateStripeSecretKeyForMode(secretKey, mode);
         if (!keyCheck.ok) {
@@ -1815,13 +1802,32 @@ export default async function handler(req, res) {
         if (!adRow) {
           return res.status(404).json({ ok: false, error: 'آگهی یافت نشد.' });
         }
-        if (adRow.status === 'rejected') {
-          return res.status(400).json({ ok: false, error: 'آگهی ردشده امکان ارتقای ویژه ندارد.' });
+        if (adRow.status !== 'active') {
+          return res.status(400).json({ ok: false, error: 'فقط آگهی‌های تاییدشده و فعال امکان ارتقای ویژه دارند.' });
         }
 
+        // Strict ownership verification via management PIN (prevents competitor country hijacking & GDPR deletion lockout)
+        const { data: verifyData, error: verifyErr } = await supabase.rpc('owner_verify_ad', {
+          p_reference_number: String(adRow.reference_number || '').trim().toUpperCase(),
+          p_pin_code: cleanPin,
+        });
+        if (verifyErr) throw verifyErr;
+        if (!verifyData?.ok || verifyData?.ad?.id !== adRow.id) {
+          return res.status(401).json({
+            ok: false,
+            code: 'INVALID_OWNER_PIN',
+            error: 'کد مدیریت واردشده صحیح نیست.',
+          });
+        }
+
+        const rawCountry = String(country || adRow.country || 'se').trim().toLowerCase();
+        if (!ALLOWED_VIP_COUNTRIES.has(rawCountry)) {
+          return res.status(400).json({ ok: false, error: 'کشور انتخابی برای ارتقای VIP پشتیبانی نمی‌شود.' });
+        }
+        const targetCountry = rawCountry;
+
         const pricing = computeVipPrice({ stripeCfg, targetCountry });
-        const safeOrigin = resolveSafeRedirectOrigin(req, ALLOWED_ORIGINS, 'https://www.linksho.eu');
-        const minuteBucket = Math.floor(Date.now() / 60000);
+        const safeOrigin = resolveSafeRedirectOrigin(req, CHECKOUT_REDIRECT_ORIGINS, 'https://www.linksho.eu');
         const session = await createStripeCheckoutSession({
           secretKey,
           amountOre: pricing.amountMinor,
@@ -1829,7 +1835,7 @@ export default async function handler(req, res) {
           productName: `ارتقای ویژه (VIP) آگهی ${adRow.reference_number} (${pricing.durationDays} روز)`,
           successUrl: `${safeOrigin}/?vip_session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${safeOrigin}/?vip_cancelled=1`,
-          idempotencyKey: `vip_${adRow.id}_${pricing.targetCountry}_${minuteBucket}`,
+          idempotencyKey: `vip_${adRow.id}_${crypto.randomUUID()}`,
           metadata: {
             type: 'ad_vip_promotion',
             adId: adRow.id,
@@ -1853,7 +1859,7 @@ export default async function handler(req, res) {
 
       if (action === 'verify_vip_checkout') {
         if (!checkSubRateLimit(req, { bucket: 'stripe_api', maxAttempts: 15, windowMs: 15 * 60 * 1000 })) {
-          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. کمی بعد تلاش کنید.' });
         }
         if (!HAS_SERVICE_ROLE) {
           return res.status(503).json({ ok: false, error: 'متغیر امنیتی SUPABASE_SERVICE_ROLE_KEY روی سرور تنظیم نشده است.' });
@@ -1863,37 +1869,59 @@ export default async function handler(req, res) {
         if (!sessionId || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
           return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
         }
-        const { mode, secretKey, stripeCfg } = await getStripeConfig();
+        const { mode, secretKey, stripeCfg } = await getStripeConfig({ fresh: true });
         const keyCheck = validateStripeSecretKeyForMode(secretKey, mode);
         if (!keyCheck.ok) {
           return res.status(503).json({ ok: false, error: keyCheck.error });
         }
 
-        const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
-        const targetCountry = String(session.metadata?.targetCountry || 'se').trim().toLowerCase();
-        const pricing = computeVipPrice({ stripeCfg, targetCountry });
+        const [session, { data: pendingPayment }] = await Promise.all([
+          retrieveStripeCheckoutSession(secretKey, sessionId),
+          supabase
+            .from('ad_payments')
+            .select('ad_id, target_country, amount, currency')
+            .eq('provider_session_id', sessionId)
+            .maybeSingle(),
+        ]);
+
+        const adId = String(pendingPayment?.ad_id || session.metadata?.adId || '').trim();
+        const targetCountry = String(pendingPayment?.target_country || session.metadata?.targetCountry || '').trim().toLowerCase();
+        if (!UUID_RE.test(adId) || !ALLOWED_VIP_COUNTRIES.has(targetCountry)) {
+          return res.status(400).json({ ok: false, error: 'اطلاعات آگهی مرتبط با پرداخت نامعتبر است.' });
+        }
+
+        const fallbackPricing = computeVipPrice({ stripeCfg, targetCountry });
+        const expectedCurrency = String(pendingPayment?.currency || fallbackPricing.currency).toUpperCase();
+        const expectedMinAmountMinor = pendingPayment && Number.isFinite(Number(pendingPayment.amount))
+          ? Math.max(100, Math.round(Number(pendingPayment.amount) * 100))
+          : fallbackPricing.amountMinor;
 
         const sessionCheck = verifyVerifiedCheckoutSession(session, {
           expectedType: 'ad_vip_promotion',
           expectedMode: mode,
-          expectedMinAmountMinor: pricing.amountMinor,
-          expectedCurrency: pricing.currency,
+          expectedMinAmountMinor,
+          expectedCurrency,
         });
         if (!sessionCheck.ok) {
           return res.status(402).json({ ok: false, error: sessionCheck.error || 'پرداخت ارتقای ویژه هنوز تایید نشده است.' });
         }
 
-        const adId = String(session.metadata?.adId || '').trim();
-        if (!UUID_RE.test(adId)) {
-          return res.status(400).json({ ok: false, error: 'شناسه آگهی مرتبط با پرداخت نامعتبر است.' });
+        // Re-check ad is still active & non-deleted (prevents TOCTOU moderation bypass)
+        const { data: liveAd } = await supabase
+          .from('swedpersiska_ads')
+          .select('id, status, deleted_at')
+          .eq('id', adId)
+          .maybeSingle();
+        if (!liveAd || liveAd.status !== 'active' || liveAd.deleted_at) {
+          return res.status(400).json({ ok: false, error: 'آگهی فعال نیست و امکان فعال‌سازی VIP وجود ندارد.' });
         }
 
-        const amountPaid = session.amount_total ? Number(session.amount_total) / 100 : pricing.amountMajor;
-        const paidCurrency = session.currency ? String(session.currency).toUpperCase() : pricing.currency;
+        const amountPaid = Number.isFinite(Number(session.amount_total)) ? Number(session.amount_total) / 100 : 0;
+        const paidCurrency = session.currency ? String(session.currency).toUpperCase() : expectedCurrency;
 
         const { data, error } = await supabase.rpc('activate_ad_promotion_from_payment', {
           p_ad_id: adId,
-          p_target_country: pricing.targetCountry,
+          p_target_country: targetCountry,
           p_provider: mode === 'live' ? 'stripe_live' : 'stripe_test',
           p_session_id: session.id,
           p_amount: amountPaid,

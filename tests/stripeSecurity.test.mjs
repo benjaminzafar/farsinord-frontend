@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { Readable } from 'node:stream';
 import {
   computeVipPrice,
   resolveSafeRedirectOrigin,
@@ -8,7 +9,8 @@ import {
   verifyStripeWebhookSignature,
   verifyVerifiedCheckoutSession,
 } from '../api/_lib/stripeSecurity.js';
-import webhookHandler from '../api/stripe-webhook.js';
+import { computeClientVipPrice } from '../src/lib/vipPricing.js';
+import webhookHandler, { readRawBody } from '../api/stripe-webhook.js';
 
 function createMockRes() {
   const headers = {};
@@ -236,4 +238,67 @@ test('stripe-webhook handler rejects non-POST (405), missing env (503), and inva
     if (prevSupabaseUrl !== undefined) process.env.SUPABASE_URL = prevSupabaseUrl;
     else delete process.env.SUPABASE_URL;
   }
+});
+
+test('readRawBody drains stream FIRST without accessing lazy req.body getter on Vercel', async () => {
+  const payload = '{"id":"evt_stream","type":"checkout.session.completed"}';
+  const streamReq = Readable.from([Buffer.from(payload, 'utf8')]);
+  let bodyGetterTouched = false;
+  Object.defineProperty(streamReq, 'body', {
+    get() {
+      bodyGetterTouched = true;
+      return { parsed: true };
+    },
+  });
+
+  const raw = await readRawBody(streamReq);
+  assert.equal(raw.toString('utf8'), payload);
+  assert.equal(bodyGetterTouched, false);
+});
+
+test('computeVipPrice prevents EUR->SEK 91% discount arbitrage and SEK->EUR 11x overcharge, matching client pricing 1-to-1', () => {
+  // Admin configures 10 EUR; Swedish customer must pay 100 SEK (NOT 10 SEK!)
+  const eurToSe = computeVipPrice({ stripeCfg: { vipPrice: 10, currency: 'EUR', vipDurationDays: 30 }, targetCountry: 'se' });
+  assert.equal(eurToSe.currency, 'SEK');
+  assert.equal(eurToSe.amountMajor, 100);
+  assert.equal(eurToSe.amountMinor, 10000);
+
+  // Admin configures 49 SEK; German customer must pay 5 EUR (NOT 49 EUR!)
+  const lowSekToDe = computeVipPrice({ stripeCfg: { vipPrice: 49, currency: 'SEK', vipDurationDays: 30 }, targetCountry: 'de' });
+  assert.equal(lowSekToDe.currency, 'EUR');
+  assert.equal(lowSekToDe.amountMajor, 5);
+  assert.equal(lowSekToDe.amountMinor, 500);
+
+  // Client helper must match server pricing deterministically across every currency
+  for (const country of ['se', 'no', 'dk', 'de', 'fr']) {
+    const cfg = { vipPrice: 99, currency: 'SEK', vipDurationDays: 30 };
+    assert.deepEqual(
+      computeClientVipPrice({ stripeSettings: cfg, targetCountry: country }),
+      computeVipPrice({ stripeCfg: cfg, targetCountry: country })
+    );
+  }
+});
+
+test('verifyVerifiedCheckoutSession strictly requires complete status, payment mode, and explicit boolean livemode', () => {
+  const validTestSession = {
+    id: 'cs_test_123',
+    status: 'complete',
+    mode: 'payment',
+    payment_status: 'paid',
+    livemode: false,
+    amount_total: 9900,
+    currency: 'sek',
+    metadata: { type: 'ad_vip_promotion' },
+  };
+  const opts = {
+    expectedType: 'ad_vip_promotion',
+    expectedMode: 'test',
+    expectedMinAmountMinor: 9900,
+    expectedCurrency: 'SEK',
+  };
+
+  assert.equal(verifyVerifiedCheckoutSession(validTestSession, opts).ok, true);
+  assert.equal(verifyVerifiedCheckoutSession({ ...validTestSession, status: undefined }, opts).ok, false);
+  assert.equal(verifyVerifiedCheckoutSession({ ...validTestSession, mode: 'subscription' }, opts).ok, false);
+  assert.equal(verifyVerifiedCheckoutSession({ ...validTestSession, livemode: undefined }, opts).ok, false);
 });

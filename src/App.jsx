@@ -432,8 +432,7 @@ export default function App() {
             currency: stripe.currency,
             vipDurationDays: stripe.vipDurationDays,
             vipBadgeText: stripe.vipBadgeText,
-            stripeReady: Boolean(stripe.stripeReady),
-            stripeKeyMatchesMode: Boolean(stripe.stripeKeyMatchesMode),
+            checkoutAvailable: Boolean(stripe.checkoutAvailable),
           });
         }
         if (settings.turnstile_settings) {
@@ -506,12 +505,20 @@ export default function App() {
       document.head.appendChild(script);
     }
 
-    const currentTrackKey = `${id}|${window.location.pathname}${window.location.search}`;
+    let safeSearch = '';
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      ['vip_session_id', 'vip_cancelled', 'stripe_session_id', 'renew_session_id', 'cancelled'].forEach((k) => sp.delete(k));
+      const qs = sp.toString();
+      safeSearch = qs ? `?${qs}` : '';
+    } catch {}
+    const safePagePath = window.location.pathname + safeSearch;
+    const currentTrackKey = `${id}|${safePagePath}`;
     if (lastTrackedPathRef.current === currentTrackKey) return;
     lastTrackedPathRef.current = currentTrackKey;
 
     window.gtag('config', id, {
-      page_path: window.location.pathname + window.location.search,
+      page_path: safePagePath,
       page_title: document.title,
     });
   }, [analyticsSettings.enabled, analyticsSettings.measurementId, gdprConsent?.analytics, selectedCountry, selectedCategory, activeAdDetail?.id]);
@@ -835,24 +842,27 @@ export default function App() {
       const vipSessionId = params.get('vip_session_id');
       const vipCancelled = params.get('vip_cancelled') === '1';
       if (vipSessionId) {
+        // Strip sensitive session_id synchronously BEFORE network fetch so it never leaks to history/analytics
+        try {
+          const clean = new URL(window.location.href);
+          clean.searchParams.delete('vip_session_id');
+          window.history.replaceState({}, '', clean.toString());
+        } catch {}
         publicApi.verifyVipCheckout(vipSessionId)
           .then((res) => {
             if (res?.ad) {
               fetchAdsRef.current?.();
+              if (res.ad.country) {
+                setSelectedCountry(res.ad.country);
+              }
+              setActiveAdDetail((curr) => (curr && curr.id === res.ad.id ? res.ad : curr));
               setToastMsg(`آگهی «${res.ad.title_fa || res.ad.title}» ویژه (VIP) شد.`);
               setTimeout(() => setToastMsg(''), 4000);
             }
           })
           .catch((err) => {
-            setToastMsg(err?.message || 'تایید پرداخت انجام نشد. در صورت کسر وجه با پشتیبانی تماس بگیرید.');
+            setToastMsg(err?.message || 'تایید پرداخت انجام نشد.');
             setTimeout(() => setToastMsg(''), 5000);
-          })
-          .finally(() => {
-            try {
-              const clean = new URL(window.location.href);
-              clean.searchParams.delete('vip_session_id');
-              window.history.replaceState({}, '', clean.toString());
-            } catch {}
           });
       } else if (vipCancelled) {
         Promise.resolve().then(() => {
@@ -1919,22 +1929,10 @@ export default function App() {
         {paymentAd && (
           <PaymentModal
             ad={paymentAd}
-            price={stripeSettings?.vipPrice || 99}
-            currency={stripeSettings?.currency || 'SEK'}
             stripeSettings={stripeSettings}
             countries={portalCountries}
             selectedCountry={selectedCountry}
             onClose={handleClosePayment}
-            onSuccess={(promotedAd) => {
-              fetchAds();
-              if (promotedAd?.country && promotedAd.country !== selectedCountry) {
-                setSelectedCountry(promotedAd.country);
-              }
-              if (activeAdDetail && activeAdDetail.id === promotedAd.id) {
-                setActiveAdDetail(promotedAd);
-              }
-              showToast(`آگهی «${promotedAd.title}» ویژه (VIP) شد.`);
-            }}
           />
         )}
 
