@@ -2,7 +2,7 @@ import React from 'react';
 import { MapPin, Eye, Clock } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
-export default React.memo(function AdCard({ ad, lang, onSelect }) {
+export default React.memo(function AdCard({ ad, lang, onSelect, priority = false }) {
   const catObj = CATEGORIES.find(c => c.id === ad.category);
   const catName = catObj ? (lang === 'fa' ? catObj.fa : catObj.sv) : ad.category;
   
@@ -30,7 +30,7 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
   return (
     <article
       onClick={() => onSelect(ad)}
-      className="group relative flex flex-col bg-[#FBFBFC] rounded-xl sm:rounded-2xl border border-[#E5E5EA] shadow-[0_1px_3px_rgba(29,29,31,0.04)] sm:hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(29,29,31,0.08)] hover:border-[#D2D2D7] transition-all duration-200 cursor-pointer overflow-hidden active:scale-[0.99]"
+      className="ad-card-perf group relative flex flex-col bg-[#FBFBFC] rounded-xl sm:rounded-2xl border border-[#E5E5EA] shadow-[0_1px_3px_rgba(29,29,31,0.04)] sm:hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(29,29,31,0.08)] hover:border-[#D2D2D7] transition-all duration-200 cursor-pointer overflow-hidden active:scale-[0.99]"
     >
       {/* Thumbnail */}
       <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-[#ECECEF]">
@@ -38,8 +38,9 @@ export default React.memo(function AdCard({ ad, lang, onSelect }) {
           src={coverImage}
           alt={ad.title}
           className="h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
           decoding="async"
+          fetchPriority={priority ? 'high' : 'auto'}
         />
 
         {/* Featured pill (Apple Calibrated Blue "ویژه") */}

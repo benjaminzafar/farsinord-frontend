@@ -99,3 +99,8 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
 }
+
+.ad-card-perf {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}

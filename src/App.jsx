@@ -52,13 +52,25 @@ const CATEGORY_ICONS = {
 
 
 
+const FEED_PAGE_SIZE = 16;
+
 export default function App() {
   const lang = 'fa'; // Complete Persian Language
   const currentT = t.fa;
 
-  // Ads state
+  // Paginated ads state
   const [ads, setAds] = useState([]);
+  const [featuredAdsList, setFeaturedAdsList] = useState([]);
+  const [totalAdsCount, setTotalAdsCount] = useState(0);
+  const [feedPage, setFeedPage] = useState(1);
+  const [hasMoreAds, setHasMoreAds] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const feedSentinelRef = useRef(null);
+  const feedRequestSeqRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const loadMoreActionRef = useRef(null);
+  const fetchAdsRef = useRef(null);
 
   // Country & URL synchronization (Address bar: /?c=se, /?c=de, /?c=ca, etc.)
   const [customCountries, setCustomCountries] = useState(() => {
@@ -104,6 +116,16 @@ export default function App() {
     return 'all';
   });
   const [selectedCity, setSelectedCity] = useState('all');
+  const [sortBy, setSortBy] = useState(null); // null | 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleCountryChange = (c) => {
     const valid = portalCountries.some(x => x.id === c) ? c : (portalCountries[0]?.id || 'se');
@@ -553,22 +575,159 @@ export default function App() {
     document.documentElement.lang = 'fa';
   }, []);
 
-  // Fetch ads from Secure Public API
+  // Fetch paginated ads + VIP showcase from Secure Public API
   const fetchAds = async () => {
+    const reqSeq = ++feedRequestSeqRef.current;
     setLoading(true);
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
     try {
-      const data = await publicApi.fetchAds();
-      setAds(data || []);
+      const [mainRes, vipRes] = await Promise.all([
+        publicApi.fetchAdsPage({
+          page: 1,
+          limit: FEED_PAGE_SIZE,
+          country: selectedCountry,
+          category: selectedCategory,
+          city: selectedCity,
+          q: debouncedSearchQuery,
+          sort: sortBy || '',
+        }),
+        publicApi.fetchAdsPage({
+          page: 1,
+          limit: 12,
+          country: selectedCountry,
+          category: selectedCategory,
+          city: selectedCity,
+          q: debouncedSearchQuery,
+          featuredOnly: true,
+        }),
+      ]);
+      if (reqSeq !== feedRequestSeqRef.current) return;
+      setAds(mainRes.ads || []);
+      setTotalAdsCount(mainRes.total || 0);
+      setFeedPage(1);
+      setHasMoreAds(Boolean(mainRes.hasMore));
+      setFeaturedAdsList(vipRes.ads || []);
     } catch (err) {
       console.error('Error fetching ads:', err);
     } finally {
-      setLoading(false);
+      if (reqSeq === feedRequestSeqRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchAds();
-  }, []);
+    let cancelled = false;
+    const reqSeq = ++feedRequestSeqRef.current;
+
+    const loadPageOne = async () => {
+      await Promise.resolve();
+      if (cancelled || reqSeq !== feedRequestSeqRef.current) return;
+      setLoading(true);
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+
+      try {
+        const [mainRes, vipRes] = await Promise.all([
+          publicApi.fetchAdsPage({
+            page: 1,
+            limit: FEED_PAGE_SIZE,
+            country: selectedCountry,
+            category: selectedCategory,
+            city: selectedCity,
+            q: debouncedSearchQuery,
+            sort: sortBy || '',
+          }),
+          publicApi.fetchAdsPage({
+            page: 1,
+            limit: 12,
+            country: selectedCountry,
+            category: selectedCategory,
+            city: selectedCity,
+            q: debouncedSearchQuery,
+            featuredOnly: true,
+          }),
+        ]);
+        if (cancelled || reqSeq !== feedRequestSeqRef.current) return;
+        setAds(mainRes.ads || []);
+        setTotalAdsCount(mainRes.total || 0);
+        setFeedPage(1);
+        setHasMoreAds(Boolean(mainRes.hasMore));
+        setFeaturedAdsList(vipRes.ads || []);
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error fetching paginated ads:', err);
+        }
+      } finally {
+        if (!cancelled && reqSeq === feedRequestSeqRef.current) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadPageOne();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCountry, selectedCategory, selectedCity, debouncedSearchQuery, sortBy]);
+
+  const loadMoreAds = async () => {
+    if (loading || loadingMoreRef.current || !hasMoreAds) return;
+    const reqSeq = feedRequestSeqRef.current;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const nextPage = feedPage + 1;
+    try {
+      const res = await publicApi.fetchAdsPage({
+        page: nextPage,
+        limit: FEED_PAGE_SIZE,
+        country: selectedCountry,
+        category: selectedCategory,
+        city: selectedCity,
+        q: debouncedSearchQuery,
+        sort: sortBy || '',
+      });
+      if (reqSeq !== feedRequestSeqRef.current) return;
+      const incoming = res.ads || [];
+      setAds((prev) => {
+        const existingIds = new Set(prev.map((item) => item.id));
+        const uniqueNew = incoming.filter((item) => !existingIds.has(item.id));
+        return uniqueNew.length > 0 ? [...prev, ...uniqueNew] : prev;
+      });
+      setTotalAdsCount(res.total || 0);
+      setFeedPage(nextPage);
+      setHasMoreAds(Boolean(res.hasMore));
+    } catch (err) {
+      console.error('Error loading more ads:', err);
+    } finally {
+      if (reqSeq === feedRequestSeqRef.current) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadMoreActionRef.current = loadMoreAds;
+    fetchAdsRef.current = fetchAds;
+  });
+
+  useEffect(() => {
+    if (loading || !hasMoreAds || activeAdDetail || podcastOpen || websiteBuilderOpen) return;
+    const node = feedSentinelRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMoreActionRef.current?.();
+        }
+      },
+      { rootMargin: '450px 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [loading, hasMoreAds, activeAdDetail, podcastOpen, websiteBuilderOpen, ads.length]);
 
   // Immediate ad & live Stripe VIP checkout check on mount
   useEffect(() => {
@@ -586,7 +745,7 @@ export default function App() {
         publicApi.verifyVipCheckout(vipSessionId)
           .then((res) => {
             if (res?.ad) {
-              fetchAds();
+              fetchAdsRef.current?.();
               setToastMsg(`آگهی «${res.ad.title_fa || res.ad.title}» با موفقیت به ویژه (VIP) ارتقا یافت!`);
               setTimeout(() => setToastMsg(''), 4000);
             }
@@ -635,7 +794,7 @@ export default function App() {
         // 2. Ad Detail Page
         const adParam = params.get('ad');
         if (adParam) {
-          const found = ads.find(a => a.reference_number === adParam || a.id === adParam);
+          const found = [...featuredAdsList, ...ads].find(a => a.reference_number === adParam || a.id === adParam);
           if (found) {
             setActiveAdDetail(found);
           } else {
@@ -661,7 +820,7 @@ export default function App() {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [ads, selectedCategory]);
+  }, [ads, featuredAdsList, selectedCategory]);
 
   // Modal Open / Close Handlers with Browser History Support
   const handleOpenPostAd = (catId = 'bostad') => {
@@ -877,8 +1036,6 @@ export default function App() {
   const heroHeading = activeCountrySeo?.heroHeading || `نیازمندی‌های فارسی‌زبانان ${currentCountryObj.nameFa}`;
   const heroSubheading = activeCountrySeo?.heroSubheading || `مسکن، رستوران، خدمات و کاریابی در سراسر ${currentCountryObj.nameFa}`;
 
-  const [sortBy, setSortBy] = useState(null); // null | 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
-
   useEffect(() => {
     if (!sortMenuOpen) return;
     const handleOutside = (e) => {
@@ -890,8 +1047,6 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [sortMenuOpen]);
 
-  // Filter ads safely with zero-lag deferred smart search (typo-tolerant + Persian/Arabic normalization)
-  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [heroSearchFocused, setHeroSearchFocused] = useState(false);
 
   const countryAds = useMemo(
@@ -953,12 +1108,18 @@ export default function App() {
   // Active Featured (VIP) ads subset
   const featuredAds = useMemo(
     () =>
-      filteredAds.filter((a) =>
-        a.is_active_vip !== undefined
-          ? Boolean(a.is_active_vip)
-          : Boolean(a.is_featured && (!a.promotion_expires_at || Date.parse(a.promotion_expires_at) > renderNow))
-      ),
-    [filteredAds, renderNow]
+      featuredAdsList.filter((a) => {
+        const matchCountry = a.country === selectedCountry || (!a.country && selectedCountry === 'se');
+        const matchCat = selectedCategory === 'all' || a.category === selectedCategory;
+        const matchCity = selectedCity === 'all' || a.city === selectedCity;
+        const matchSearch = matchesSmartSearch(a, deferredSearchQuery);
+        const vipActive =
+          a.is_active_vip !== undefined
+            ? Boolean(a.is_active_vip)
+            : Boolean(a.is_featured && (!a.promotion_expires_at || Date.parse(a.promotion_expires_at) > renderNow));
+        return matchCountry && matchCat && matchCity && matchSearch && vipActive;
+      }),
+    [featuredAdsList, selectedCountry, selectedCategory, selectedCity, deferredSearchQuery, renderNow]
   );
 
   return (
@@ -1049,6 +1210,8 @@ export default function App() {
                 key={activeHero.image}
                 src={activeHero.image}
                 alt={activeHero.cityFa}
+                decoding="async"
+                fetchPriority="high"
                 className="w-full h-full object-cover object-center opacity-90 transition-all duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/55" />
@@ -1231,12 +1394,13 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
-              {featuredAds.map(ad => (
+              {featuredAds.map((ad, idx) => (
                 <AdCard
                   key={ad.id}
                   ad={ad}
                   lang={lang}
                   onSelect={handleSelectAd}
+                  priority={idx < 4}
                 />
               ))}
             </div>
@@ -1251,7 +1415,7 @@ export default function App() {
                 {currentT.recentAds}
               </h2>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FBFBFC] border border-[#E5E5EA] text-[#515154] text-[11px] font-bold tabular-nums">
-                {sortedAds.length} آگهی
+                {searchQuery.trim() === debouncedSearchQuery ? totalAdsCount : sortedAds.length} آگهی
               </span>
               {selectedCategory !== 'all' && (
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EAF2FB] text-[#0066CC] text-xs font-semibold border border-[#CDE0F5]">
@@ -1360,17 +1524,41 @@ export default function App() {
               </button>
             </div>
           ) : (
-            /* Ads Grid */
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
-              {sortedAds.map(ad => (
-                <AdCard
-                  key={ad.id}
-                  ad={ad}
-                  lang={lang}
-                  onSelect={handleSelectAd}
-                />
-              ))}
-            </div>
+            /* Ads Grid with Scroll-Triggered Pagination */
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
+                {sortedAds.map((ad, idx) => (
+                  <AdCard
+                    key={ad.id}
+                    ad={ad}
+                    lang={lang}
+                    onSelect={handleSelectAd}
+                    priority={idx < 4 && featuredAds.length === 0}
+                  />
+                ))}
+              </div>
+              {loadingMore && (
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5 pt-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={`more-sk-${i}`} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-[#E5E5EA]/70 animate-pulse" />
+                  ))}
+                </div>
+              )}
+              {hasMoreAds && (
+                <div ref={feedSentinelRef} className="pt-4 pb-2 flex justify-center">
+                  <button
+                    type="button"
+                    disabled={loadingMore}
+                    onClick={loadMoreAds}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] border border-[#E5E5EA] text-xs font-bold text-[#1D1D1F] shadow-2xs transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+                  >
+                    {loadingMore
+                      ? 'در حال بارگذاری...'
+                      : `مشاهده آگهی‌های بیشتر${totalAdsCount > sortedAds.length ? ` (${totalAdsCount - sortedAds.length} باقی‌مانده)` : ''}`}
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
         </section>

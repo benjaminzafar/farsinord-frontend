@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-const MAX_FILE_BYTES = 1048576; // Strict 1 MB limit per photo
+export const MAX_FILE_BYTES = 1048576; // Strict 1 MB limit per photo
 const ALLOWED_MIME_TYPES = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
@@ -38,7 +38,16 @@ function encodeRfc3986(str) {
  * Generate an AWS S3 SigV4 presigned PUT URL for Cloudflare R2 using Node crypto.
  * Zero external SDK dependencies for fast cold starts.
  */
-function createR2PresignedPutUrl({ accountId, accessKeyId, secretAccessKey, bucketName, objectKey, contentType, expiresSeconds = 300 }) {
+export function createR2PresignedPutUrl({
+  accountId,
+  accessKeyId,
+  secretAccessKey,
+  bucketName,
+  objectKey,
+  contentType,
+  contentLength,
+  expiresSeconds = 300,
+}) {
   const host = `${accountId}.r2.cloudflarestorage.com`;
   const region = 'auto';
   const service = 's3';
@@ -48,12 +57,25 @@ function createR2PresignedPutUrl({ accountId, accessKeyId, secretAccessKey, buck
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
   const canonicalUri = `/${bucketName}/${objectKey.split('/').map(encodeRfc3986).join('/')}`;
 
+  const headerPairs = [
+    ['content-type', contentType],
+    ['host', host],
+  ];
+  const parsedLen = Number(contentLength);
+  if (Number.isInteger(parsedLen) && parsedLen > 0) {
+    headerPairs.push(['content-length', String(parsedLen)]);
+  }
+  headerPairs.sort((a, b) => a[0].localeCompare(b[0]));
+
+  const signedHeaders = headerPairs.map(([k]) => k).join(';');
+  const canonicalHeaders = headerPairs.map(([k, v]) => `${k}:${v}\n`).join('');
+
   const queryParams = {
     'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
     'X-Amz-Credential': `${accessKeyId}/${credentialScope}`,
     'X-Amz-Date': amzDate,
     'X-Amz-Expires': String(expiresSeconds),
-    'X-Amz-SignedHeaders': 'content-type;host',
+    'X-Amz-SignedHeaders': signedHeaders,
   };
 
   const canonicalQuery = Object.keys(queryParams)
@@ -61,13 +83,12 @@ function createR2PresignedPutUrl({ accountId, accessKeyId, secretAccessKey, buck
     .map((k) => `${encodeRfc3986(k)}=${encodeRfc3986(queryParams[k])}`)
     .join('&');
 
-  const canonicalHeaders = `content-type:${contentType}\nhost:${host}\n`;
   const canonicalRequest = [
     'PUT',
     canonicalUri,
     canonicalQuery,
     canonicalHeaders,
-    'content-type;host',
+    signedHeaders,
     'UNSIGNED-PAYLOAD',
   ].join('\n');
 
@@ -137,7 +158,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'فقط فرمت‌های تصویری مجاز هستند (JPG, PNG, WebP).' });
     }
 
-    if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > MAX_FILE_BYTES) {
+    if (!Number.isInteger(fileSize) || fileSize <= 0 || fileSize > MAX_FILE_BYTES) {
       return res.status(400).json({ ok: false, error: 'حجم هر تصویر باید حداکثر ۱ مگابایت باشد.' });
     }
 
@@ -159,6 +180,7 @@ export default async function handler(req, res) {
       bucketName: r2.bucketName,
       objectKey,
       contentType,
+      contentLength: fileSize,
       expiresSeconds: 300,
     });
 

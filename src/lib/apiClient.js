@@ -78,29 +78,116 @@ export const publicApi = {
     return settings;
   },
 
-  async fetchAds() {
+  async fetchAdsPage({
+    page = 1,
+    limit = 16,
+    country = 'all',
+    category = 'all',
+    city = 'all',
+    q = '',
+    sort = '',
+    featuredOnly = false,
+  } = {}) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(48, Math.max(1, Number(limit) || 16));
+    const params = new URLSearchParams({
+      page: String(safePage),
+      limit: String(safeLimit),
+    });
+    if (country && country !== 'all') params.set('country', country);
+    if (category && category !== 'all') params.set('category', category);
+    if (city && city !== 'all') params.set('city', city);
+    if (q && String(q).trim()) params.set('q', String(q).trim());
+    if (sort) params.set('sort', sort);
+    if (featuredOnly) params.set('featuredOnly', 'true');
+
     try {
-      const res = await fetch(`${API_BASE}/api/public`, {
+      const res = await fetch(`${API_BASE}/api/public?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
       if (res.ok) {
         const json = await res.json();
         if (json && json.ok && Array.isArray(json.ads)) {
-          return json.ads.map(normalizeClientAd);
+          return {
+            ads: json.ads.map(normalizeClientAd),
+            total: Number(json.total ?? json.ads.length) || 0,
+            page: Number(json.page ?? safePage) || safePage,
+            limit: Number(json.limit ?? safeLimit) || safeLimit,
+            hasMore: Boolean(json.hasMore),
+          };
         }
       }
     } catch {}
 
-    const { data, error } = await supabase
+    const from = (safePage - 1) * safeLimit;
+    const to = from + safeLimit - 1;
+    let query = supabase
       .from('swedpersiska_ads')
-      .select(PUBLIC_AD_COLUMNS)
+      .select(PUBLIC_AD_COLUMNS, { count: 'exact' })
       .eq('status', 'active')
-      .is('deleted_at', null)
-      .order('is_featured', { ascending: false })
-      .order('sort_timestamp', { ascending: false })
-      .order('created_at', { ascending: false });
+      .is('deleted_at', null);
+
+    if (country && country !== 'all') query = query.eq('country', country);
+    if (category && category !== 'all') query = query.eq('category', category);
+    if (city && city !== 'all') query = query.eq('city', city);
+    if (featuredOnly) {
+      const nowIso = new Date().toISOString();
+      query = query.eq('is_featured', true).or(`promotion_expires_at.is.null,promotion_expires_at.gt.${nowIso}`);
+    }
+    if (q && String(q).trim()) {
+      const sanitized = String(q)
+        .replace(/[,()]/g, ' ')
+        .replace(/ي/g, 'ی')
+        .replace(/ك/g, 'ک')
+        .trim();
+      if (sanitized) {
+        const term = `%${sanitized}%`;
+        query = query.or(`title.ilike.${term},title_fa.ilike.${term},description.ilike.${term},city.ilike.${term},reference_number.ilike.${term}`);
+      }
+    }
+
+    if (sort === 'most_viewed') {
+      query = query
+        .order('is_featured', { ascending: false })
+        .order('views_count', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false });
+    } else if (sort === 'price_asc') {
+      query = query
+        .order('is_featured', { ascending: false })
+        .order('price', { ascending: true, nullsFirst: false })
+        .order('sort_timestamp', { ascending: false })
+        .order('id', { ascending: false });
+    } else if (sort === 'price_desc') {
+      query = query
+        .order('is_featured', { ascending: false })
+        .order('price', { ascending: false, nullsFirst: true })
+        .order('sort_timestamp', { ascending: false })
+        .order('id', { ascending: false });
+    } else {
+      query = query
+        .order('is_featured', { ascending: false })
+        .order('sort_timestamp', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false });
+    }
+
+    const { data, count, error } = await query.range(from, to);
     if (error) throw error;
-    return (data || []).map(normalizeClientAd);
+    const normalized = (data || []).map(normalizeClientAd);
+    const total = count ?? normalized.length;
+    return {
+      ads: normalized,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      hasMore: to + 1 < total,
+    };
+  },
+
+  async fetchAds() {
+    const res = await this.fetchAdsPage({ page: 1, limit: 48 });
+    return res.ads;
   },
 
   async fetchAdByParam(rawParam) {

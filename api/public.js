@@ -275,6 +275,7 @@ export default async function handler(req, res) {
           }
         });
 
+        res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
         return res.status(200).json({ ok: true, settings });
       }
 
@@ -402,29 +403,84 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, ad: normalizePublicAd(data) || null });
       }
 
-      // Default GET: list active non-deleted public ads sorted by active VIP first, then sort_timestamp (boost/publish time)
-      const { data, error } = await supabase
+      // Default GET: paginated active non-deleted public ads sorted by active VIP first, then sort_timestamp (or selected sort)
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(48, Math.max(1, Number(req.query.limit) || 16));
+      const country = String(req.query.country || 'all').trim().toLowerCase();
+      const category = String(req.query.category || 'all').trim();
+      const city = String(req.query.city || 'all').trim();
+      const search = String(req.query.q || '').trim();
+      const sort = String(req.query.sort || '').trim();
+      const featuredOnly = req.query.featuredOnly === 'true' || req.query.featuredOnly === '1';
+
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      let q = supabase
         .from('swedpersiska_ads')
-        .select(PUBLIC_AD_COLUMNS)
+        .select(PUBLIC_AD_COLUMNS, { count: 'exact' })
         .eq('status', 'active')
-        .is('deleted_at', null)
-        .order('is_featured', { ascending: false })
-        .order('sort_timestamp', { ascending: false })
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: false });
+        .is('deleted_at', null);
+
+      if (country && country !== 'all') q = q.eq('country', country);
+      if (category && category !== 'all') q = q.eq('category', category);
+      if (city && city !== 'all') q = q.eq('city', city);
+      if (featuredOnly) {
+        const nowIso = new Date().toISOString();
+        q = q.eq('is_featured', true).or(`promotion_expires_at.is.null,promotion_expires_at.gt.${nowIso}`);
+      }
+      if (search) {
+        const sanitized = search
+          .replace(/[,()]/g, ' ')
+          .replace(/ي/g, 'ی')
+          .replace(/ك/g, 'ک')
+          .trim();
+        if (sanitized) {
+          const term = `%${sanitized}%`;
+          q = q.or(`title.ilike.${term},title_fa.ilike.${term},description.ilike.${term},city.ilike.${term},reference_number.ilike.${term}`);
+        }
+      }
+
+      if (sort === 'most_viewed') {
+        q = q
+          .order('is_featured', { ascending: false })
+          .order('views_count', { ascending: false })
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false });
+      } else if (sort === 'price_asc') {
+        q = q
+          .order('is_featured', { ascending: false })
+          .order('price', { ascending: true, nullsFirst: false })
+          .order('sort_timestamp', { ascending: false })
+          .order('id', { ascending: false });
+      } else if (sort === 'price_desc') {
+        q = q
+          .order('is_featured', { ascending: false })
+          .order('price', { ascending: false, nullsFirst: true })
+          .order('sort_timestamp', { ascending: false })
+          .order('id', { ascending: false });
+      } else {
+        q = q
+          .order('is_featured', { ascending: false })
+          .order('sort_timestamp', { ascending: false })
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false });
+      }
+
+      const { data, count, error } = await q.range(from, to);
 
       if (error) throw error;
-      const normalizedAds = (data || [])
-        .map(normalizePublicAd)
-        .sort((a, b) => {
-          if (Boolean(b.is_featured) !== Boolean(a.is_featured)) {
-            return b.is_featured ? 1 : -1;
-          }
-          const tA = Date.parse(a.sort_timestamp || a.created_at || 0) || 0;
-          const tB = Date.parse(b.sort_timestamp || b.created_at || 0) || 0;
-          return tB - tA;
-        });
-      return res.status(200).json({ ok: true, ads: normalizedAds });
+      const normalizedAds = (data || []).map(normalizePublicAd);
+      const total = count ?? normalizedAds.length;
+      res.setHeader('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=60');
+      return res.status(200).json({
+        ok: true,
+        ads: normalizedAds,
+        total,
+        page,
+        limit,
+        hasMore: to + 1 < total,
+      });
     }
 
     if (req.method === 'POST') {

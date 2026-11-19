@@ -28,6 +28,10 @@ import {
   containsLinkInDescription,
   DESCRIPTION_LINK_ERROR_MSG,
 } from '../lib/moderation';
+import {
+  MAX_IMAGE_BYTES,
+  compressImageForUpload,
+} from '../lib/imageCompressor';
 import { COUNTRIES, CATEGORIES, t, buildAdPolicyRules } from '../lib/translations';
 
 async function computeFileSha256(file) {
@@ -44,45 +48,7 @@ async function computeFileSha256(file) {
 }
 
 const MAX_PHOTOS = 4;
-const MAX_FILE_BYTES = 1048576; // 1 MB
-
-async function compressImageUnder1MB(file) {
-  if (file.size <= MAX_FILE_BYTES && ['image/webp', 'image/jpeg', 'image/png', 'image/avif'].includes(file.type)) {
-    return file;
-  }
-  const imgUrl = URL.createObjectURL(file);
-  try {
-    const img = await new Promise((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = reject;
-      i.src = imgUrl;
-    });
-    const maxDim = 1600;
-    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-    const width = Math.max(1, Math.round(img.width * scale));
-    const height = Math.max(1, Math.round(img.height * scale));
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, width, height);
-
-    for (const quality of [0.85, 0.72, 0.58]) {
-      const blob = await new Promise((res) => canvas.toBlob(res, 'image/webp', quality));
-      if (blob && blob.size <= MAX_FILE_BYTES) {
-        return new File([blob], `${Date.now()}.webp`, { type: 'image/webp' });
-      }
-    }
-    const fallbackBlob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.55));
-    if (fallbackBlob && fallbackBlob.size <= MAX_FILE_BYTES) {
-      return new File([fallbackBlob], `${Date.now()}.jpg`, { type: 'image/jpeg' });
-    }
-    throw new Error('حجم تصویر حتی پس از فشرده‌سازی بیشتر از ۱ مگابایت است.');
-  } finally {
-    URL.revokeObjectURL(imgUrl);
-  }
-}
+const MAX_FILE_BYTES = MAX_IMAGE_BYTES; // 1 MB
 
 export default function PostAdModal({ 
   initialCategory = 'bostad', 
@@ -190,7 +156,7 @@ export default function PostAdModal({
         if (!rawFile.type.startsWith('image/')) {
           throw new Error('فقط فایل‌های تصویری مجاز هستند.');
         }
-        const readyFile = await compressImageUnder1MB(rawFile);
+        const readyFile = await compressImageForUpload(rawFile, { maxBytes: MAX_FILE_BYTES });
         if (readyFile.size > MAX_FILE_BYTES) {
           throw new Error('حجم هر تصویر باید حداکثر ۱ مگابایت باشد.');
         }
