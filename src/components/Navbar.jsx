@@ -95,18 +95,18 @@ export default function Navbar({
     : 'همه شهرها';
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 w-full pointer-events-none md:pointer-events-auto bg-transparent md:bg-white md:border-b md:border-[#E8EBF0] md:dark:bg-[#1C202A] md:dark:border-white/[0.065] select-none font-vazir transition-colors" dir="rtl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="fixed top-0 inset-x-0 z-40 w-full pointer-events-none md:pointer-events-auto bg-transparent border-b border-transparent md:bg-[#FBFBFC] md:border-[#E5E5EA] select-none font-vazir transition-colors" dir="rtl">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         
         {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
         <div className="relative flex md:hidden h-16 items-center">
 
-          <div className="pointer-events-auto flex-1 flex items-center h-12 rounded-full bg-white/95 backdrop-blur-md border border-[#ECEFF4] shadow-[0_2px_10px_rgba(15,23,42,0.06)] px-4 gap-3 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC]/45 focus-within:ring-2 focus-within:ring-[#0066CC]/15 dark:bg-[#222734]/95 dark:border-white/[0.08] dark:shadow-[0_4px_16px_rgba(0,0,0,0.32)]">
+          <div className="pointer-events-auto flex-1 flex items-center h-12 rounded-full bg-white/95 dark:bg-[#16181D]/95 backdrop-blur-md border border-[#E5E5EA] dark:border-[#2A2D36] shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_14px_rgba(0,0,0,0.35)] px-3.5 gap-2.5 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15">
 
             {/* Search Input (Icon on Right — exact same vertical center as City Selector) */}
             <div className="relative flex-1 flex items-center gap-2 min-w-0 h-full">
-              <span className="flex h-5 w-5 items-center justify-center shrink-0 text-[#6E6E73] pointer-events-none">
-                <Search size={17} strokeWidth={1.9} className="block" />
+              <span className="flex h-5 w-5 items-center justify-center shrink-0 text-[#86868B] pointer-events-none">
+                <Search size={15} strokeWidth={2} className="block" />
               </span>
               <input
                 type="text"
@@ -115,7 +115,7 @@ export default function Navbar({
                 onBlur={() => setTimeout(() => setMobileSearchFocused(false), 150)}
                 onChange={(e) => onSearchChange?.(e.target.value)}
                 placeholder="جستجو در نیازمندی‌ها..."
-                className="w-full h-full bg-transparent text-[13.5px] font-medium leading-none text-[#1D1D1F] placeholder:text-[#76767B] focus:outline-none min-w-0"
+                className="w-full h-full bg-transparent text-[13px] leading-none text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none min-w-0"
               />
               {searchQuery && (
                 <button
@@ -130,19 +130,19 @@ export default function Navbar({
             </div>
 
             {/* Vertical separator */}
-            <div className="h-6 w-px bg-[#ECEFF4] shrink-0" />
+            <div className="h-5 w-px bg-[#E5E5EA] shrink-0" />
 
             {/* City Selector on Left (Flat, aligned on exact same horizontal axis) */}
             <div className="relative shrink-0 flex items-center h-full">
-              <div className="inline-flex items-center gap-1.5 h-9 ps-1 pe-0.5 text-[#1D1D1F] text-[13px] font-bold leading-none">
-                <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#6E6E73]">
-                  <MapPin size={16} strokeWidth={1.85} className="block" />
+              <div className="inline-flex items-center gap-1.5 h-8 px-2 rounded-xl text-[#1D1D1F] text-xs font-bold leading-none">
+                <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
+                  <MapPin size={14} strokeWidth={2} className="block" />
                 </span>
-                <span className="truncate max-w-[92px] leading-none">
+                <span className="truncate max-w-[72px] leading-none">
                   {cityLabel}
                 </span>
-                <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#6E6E73]">
-                  <ChevronDown size={15} strokeWidth={1.9} className="block" />
+                <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
+                  <ChevronDown size={14} strokeWidth={2} className="block" />
                 </span>
               </div>
 
@@ -165,7 +165,7 @@ export default function Navbar({
 
           {/* Google-style Smart Autocomplete Suggestions (Mobile) */}
           {mobileSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-            <div className="pointer-events-auto absolute inset-x-0 top-[62px] bg-white border border-[#ECEFF4] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.14)] p-1.5 z-50 space-y-0.5">
+            <div className="pointer-events-auto absolute inset-x-0 top-[62px] bg-[#FBFBFC] dark:bg-[#16181D] border border-[#E5E5EA] dark:border-[#2A2D36] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] dark:shadow-[0_14px_40px_rgba(0,0,0,0.5)] p-1.5 z-50 space-y-0.5">
               {searchSuggestions.map((item, idx) => (
                 <button
                   key={`${item.label}-${idx}`}

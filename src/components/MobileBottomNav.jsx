@@ -76,26 +76,26 @@ export default function MobileBottomNav({
 
   return (
     <>
-      {/* 1. Clean Mobile Bottom Navigation Bar */}
+      {/* 1. Sleek Compact Mobile Bottom Navigation Bar (Apple Frosted Spring Feel) */}
       <nav 
-        className="fixed bottom-0 inset-x-0 z-40 md:hidden rounded-t-[22px] bg-white dark:bg-[#181C25] border-t border-x border-[#ECEFF4] dark:border-white/[0.07] shadow-[0_-4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_-4px_18px_rgba(0,0,0,0.35)] px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.25rem)] font-vazir select-none"
+        className="fixed bottom-0 inset-x-0 z-40 md:hidden rounded-t-[22px] bg-white/95 dark:bg-[#16181D]/95 backdrop-blur-md border-t border-x border-[#E5E5EA] dark:border-[#2A2D36] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)] px-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.25rem)] font-vazir select-none overflow-hidden"
         dir="rtl"
         aria-label="منوی دسترسی موبایل"
       >
-        <div className="grid grid-cols-5 items-end max-w-lg mx-auto">
+        <div className="grid grid-cols-5 items-stretch max-w-lg mx-auto">
           
           {/* Tab 1: خانه (Home) */}
           <button
             type="button"
             onClick={handleGoHome}
-            className={`h-12 flex flex-col items-center justify-end pb-0.5 gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.9] cursor-pointer ${
+            className={`h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isHomeActive 
                 ? 'text-[#0066CC] font-bold' 
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
             <span className="flex h-6 w-6 items-center justify-center shrink-0">
-              <Home size={19} strokeWidth={isHomeActive ? 2.15 : 1.8} className="block" />
+              <Home size={19} strokeWidth={isHomeActive ? 2.2 : 1.85} className="block" />
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">خانه</span>
           </button>
@@ -104,16 +104,16 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={() => setCollectionSheetOpen(true)}
-            className={`relative h-12 flex flex-col items-center justify-end pb-0.5 gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.9] cursor-pointer ${
+            className={`relative h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isCollectionActive 
                 ? 'text-[#0066CC] font-bold' 
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
             }`}
           >
             <span className="relative flex h-6 w-6 items-center justify-center shrink-0">
-              <LayoutGrid size={19} strokeWidth={isCollectionActive ? 2.15 : 1.8} className="block" />
+              <LayoutGrid size={19} strokeWidth={isCollectionActive ? 2.2 : 1.85} className="block" />
               {selectedCategory !== 'all' && (
-                <span className="absolute -top-0.5 -end-0.5 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-white dark:ring-[#181C25]" />
+                <span className="absolute -top-0.5 -end-0.5 h-1.5 w-1.5 rounded-full bg-[#0066CC] ring-2 ring-[#FBFBFC]" />
               )}
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">دسته‌بندی‌ها</span>
@@ -123,11 +123,11 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={onOpenPostAd}
-            className="h-12 flex flex-col items-center justify-end pb-0.5 gap-1 rounded-xl text-[#1D1D1F] font-extrabold cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.9]"
+            className="h-12 flex flex-col items-center justify-center gap-1 rounded-xl text-[#1D1D1F] font-bold cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88]"
             title="ثبت رایگان آگهی"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0066CC] text-white shadow-[0_2px_8px_rgba(0,102,204,0.28)] shrink-0">
-              <Plus size={16} strokeWidth={2.4} className="block" />
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0066CC] text-[#FBFBFC] shrink-0">
+              <Plus size={14} strokeWidth={2.5} className="block" />
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">ثبت آگهی</span>
           </button>
@@ -136,11 +136,11 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={onOpenManageAd}
-            className="h-12 flex flex-col items-center justify-end pb-0.5 gap-1 rounded-xl text-[#6E6E73] hover:text-[#1D1D1F] font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.9] cursor-pointer"
+            className="h-12 flex flex-col items-center justify-center gap-1 rounded-xl text-[#6E6E73] hover:text-[#1D1D1F] font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
             title="مدیریت یا حذف آگهی با کد امنیتی"
           >
             <span className="flex h-6 w-6 items-center justify-center shrink-0">
-              <KeyRound size={19} strokeWidth={1.8} className="block" />
+              <KeyRound size={19} strokeWidth={1.85} className="block" />
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">مدیریت</span>
           </button>
@@ -152,7 +152,7 @@ export default function MobileBottomNav({
               setCollectionSheetOpen(false);
               setMoreSheetOpen(true);
             }}
-            className={`h-12 flex flex-col items-center justify-end pb-0.5 gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.9] cursor-pointer ${
+            className={`h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               moreSheetOpen
                 ? 'text-[#0066CC] font-bold'
                 : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
@@ -160,7 +160,7 @@ export default function MobileBottomNav({
             title="امکانات بیشتر"
           >
             <span className="flex h-6 w-6 items-center justify-center shrink-0">
-              <MoreHorizontal size={19} strokeWidth={moreSheetOpen ? 2.15 : 1.8} className="block" />
+              <MoreHorizontal size={19} strokeWidth={moreSheetOpen ? 2.2 : 1.85} className="block" />
             </span>
             <span className="text-[10px] leading-none whitespace-nowrap">بیشتر</span>
           </button>

@@ -982,19 +982,55 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Category pill scroll & touch-swipe navigation refs
+  // Apple-like sliding active category pill & touch-swipe navigation refs
+  const categoryStripRef = useRef(null);
   const categoryPillRefs = useRef({});
   const sortMenuRef = useRef(null);
   const touchSwipeRef = useRef({ x: 0, y: 0 });
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, ready: false });
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   useEffect(() => {
     if (activeAdDetail || podcastOpen || websiteBuilderOpen) return;
     const el = categoryPillRefs.current[selectedCategory];
     if (!el) return;
+
+    let cancelled = false;
+    let rafId = 0;
+
+    const measurePill = () => {
+      if (cancelled) return;
+      const currentEl = categoryPillRefs.current[selectedCategory];
+      if (!currentEl) return;
+      setPillStyle({ left: currentEl.offsetLeft, width: currentEl.offsetWidth, ready: true });
+    };
+
+    const scheduleMeasure = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(measurePill);
+    };
+
+    scheduleMeasure();
     try {
       el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     } catch {}
+
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(scheduleMeasure);
+      if (categoryStripRef.current) ro.observe(categoryStripRef.current);
+      ro.observe(el);
+    }
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(scheduleMeasure).catch(() => {});
+    }
+    window.addEventListener('resize', scheduleMeasure);
+    return () => {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', scheduleMeasure);
+    };
   }, [selectedCategory, activeAdDetail, podcastOpen, websiteBuilderOpen]);
 
   const handleFeedTouchStart = (e) => {
@@ -1250,11 +1286,11 @@ export default function App() {
       ) : (
         <>
           {/* Hero Section - Always visible on Desktop; hidden on Mobile when filtering by category */}
-          <section className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-5 pb-2 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
-          <div className="relative min-h-[200px] sm:min-h-[300px] md:min-h-[350px] rounded-[22px] sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-14 md:py-16">
+          <section className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-1 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
+          <div className="relative min-h-[200px] sm:min-h-[300px] md:min-h-[350px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-14 md:py-16">
             
             {/* Rounded Architectural Cityscape Backdrop */}
-            <div className="absolute inset-0 z-0 rounded-[22px] sm:rounded-3xl overflow-hidden border border-[#E5E5EA] bg-[#1D1D1F] pointer-events-none select-none">
+            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#E5E5EA] bg-[#1D1D1F] pointer-events-none select-none">
               <img
                 key={activeHero.image}
                 src={activeHero.image}
@@ -1277,7 +1313,7 @@ export default function App() {
 
               {/* Flat Unified Search Capsule — Hairline-Divided (No Box-in-Box) */}
               <div className="pt-2 sm:pt-3 px-1 hidden md:block">
-                <div className="bg-white rounded-full p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-[#F0F2F5]/90 dark:bg-[#222734] dark:border-white/[0.065] max-w-2xl mx-auto flex items-center gap-1.5 transition-all">
+                <div className="bg-[#FBFBFC] rounded-full p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] border border-white/40 max-w-2xl mx-auto flex items-center gap-1.5 transition-all">
                   
                   {/* Keyword Input with Google-style Smart Autocomplete (Right side in RTL) */}
                   <div className="relative flex-1 flex items-center gap-2 h-10 px-3 min-w-0">
@@ -1305,7 +1341,7 @@ export default function App() {
                     )}
 
                     {heroSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] border border-[#F0F2F5] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5 text-right">
+                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] border border-[#E5E5EA] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] p-1.5 z-50 space-y-0.5 text-right">
                         {searchSuggestions.map((item, idx) => (
                           <button
                             key={`${item.label}-${idx}`}
@@ -1331,7 +1367,7 @@ export default function App() {
                   </div>
 
                   {/* Clean Hairline Divider (No inner box) */}
-                  <div className="h-5 w-px bg-[#ECEFF4] shrink-0" />
+                  <div className="h-5 w-px bg-[#E5E5EA] shrink-0" />
 
                   {/* Flat Borderless City Selector (Flex-aligned on exact same baseline) */}
                   <div className="relative flex items-center h-10 px-2.5 shrink-0">
@@ -1376,10 +1412,24 @@ export default function App() {
           </div>
         </section>
 
-      {/* Horizontal Sticky Category Strip */}
+      {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
       <div className="sticky top-16 z-30 bg-[#F5F5F7]/90 backdrop-blur-md py-2.5 sm:py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
-        <div className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA]">
+        <div
+          ref={categoryStripRef}
+          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA]"
+        >
+          {pillStyle.ready && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#0066CC] transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+              style={{
+                width: `${pillStyle.width}px`,
+                transform: `translate3d(${pillStyle.left}px, 0, 0)`,
+                left: 0,
+              }}
+            />
+          )}
           {CATEGORIES.map(cat => {
             const isActive = selectedCategory === cat.id;
             const CatIcon = CATEGORY_ICONS[cat.id] || Tag;
@@ -1391,7 +1441,7 @@ export default function App() {
                 onClick={() => handleCategoryChange(cat.id)}
                 className={`relative z-10 h-8 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-full text-xs font-bold leading-none whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
                   isActive
-                    ? 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs'
+                    ? (pillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs')
                     : 'text-[#515154] hover:text-[#1D1D1F]'
                 }`}
               >
