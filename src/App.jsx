@@ -1377,9 +1377,9 @@ export default function App() {
         </section>
 
       {/* Horizontal Sticky Category Strip */}
-      <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-[#F1F3F6] py-2.5 dark:bg-[#14171F]/95 dark:border-white/[0.06]">
+      <div className="sticky top-16 z-30 bg-[#F5F5F7]/90 backdrop-blur-md py-2.5 sm:py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
-        <div className="flex items-center gap-2 w-max md:mx-auto">
+        <div className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] p-1 rounded-full border border-[#E5E5EA]">
           {CATEGORIES.map(cat => {
             const isActive = selectedCategory === cat.id;
             const CatIcon = CATEGORY_ICONS[cat.id] || Tag;
@@ -1389,14 +1389,14 @@ export default function App() {
                 ref={(el) => { if (el) categoryPillRefs.current[cat.id] = el; }}
                 type="button"
                 onClick={() => handleCategoryChange(cat.id)}
-                className={`h-9 inline-flex items-center justify-center gap-2 rounded-full text-[13px] font-bold leading-none whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.95] select-none ${
+                className={`relative z-10 h-8 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-full text-xs font-bold leading-none whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
                   isActive
-                    ? 'bg-[#0066CC] text-white px-4 shadow-[0_2px_10px_rgba(0,102,204,0.22)]'
-                    : 'px-3 text-[#1D1D1F] hover:bg-[#F5F5F7]'
+                    ? 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs'
+                    : 'text-[#515154] hover:text-[#1D1D1F]'
                 }`}
               >
                 <span className="flex h-4 w-4 items-center justify-center shrink-0">
-                  <CatIcon size={16} strokeWidth={isActive ? 2 : 1.85} className={`block transition-colors duration-200 ${isActive ? 'text-white' : 'text-[#6E6E73]'}`} />
+                  <CatIcon size={14} strokeWidth={2} className={`block transition-colors duration-200 ${isActive ? 'text-[#FBFBFC]' : 'text-[#86868B]'}`} />
                 </span>
                 <span className="leading-none">{cat.fa}</span>
               </button>
