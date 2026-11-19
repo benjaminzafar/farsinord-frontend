@@ -1412,8 +1412,8 @@ export default function App() {
           </div>
         </section>
 
-      {/* Horizontal Sticky Category Strip with Apple-feel sliding pill */}
-      <div className="sticky top-16 z-30 bg-[#FBFBFC]/90 dark:bg-[#0B0C10]/90 backdrop-blur-md py-2.5 sm:py-3">
+      {/* Horizontal Sticky Category Strip with Apple-feel sliding pill (Desktop Only) */}
+      <div className="hidden md:block sticky top-16 z-30 bg-[#FBFBFC]/90 dark:bg-[#0B0C10]/90 backdrop-blur-md py-2.5 sm:py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
         <div
           ref={categoryStripRef}
