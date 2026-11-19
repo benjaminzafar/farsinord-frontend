@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ArrowRight, 
   MapPin, 
@@ -41,7 +41,7 @@ export default function AdDetailPage({
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-  const [reportReason, setReportReason] = useState('محتوای غیرمجاز یا نامناسب');
+  const [reportReason, setReportReason] = useState('Ù…Ø­ØªÙˆØ§ÛŒ ØºÛŒØ±Ù…Ø¬Ø§Ø² ÛŒØ§ Ù†Ø§Ù…Ù†Ø§Ø³Ø¨');
   const [reportDetails, setReportDetails] = useState('');
   const [reportSending, setReportSending] = useState(false);
   const [reportSent, setReportSent] = useState(false);
@@ -189,7 +189,7 @@ export default function AdDetailPage({
 
   const displayPrice = ad.price 
     ? `${Number(ad.price).toLocaleString('sv-SE')} ${ad.price_type || 'kr'}`
-    : (ad.price_type || (lang === 'fa' ? 'توافقی' : 'Enligt överenskommelse'));
+    : (ad.price_type || (lang === 'fa' ? 'ØªÙˆØ§ÙÙ‚ÛŒ' : 'Enligt Ã¶verenskommelse'));
 
   const dateStr = ad.created_at 
     ? new Date(ad.created_at).toLocaleDateString(lang === 'fa' ? 'fa-IR' : 'sv-SE', {
@@ -216,7 +216,7 @@ export default function AdDetailPage({
   // Find 4 VIP Promoted ads strictly within the same country
   const adCountryCode = ad.country || 'se';
   const adCountryObj = COUNTRIES.find(c => c.id === adCountryCode) || COUNTRIES[0];
-  const adCountryName = adCountryObj?.nameFa || 'سوئد';
+  const adCountryName = adCountryObj?.nameFa || 'Ø³ÙˆØ¦Ø¯';
   const sameCountryAds = allAds.filter(a => a.id !== ad.id && (a.country || 'se') === adCountryCode);
   const checkVip = (a) => Boolean(
     a.is_active_vip !== undefined
@@ -242,12 +242,12 @@ export default function AdDetailPage({
             className="inline-flex items-center gap-1.5 -ms-1 px-1 h-8 text-[13px] font-semibold leading-none text-[#0066CC] hover:text-[#0055AA] transition-colors active:opacity-60 cursor-pointer shrink-0"
           >
             <ArrowRight size={15} strokeWidth={2} className="block shrink-0" />
-            <span className="leading-none">بازگشت</span>
+            <span className="leading-none">Ø¨Ø§Ø²Ú¯Ø´Øª</span>
           </button>
 
           <div className="hidden sm:flex items-center gap-1.5 text-xs leading-none text-[#86868B] truncate">
             <span>/</span>
-            <span>خانه</span>
+            <span>Ø®Ø§Ù†Ù‡</span>
             <span>/</span>
             <span className="text-[#1D1D1F] dark:text-[#F5F5F7] font-semibold">{catName}</span>
           </div>
@@ -256,7 +256,7 @@ export default function AdDetailPage({
         <button
           type="button"
           onClick={shareAd}
-          aria-label="اشتراک‌گذاری"
+          aria-label="Ø§Ø´ØªØ±Ø§Ú©â€ŒÚ¯Ø°Ø§Ø±ÛŒ"
           className="inline-flex items-center gap-1.5 px-1 h-8 text-[13px] font-semibold leading-none text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white transition-colors active:opacity-60 cursor-pointer shrink-0"
         >
           {copiedLink ? (
@@ -264,7 +264,7 @@ export default function AdDetailPage({
           ) : (
             <Share2 size={15} strokeWidth={2} className="block shrink-0" />
           )}
-          <span className="leading-none">{copiedLink ? currentT.copied : 'اشتراک‌گذاری'}</span>
+          <span className="leading-none">{copiedLink ? currentT.copied : 'Ø§Ø´ØªØ±Ø§Ú©â€ŒÚ¯Ø°Ø§Ø±ÛŒ'}</span>
         </button>
       </div>
 
@@ -278,7 +278,7 @@ export default function AdDetailPage({
             {/* Frameless Image Gallery (Unified with page plane) */}
             <div className="space-y-2.5">
               {/* Big Stage Image (click to zoom) */}
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#F0F2F5] dark:bg-[#1C202A] border border-[#ECEFF4] dark:border-white/[0.06] shadow-none group">
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#F0F2F5] dark:bg-[#1C202A] border border-[#ECEFF4] dark:border-white/[0.03] shadow-none group">
                 <img
                   src={images[activeImageIdx]}
                   alt={ad.title}
@@ -299,7 +299,7 @@ export default function AdDetailPage({
                     setZoomOpen(true);
                   }}
                   className="absolute bottom-3 end-3 h-9 w-9 rounded-full bg-[#1D1D1F]/65 hover:bg-[#1D1D1F]/85 text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer"
-                  title="مشاهده تمام‌صفحه"
+                  title="Ù…Ø´Ø§Ù‡Ø¯Ù‡ ØªÙ…Ø§Ù…â€ŒØµÙØ­Ù‡"
                 >
                   <ZoomIn size={16} />
                 </button>
@@ -308,12 +308,12 @@ export default function AdDetailPage({
                 {isVipActive && (
                   <div className="absolute top-3 start-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0066CC] text-white text-xs font-bold backdrop-blur-xs">
                     <Crown size={13} className="text-white/90" />
-                    <span>ویژه</span>
+                    <span>ÙˆÛŒÚ˜Ù‡</span>
                   </div>
                 )}
 
                 {/* Category Badge */}
-                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#16181D]/90 border border-[#ECEFF4]/60 dark:border-white/[0.08] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
+                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#16181D]/90 border border-[#ECEFF4]/60 dark:border-white/[0.04] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
                   {catName}
                 </div>
 
@@ -346,7 +346,7 @@ export default function AdDetailPage({
                       key={idx}
                       type="button"
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#ECEFF4] dark:border-white/[0.06] ${
+                      className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#ECEFF4] dark:border-white/[0.03] ${
                         activeImageIdx === idx 
                           ? 'ring-2 ring-[#0066CC] opacity-100' 
                           : 'opacity-65 hover:opacity-100'
@@ -360,10 +360,10 @@ export default function AdDetailPage({
             </div>
 
             {/* Title, Price & Details Card (Unified Flat Surface, No Heavy Shadows) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.06] p-5 sm:p-8 space-y-6 shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] p-5 sm:p-8 space-y-6 shadow-none">
               
               {/* Header: Title, Price & Unified Meta Row */}
-              <div className="space-y-3.5 pb-6 border-b border-[#F0F2F5] dark:border-white/[0.05]">
+              <div className="space-y-3.5 pb-6 border-b border-[#F0F2F5] dark:border-white/[0.025]">
                 <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 sm:gap-4">
                   <h1 className="text-xl sm:text-2xl font-black text-[#1D1D1F] dark:text-white leading-snug">
                     {lang === 'fa' && ad.title_fa ? ad.title_fa : ad.title}
@@ -381,25 +381,25 @@ export default function AdDetailPage({
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs leading-none text-[#6E6E73] dark:text-[#98989F]">
                   <span className="inline-flex items-center gap-1.5 font-semibold leading-none text-[#1D1D1F] dark:text-[#F5F5F7]">
                     <MapPin size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
-                    <span className="leading-none">{ad.city}{ad.area ? `، ${ad.area}` : ''}</span>
+                    <span className="leading-none">{ad.city}{ad.area ? `ØŒ ${ad.area}` : ''}</span>
                   </span>
 
                   <span className="inline-flex items-center gap-1.5 leading-none">
                     <Clock size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
                     <span className="leading-none">
-                      انتشار: {dateStr}
-                      {ad.last_boosted_at && ` • بروزشده`}
+                      Ø§Ù†ØªØ´Ø§Ø±: {dateStr}
+                      {ad.last_boosted_at && ` â€¢ Ø¨Ø±ÙˆØ²Ø´Ø¯Ù‡`}
                     </span>
                   </span>
 
                   <span className="inline-flex items-center gap-1.5 leading-none">
                     <Eye size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
-                    <span className="leading-none">{ad.views_count || 1} بازدید</span>
+                    <span className="leading-none">{ad.views_count || 1} Ø¨Ø§Ø²Ø¯ÛŒØ¯</span>
                   </span>
 
                   {ad.reference_number && (
                     <span className="inline-flex items-center gap-1 leading-none text-[#86868B]">
-                      <span className="leading-none">کد:</span>
+                      <span className="leading-none">Ú©Ø¯:</span>
                       <bdi className="font-mono font-semibold leading-none text-[#6E6E73] dark:text-[#98989F]">{ad.reference_number}</bdi>
                     </span>
                   )}
@@ -409,20 +409,20 @@ export default function AdDetailPage({
               {/* Description Section (Integrated Smoothly on Exact Same Visual Plane) */}
               <div className="space-y-2.5">
                 <h3 className="text-xs font-bold text-[#86868B] dark:text-[#98989F]">
-                  توضیحات و مشخصات
+                  ØªÙˆØ¶ÛŒØ­Ø§Øª Ùˆ Ù…Ø´Ø®ØµØ§Øª
                 </h3>
                 <div className="text-sm sm:text-[15px] text-[#1D1D1F] dark:text-[#E5E5EA] leading-relaxed sm:leading-loose whitespace-pre-wrap">
                   {ad.description}
                 </div>
               </div>
 
-              {/* Contact Seller Section (Flat, Integrated Flow — No "Card on Card") */}
-              <div className="pt-6 border-t border-[#F0F2F5] dark:border-white/[0.05] flex flex-col items-center text-center space-y-4">
+              {/* Contact Seller Section (Flat, Integrated Flow â€” No "Card on Card") */}
+              <div className="pt-6 border-t border-[#F0F2F5] dark:border-white/[0.025] flex flex-col items-center text-center space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">اطلاعات تماس با آگهی‌دهنده</h3>
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">Ø§Ø·Ù„Ø§Ø¹Ø§Øª ØªÙ…Ø§Ø³ Ø¨Ø§ Ø¢Ú¯Ù‡ÛŒâ€ŒØ¯Ù‡Ù†Ø¯Ù‡</h3>
                   {ad.contact_name && (
                     <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
-                      ثبت‌شده توسط <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{ad.contact_name}</span>
+                      Ø«Ø¨Øªâ€ŒØ´Ø¯Ù‡ ØªÙˆØ³Ø· <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{ad.contact_name}</span>
                     </p>
                   )}
                 </div>
@@ -432,7 +432,7 @@ export default function AdDetailPage({
                     {!showTurnstileGate ? (
                       <>
                         <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
-                          برای جلوگیری از ربات‌ها، راه‌های ارتباطی پس از کلیک نمایش داده می‌شود
+                          Ø¨Ø±Ø§ÛŒ Ø¬Ù„ÙˆÚ¯ÛŒØ±ÛŒ Ø§Ø² Ø±Ø¨Ø§Øªâ€ŒÙ‡Ø§ØŒ Ø±Ø§Ù‡â€ŒÙ‡Ø§ÛŒ Ø§Ø±ØªØ¨Ø§Ø·ÛŒ Ù¾Ø³ Ø§Ø² Ú©Ù„ÛŒÚ© Ù†Ù…Ø§ÛŒØ´ Ø¯Ø§Ø¯Ù‡ Ù…ÛŒâ€ŒØ´ÙˆØ¯
                         </p>
 
                         <button
@@ -447,13 +447,13 @@ export default function AdDetailPage({
                           className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-[13px] font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.96] shadow-none cursor-pointer"
                         >
                           <Lock size={15} />
-                          <span>نمایش اطلاعات تماس</span>
+                          <span>Ù†Ù…Ø§ÛŒØ´ Ø§Ø·Ù„Ø§Ø¹Ø§Øª ØªÙ…Ø§Ø³</span>
                         </button>
                       </>
                     ) : (
                       <div className="flex flex-col items-center justify-center space-y-2.5 py-1 animate-in fade-in duration-200">
                         <p className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                          تایید امنیتی جهت نمایش اطلاعات تماس
+                          ØªØ§ÛŒÛŒØ¯ Ø§Ù…Ù†ÛŒØªÛŒ Ø¬Ù‡Øª Ù†Ù…Ø§ÛŒØ´ Ø§Ø·Ù„Ø§Ø¹Ø§Øª ØªÙ…Ø§Ø³
                         </p>
                         <CloudflareTurnstile
                           theme="light"
@@ -471,7 +471,7 @@ export default function AdDetailPage({
                       {ad.contact_phone && (
                         <a
                           href={`tel:${ad.contact_phone.replace(/[^0-9+]/g, '')}`}
-                          title="تماس تلفنی"
+                          title="ØªÙ…Ø§Ø³ ØªÙ„ÙÙ†ÛŒ"
                           className="h-10 px-4 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                         >
                           <Phone size={15} />
@@ -485,11 +485,11 @@ export default function AdDetailPage({
                           href={`https://wa.me/${ad.contact_whatsapp.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="پیام در واتساپ"
-                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
+                          title="Ù¾ÛŒØ§Ù… Ø¯Ø± ÙˆØ§ØªØ³Ø§Ù¾"
+                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                         >
                           <MessageSquare size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
-                          <span>واتساپ</span>
+                          <span>ÙˆØ§ØªØ³Ø§Ù¾</span>
                         </a>
                       )}
 
@@ -499,23 +499,23 @@ export default function AdDetailPage({
                           href={/^https?:\/\//i.test(ad.contact_telegram.trim()) ? ad.contact_telegram.trim() : `https://t.me/${ad.contact_telegram.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="گفتگو در تلگرام"
-                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
+                          title="Ú¯ÙØªÚ¯Ùˆ Ø¯Ø± ØªÙ„Ú¯Ø±Ø§Ù…"
+                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                         >
                           <Send size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
-                          <span>تلگرام</span>
+                          <span>ØªÙ„Ú¯Ø±Ø§Ù…</span>
                         </a>
                       )}
 
                       {/* Email */}
                       {ad.contact_email && (
                         <a
-                          href={`mailto:${ad.contact_email}?subject=پرسش درباره آگهی ${ad.reference_number}`}
-                          title="ارسال ایمیل"
-                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
+                          href={`mailto:${ad.contact_email}?subject=Ù¾Ø±Ø³Ø´ Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ø¢Ú¯Ù‡ÛŒ ${ad.reference_number}`}
+                          title="Ø§Ø±Ø³Ø§Ù„ Ø§ÛŒÙ…ÛŒÙ„"
+                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                         >
                           <Mail size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
-                          <span>ایمیل</span>
+                          <span>Ø§ÛŒÙ…ÛŒÙ„</span>
                         </a>
                       )}
 
@@ -529,11 +529,11 @@ export default function AdDetailPage({
                             href={safeHref}
                             target="_blank"
                             rel="noopener noreferrer"
-                            title="مشاهده وب‌سایت"
-                            className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
+                            title="Ù…Ø´Ø§Ù‡Ø¯Ù‡ ÙˆØ¨â€ŒØ³Ø§ÛŒØª"
+                            className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
                           >
                             <Globe size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
-                            <span>وب‌سایت</span>
+                            <span>ÙˆØ¨â€ŒØ³Ø§ÛŒØª</span>
                           </a>
                         );
                       })()}
@@ -543,28 +543,28 @@ export default function AdDetailPage({
               </div>
 
               {/* Safety Notice & Report Abuse Section */}
-              <div className="pt-5 border-t border-[#F0F2F5] dark:border-white/[0.05] space-y-3">
+              <div className="pt-5 border-t border-[#F0F2F5] dark:border-white/[0.025] space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-xs text-[#6E6E73] dark:text-[#98989F]">
                     <ShieldCheck size={16} className="text-[#86868B] shrink-0" />
-                    <span>قبل از هرگونه پرداخت، کالا یا مسکن را حضوری بررسی کنید.</span>
+                    <span>Ù‚Ø¨Ù„ Ø§Ø² Ù‡Ø±Ú¯ÙˆÙ†Ù‡ Ù¾Ø±Ø¯Ø§Ø®ØªØŒ Ú©Ø§Ù„Ø§ ÛŒØ§ Ù…Ø³Ú©Ù† Ø±Ø§ Ø­Ø¶ÙˆØ±ÛŒ Ø¨Ø±Ø±Ø³ÛŒ Ú©Ù†ÛŒØ¯.</span>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setReportOpen((v) => !v)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white text-[11px] font-bold shrink-0 transition-colors cursor-pointer border border-[#ECEFF4] dark:border-white/[0.06] shadow-none"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white text-[11px] font-bold shrink-0 transition-colors cursor-pointer border border-[#ECEFF4] dark:border-white/[0.03] shadow-none"
                   >
                     <Flag size={12} className="text-[#86868B]" />
-                    <span>گزارش آگهی</span>
+                    <span>Ú¯Ø²Ø§Ø±Ø´ Ø¢Ú¯Ù‡ÛŒ</span>
                   </button>
                 </div>
 
                 {reportOpen && (
-                  <div className="pt-3 border-t border-[#F0F2F5] dark:border-white/[0.05] space-y-2.5">
+                  <div className="pt-3 border-t border-[#F0F2F5] dark:border-white/[0.025] space-y-2.5">
                     {reportSent ? (
                       <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                        گزارش شما با موفقیت برای بررسی مدیر ارسال شد. با تشکر از همکاری شما.
+                        Ú¯Ø²Ø§Ø±Ø´ Ø´Ù…Ø§ Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø¨Ø±Ø§ÛŒ Ø¨Ø±Ø±Ø³ÛŒ Ù…Ø¯ÛŒØ± Ø§Ø±Ø³Ø§Ù„ Ø´Ø¯. Ø¨Ø§ ØªØ´Ú©Ø± Ø§Ø² Ù‡Ù…Ú©Ø§Ø±ÛŒ Ø´Ù…Ø§.
                       </p>
                     ) : (
                       <>
@@ -572,19 +572,19 @@ export default function AdDetailPage({
                           <select
                             value={reportReason}
                             onChange={(e) => setReportReason(e.target.value)}
-                            className="h-9 rounded-xl border border-[#ECEFF4] dark:border-white/[0.08] bg-[#FBFBFC] dark:bg-[#1C202A] px-3 text-xs font-semibold text-[#1D1D1F] dark:text-white focus:outline-none"
+                            className="h-9 rounded-xl border border-[#ECEFF4] dark:border-white/[0.04] bg-[#FBFBFC] dark:bg-[#1C202A] px-3 text-xs font-semibold text-[#1D1D1F] dark:text-white focus:outline-none"
                           >
-                            <option value="محتوای غیرمجاز یا نامناسب">محتوای غیرمجاز یا نامناسب</option>
-                            <option value="کلاهبرداری یا آگهی جعلی">کلاهبرداری یا آگهی جعلی</option>
-                            <option value="اسپم یا آگهی تکراری">اسپم یا آگهی تکراری</option>
-                            <option value="سایر موارد">سایر موارد</option>
+                            <option value="Ù…Ø­ØªÙˆØ§ÛŒ ØºÛŒØ±Ù…Ø¬Ø§Ø² ÛŒØ§ Ù†Ø§Ù…Ù†Ø§Ø³Ø¨">Ù…Ø­ØªÙˆØ§ÛŒ ØºÛŒØ±Ù…Ø¬Ø§Ø² ÛŒØ§ Ù†Ø§Ù…Ù†Ø§Ø³Ø¨</option>
+                            <option value="Ú©Ù„Ø§Ù‡Ø¨Ø±Ø¯Ø§Ø±ÛŒ ÛŒØ§ Ø¢Ú¯Ù‡ÛŒ Ø¬Ø¹Ù„ÛŒ">Ú©Ù„Ø§Ù‡Ø¨Ø±Ø¯Ø§Ø±ÛŒ ÛŒØ§ Ø¢Ú¯Ù‡ÛŒ Ø¬Ø¹Ù„ÛŒ</option>
+                            <option value="Ø§Ø³Ù¾Ù… ÛŒØ§ Ø¢Ú¯Ù‡ÛŒ ØªÚ©Ø±Ø§Ø±ÛŒ">Ø§Ø³Ù¾Ù… ÛŒØ§ Ø¢Ú¯Ù‡ÛŒ ØªÚ©Ø±Ø§Ø±ÛŒ</option>
+                            <option value="Ø³Ø§ÛŒØ± Ù…ÙˆØ§Ø±Ø¯">Ø³Ø§ÛŒØ± Ù…ÙˆØ§Ø±Ø¯</option>
                           </select>
                           <input
                             type="text"
                             value={reportDetails}
                             onChange={(e) => setReportDetails(e.target.value)}
-                            placeholder="توضیح کوتاه (اختیاری)..."
-                            className="h-9 rounded-xl border border-[#ECEFF4] dark:border-white/[0.08] bg-[#FBFBFC] dark:bg-[#1C202A] px-3 text-xs text-[#1D1D1F] dark:text-white focus:outline-none"
+                            placeholder="ØªÙˆØ¶ÛŒØ­ Ú©ÙˆØªØ§Ù‡ (Ø§Ø®ØªÛŒØ§Ø±ÛŒ)..."
+                            className="h-9 rounded-xl border border-[#ECEFF4] dark:border-white/[0.04] bg-[#FBFBFC] dark:bg-[#1C202A] px-3 text-xs text-[#1D1D1F] dark:text-white focus:outline-none"
                           />
                         </div>
                         <div className="flex items-center justify-end gap-2">
@@ -593,7 +593,7 @@ export default function AdDetailPage({
                             onClick={() => setReportOpen(false)}
                             className="h-8 px-3 rounded-full text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] dark:text-[#98989F] dark:hover:text-white cursor-pointer"
                           >
-                            انصراف
+                            Ø§Ù†ØµØ±Ø§Ù
                           </button>
                           <button
                             type="button"
@@ -614,7 +614,7 @@ export default function AdDetailPage({
                             }}
                             className="h-8 px-4 rounded-full bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer shadow-none"
                           >
-                            {reportSending ? 'در حال ارسال...' : 'ارسال گزارش'}
+                            {reportSending ? 'Ø¯Ø± Ø­Ø§Ù„ Ø§Ø±Ø³Ø§Ù„...' : 'Ø§Ø±Ø³Ø§Ù„ Ú¯Ø²Ø§Ø±Ø´'}
                           </button>
                         </div>
                       </>
@@ -631,16 +631,16 @@ export default function AdDetailPage({
           <aside className="lg:col-span-4 lg:sticky lg:top-32 space-y-5">
             
             {/* VIP Sponsored Ads List (Flat Unified Card, Hairline Dividers) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.06] overflow-hidden shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] overflow-hidden shadow-none">
               
-              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#F0F2F5] dark:border-white/[0.05]">
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#F0F2F5] dark:border-white/[0.025]">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
                     <Crown size={15} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">آگهی‌های ویژه {adCountryName}</h2>
-                    <p className="text-[10px] text-[#86868B] dark:text-[#98989F] font-medium">برگزیده‌های ویژه در {adCountryName}</p>
+                    <h2 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">Ø¢Ú¯Ù‡ÛŒâ€ŒÙ‡Ø§ÛŒ ÙˆÛŒÚ˜Ù‡ {adCountryName}</h2>
+                    <p className="text-[10px] text-[#86868B] dark:text-[#98989F] font-medium">Ø¨Ø±Ú¯Ø²ÛŒØ¯Ù‡â€ŒÙ‡Ø§ÛŒ ÙˆÛŒÚ˜Ù‡ Ø¯Ø± {adCountryName}</p>
                   </div>
                 </div>
 
@@ -650,7 +650,7 @@ export default function AdDetailPage({
               </div>
 
               {/* Flat Hairline-Divided Rows */}
-              <div className="divide-y divide-[#F0F2F5] dark:divide-white/[0.05]">
+              <div className="divide-y divide-[#F0F2F5] dark:divide-white/[0.025]">
                 {displayVipAds.map((vipAd) => {
                   const vipCat = CATEGORIES.find(c => c.id === vipAd.category);
                   const vipCover = (vipAd.images && vipAd.images.length > 0)
@@ -658,7 +658,7 @@ export default function AdDetailPage({
                     : 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=400&q=80';
                   const vipPrice = vipAd.price 
                     ? `${Number(vipAd.price).toLocaleString('sv-SE')} ${vipAd.price_type || 'kr'}`
-                    : (vipAd.price_type || 'توافقی');
+                    : (vipAd.price_type || 'ØªÙˆØ§ÙÙ‚ÛŒ');
 
                   return (
                     <article
@@ -667,7 +667,7 @@ export default function AdDetailPage({
                       className="group flex items-center gap-3.5 px-4 sm:px-5 py-3.5 hover:bg-[#F5F5F7]/80 dark:hover:bg-white/[0.04] active:bg-[#EBEBF0] transition-colors cursor-pointer"
                     >
                       {/* Clean Thumbnail */}
-                      <div className="relative h-16 w-20 rounded-xl overflow-hidden shrink-0 bg-[#F5F5F7] dark:bg-white/[0.05] border border-[#ECEFF4] dark:border-white/[0.06]">
+                      <div className="relative h-16 w-20 rounded-xl overflow-hidden shrink-0 bg-[#F5F5F7] dark:bg-white/[0.05] border border-[#ECEFF4] dark:border-white/[0.03]">
                         <img
                           src={vipCover}
                           alt={vipAd.title}
@@ -704,19 +704,19 @@ export default function AdDetailPage({
             </div>
 
             {/* Monetization Promotion CTA Card (Unified Surface, Zero Box Shadow) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.06] p-5 space-y-3.5 shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] p-5 space-y-3.5 shadow-none">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">آگهی شما در صدر {adCountryName} دیده شود!</h3>
-                  <p className="text-[10px] text-[#86868B] dark:text-[#98989F]">جذب ۳ برابری مشتریان و بازدیدکنندگان در {adCountryName}</p>
+                  <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">Ø¢Ú¯Ù‡ÛŒ Ø´Ù…Ø§ Ø¯Ø± ØµØ¯Ø± {adCountryName} Ø¯ÛŒØ¯Ù‡ Ø´ÙˆØ¯!</h3>
+                  <p className="text-[10px] text-[#86868B] dark:text-[#98989F]">Ø¬Ø°Ø¨ Û³ Ø¨Ø±Ø§Ø¨Ø±ÛŒ Ù…Ø´ØªØ±ÛŒØ§Ù† Ùˆ Ø¨Ø§Ø²Ø¯ÛŒØ¯Ú©Ù†Ù†Ø¯Ú¯Ø§Ù† Ø¯Ø± {adCountryName}</p>
                 </div>
               </div>
 
               <p className="text-xs text-[#6E6E73] dark:text-[#98989F] leading-relaxed">
-                با ارتقا به آگهی ویژه (VIP)، آگهی شما در بخش ویژه و بالای فهرست جستجوی فارسی‌زبانان در سراسر {adCountryName} نمایش داده می‌شود.
+                Ø¨Ø§ Ø§Ø±ØªÙ‚Ø§ Ø¨Ù‡ Ø¢Ú¯Ù‡ÛŒ ÙˆÛŒÚ˜Ù‡ (VIP)ØŒ Ø¢Ú¯Ù‡ÛŒ Ø´Ù…Ø§ Ø¯Ø± Ø¨Ø®Ø´ ÙˆÛŒÚ˜Ù‡ Ùˆ Ø¨Ø§Ù„Ø§ÛŒ ÙÙ‡Ø±Ø³Øª Ø¬Ø³ØªØ¬ÙˆÛŒ ÙØ§Ø±Ø³ÛŒâ€ŒØ²Ø¨Ø§Ù†Ø§Ù† Ø¯Ø± Ø³Ø±Ø§Ø³Ø± {adCountryName} Ù†Ù…Ø§ÛŒØ´ Ø¯Ø§Ø¯Ù‡ Ù…ÛŒâ€ŒØ´ÙˆØ¯.
               </p>
 
               <button
@@ -725,7 +725,7 @@ export default function AdDetailPage({
                 className="w-full h-10 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold active:scale-[0.97] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-none"
               >
                 <Crown size={15} className="text-white/90" />
-                <span>{isVipActive ? `تمدید یا تغییر کشور ویژه (${adCountryName})` : `ارتقا و ویژه کردن در ${adCountryName}`}</span>
+                <span>{isVipActive ? `ØªÙ…Ø¯ÛŒØ¯ ÛŒØ§ ØªØºÛŒÛŒØ± Ú©Ø´ÙˆØ± ÙˆÛŒÚ˜Ù‡ (${adCountryName})` : `Ø§Ø±ØªÙ‚Ø§ Ùˆ ÙˆÛŒÚ˜Ù‡ Ú©Ø±Ø¯Ù† Ø¯Ø± ${adCountryName}`}</span>
               </button>
             </div>
 
@@ -748,7 +748,7 @@ export default function AdDetailPage({
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F] text-xs font-bold transition-colors cursor-pointer"
             >
               <X size={15} />
-              <span>بستن</span>
+              <span>Ø¨Ø³ØªÙ†</span>
             </button>
 
             {images.length > 1 ? (
@@ -756,7 +756,7 @@ export default function AdDetailPage({
                 {activeImageIdx + 1} / {images.length}
               </span>
             ) : (
-              <span className="text-xs font-semibold text-[#6E6E73]">نمای کامل تصویر</span>
+              <span className="text-xs font-semibold text-[#6E6E73]">Ù†Ù…Ø§ÛŒ Ú©Ø§Ù…Ù„ ØªØµÙˆÛŒØ±</span>
             )}
 
             <button
@@ -771,7 +771,7 @@ export default function AdDetailPage({
               className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F] text-xs font-bold transition-colors cursor-pointer"
             >
               <ZoomIn size={14} />
-              <span>{zoomed ? 'نمای عادی' : 'بزرگنمایی'}</span>
+              <span>{zoomed ? 'Ù†Ù…Ø§ÛŒ Ø¹Ø§Ø¯ÛŒ' : 'Ø¨Ø²Ø±Ú¯Ù†Ù…Ø§ÛŒÛŒ'}</span>
             </button>
           </div>
 
@@ -861,3 +861,4 @@ export default function AdDetailPage({
     </div>
   );
 }
+
