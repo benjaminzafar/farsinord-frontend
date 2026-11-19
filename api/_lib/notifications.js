@@ -1,3 +1,5 @@
+import { getVaultSecret } from './secretVault.js';
+
 const MAIN_SITE_URL = (process.env.VITE_MAIN_SITE_URL || 'https://www.linksho.eu').replace(/\/+$/, '');
 
 function escapeHtml(str) {
@@ -47,8 +49,19 @@ export async function dispatchPendingNotifications(supabase, limit = 50) {
     return { processed: 0, sent: 0, inAppOnly: 0, failed: 0 };
   }
 
-  const resendKey = String(process.env.RESEND_API_KEY || '').trim();
-  const fromEmail = String(process.env.NOTIFICATION_FROM_EMAIL || 'LinkSho <noreply@linksho.eu>').trim();
+  let resendKey = '';
+  let fromEmail = 'LinkSho <noreply@linksho.eu>';
+  try {
+    const [keyRes, fromRes] = await Promise.all([
+      getVaultSecret(supabase, 'resend_api_key'),
+      getVaultSecret(supabase, 'notification_from_email'),
+    ]);
+    resendKey = String(keyRes?.value || '').trim();
+    if (fromRes?.value) fromEmail = String(fromRes.value).trim();
+  } catch {
+    resendKey = String(process.env.RESEND_API_KEY || '').trim();
+    fromEmail = String(process.env.NOTIFICATION_FROM_EMAIL || fromEmail).trim();
+  }
 
   let sent = 0;
   let inAppOnly = 0;

@@ -5,6 +5,7 @@ import {
   verifyStripeWebhookSignature,
   verifyVerifiedCheckoutSession,
 } from './_lib/stripeSecurity.js';
+import { resolveStripeWebhookSecret } from './_lib/secretVault.js';
 
 export const config = {
   api: {
@@ -58,6 +59,8 @@ export async function readRawBody(req, maxBytes = MAX_WEBHOOK_BYTES) {
   return Buffer.alloc(0);
 }
 
+let lastWebhookRefreshAt = 0;
+
 export default async function handler(req, res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
@@ -65,17 +68,49 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
   }
 
-  const webhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || '').trim();
   const serviceRoleKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   const supabaseUrl =
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
     'https://bezbnymjcnmazdonfzky.supabase.co';
 
-  if (!webhookSecret || !serviceRoleKey || !supabaseUrl) {
+  if (!serviceRoleKey || !supabaseUrl) {
     return res.status(503).json({
       ok: false,
-      error: 'STRIPE_WEBHOOK_SECRET and SUPABASE_SERVICE_ROLE_KEY must be configured on the server.',
+      error: 'SUPABASE_SERVICE_ROLE_KEY must be configured on the server.',
+    });
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  let stripeCfg = {};
+  try {
+    const { data: stripeRow } = await supabase
+      .from('swedpersiska_settings')
+      .select('value')
+      .eq('key', 'stripe_settings')
+      .maybeSingle();
+    if (stripeRow?.value && typeof stripeRow.value === 'object') {
+      stripeCfg = stripeRow.value;
+    }
+  } catch {}
+  const expectedMode = stripeCfg.mode === 'live' ? 'live' : 'test';
+
+  let webhookSecretRes;
+  try {
+    webhookSecretRes = await resolveStripeWebhookSecret(supabase, expectedMode);
+  } catch (err) {
+    console.error('[stripe-webhook] vault decryption error:', err?.message);
+    return res.status(503).json({ ok: false, error: 'Failed to decrypt Stripe webhook secret from vault.' });
+  }
+
+  let webhookSecret = String(webhookSecretRes?.value || '').trim();
+  if (!webhookSecret) {
+    return res.status(503).json({
+      ok: false,
+      error: 'Stripe Webhook Secret is not configured in Admin Secret Vault or server env.',
     });
   }
 
@@ -87,7 +122,20 @@ export default async function handler(req, res) {
   }
 
   const sigHeader = req.headers?.['stripe-signature'] || req.headers?.['Stripe-Signature'] || '';
-  const sigCheck = verifyStripeWebhookSignature(rawBody, sigHeader, webhookSecret);
+  let sigCheck = verifyStripeWebhookSignature(rawBody, sigHeader, webhookSecret);
+
+  // Self-healing zero-drop rotation: if cached vault secret fails HMAC, force 1 fresh DB read (debounced 10s)
+  if (!sigCheck.ok && webhookSecretRes?.source === 'vault' && Date.now() - lastWebhookRefreshAt > 10_000) {
+    lastWebhookRefreshAt = Date.now();
+    try {
+      const freshRes = await resolveStripeWebhookSecret(supabase, expectedMode, { fresh: true });
+      if (freshRes?.value && freshRes.value !== webhookSecret) {
+        webhookSecret = freshRes.value;
+        sigCheck = verifyStripeWebhookSignature(rawBody, sigHeader, webhookSecret);
+      }
+    } catch {}
+  }
+
   if (!sigCheck.ok) {
     return res.status(400).json({ ok: false, error: sigCheck.error });
   }
@@ -101,17 +149,8 @@ export default async function handler(req, res) {
 
   const eventType = String(event?.type || '').trim();
   const obj = event?.data?.object || {};
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    const { data: stripeRow } = await supabase
-      .from('swedpersiska_settings')
-      .select('value')
-      .eq('key', 'stripe_settings')
-      .maybeSingle();
-    const stripeCfg = stripeRow?.value || {};
-    const expectedMode = stripeCfg.mode === 'live' ? 'live' : 'test';
-
     // Reject mode mismatch events across ALL Stripe event types
     if (typeof event?.livemode === 'boolean' && event.livemode !== (expectedMode === 'live')) {
       console.warn('[stripe-webhook] mode mismatch ignored:', { eventType, eventLivemode: event.livemode, expectedMode });

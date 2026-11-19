@@ -2,34 +2,55 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'node:crypto';
 import { deleteR2ObjectsForAd, resolveR2Config } from './_lib/r2Storage.js';
 import { dispatchPendingNotifications } from './_lib/notifications.js';
+import { getAdminJwtSigningContext, getVaultSecret, safeTimingEqual } from './_lib/secretVault.js';
 
-const TOKEN_SECRET = process.env.ADMIN_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-function safeEqual(a, b) {
-  const bufA = Buffer.from(String(a || ''), 'utf8');
-  const bufB = Buffer.from(String(b || ''), 'utf8');
-  if (bufA.length !== bufB.length) return false;
-  return crypto.timingSafeEqual(bufA, bufB);
-}
-
-function isAuthorizedCron(req) {
-  const cronSecret = String(process.env.CRON_SECRET || '').trim();
+async function isAuthorizedCron(req, supabase) {
   const auth = String(req.headers.authorization || '').trim();
   const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  if (!bearer) return false;
 
-  if (cronSecret && bearer && safeEqual(bearer, cronSecret)) {
+  // 1. Check Vercel env CRON_SECRET first (native Vercel Cron)
+  const envCronSecret = String(process.env.CRON_SECRET || '').trim();
+  if (envCronSecret && safeTimingEqual(bearer, envCronSecret)) {
     return true;
   }
-  if (TOKEN_SECRET && bearer && bearer.includes('.')) {
-    const [payload, sig] = bearer.split('.');
-    const expected = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
-    if (safeEqual(sig, expected)) {
-      try {
-        const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-        if (decoded?.role === 'admin' && decoded.exp > Date.now()) return true;
-      } catch {}
+
+  // 2. Check Encrypted DB Vault cron_secret (external scheduler / pg_cron + pg_net)
+  try {
+    const vaultCron = await getVaultSecret(supabase, 'cron_secret', { allowEnvFallback: false });
+    if (vaultCron?.value && safeTimingEqual(bearer, vaultCron.value)) {
+      return true;
     }
+  } catch {}
+
+  // 3. Check signed Admin Bearer JWT (derived via shared HKDF + DB pepper)
+  const parts = bearer.split('.');
+  if (parts.length === 2 && parts[0] && parts[1]) {
+    const [payload, sig] = parts;
+    try {
+      const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+      if (decoded?.role !== 'admin' || !decoded.exp || decoded.exp <= Date.now()) {
+        return false;
+      }
+
+      const verifyWithCtx = (ctx) => {
+        if (!ctx?.signingKey) return false;
+        const expected = crypto.createHmac('sha256', ctx.signingKey).update(payload).digest('base64url');
+        if (!safeTimingEqual(sig, expected)) return false;
+        if (ctx.hasDbPepper && Number(decoded.pv ?? -1) !== Number(ctx.pepperVersion)) return false;
+        return true;
+      };
+
+      let ctx = await getAdminJwtSigningContext(supabase);
+      if (verifyWithCtx(ctx)) return true;
+
+      if (decoded.pv !== undefined && Number(decoded.pv) !== Number(ctx.pepperVersion)) {
+        ctx = await getAdminJwtSigningContext(supabase, { fresh: true });
+        if (verifyWithCtx(ctx)) return true;
+      }
+    } catch {}
   }
+
   return false;
 }
 
@@ -40,15 +61,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
   }
 
-  if (!isAuthorizedCron(req)) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized cron or admin invocation' });
-  }
-
   const supabaseUrl =
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
     'https://bezbnymjcnmazdonfzky.supabase.co';
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   if (!supabaseUrl || !serviceKey) {
     return res.status(503).json({
       ok: false,
@@ -56,7 +73,13 @@ export default async function handler(req, res) {
     });
   }
 
-  const supabase = createClient(supabaseUrl, serviceKey);
+  const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  if (!(await isAuthorizedCron(req, supabase))) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized cron or admin invocation' });
+  }
 
   try {
     const body = req.method === 'POST'

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { resolveR2VaultConfig } from './secretVault.js';
 
 function hmacSha256(key, data) {
   return crypto.createHmac('sha256', key).update(data, 'utf8').digest();
@@ -12,53 +13,21 @@ function encodeRfc3986(str) {
   return encodeURIComponent(str).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 }
 
-const R2_CONFIG_TTL_MS = 3 * 60 * 1000;
+const R2_CONFIG_TTL_MS = 60 * 1000;
 let cachedR2Config = null;
 let cachedR2ConfigAt = 0;
 
-export async function resolveR2Config(supabase) {
-  if (
-    process.env.R2_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY &&
-    process.env.R2_BUCKET_NAME &&
-    process.env.R2_PUBLIC_URL
-  ) {
-    return {
-      enabled: true,
-      accountId: process.env.R2_ACCOUNT_ID.trim(),
-      accessKeyId: process.env.R2_ACCESS_KEY_ID.trim(),
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY.trim(),
-      bucketName: process.env.R2_BUCKET_NAME.trim(),
-      publicUrl: process.env.R2_PUBLIC_URL.trim().replace(/\/+$/, ''),
-    };
-  }
-
+export async function resolveR2Config(supabase, { fresh = false } = {}) {
   const now = Date.now();
-  if (cachedR2Config && now - cachedR2ConfigAt < R2_CONFIG_TTL_MS) {
+  if (!fresh && cachedR2Config && now - cachedR2ConfigAt < R2_CONFIG_TTL_MS) {
     return cachedR2Config;
   }
 
-  if (!supabase) return null;
-  const { data } = await supabase
-    .from('swedpersiska_settings')
-    .select('value')
-    .eq('key', 'r2_settings')
-    .maybeSingle();
-
-  const val = data?.value;
-  if (!val?.enabled || !val.accountId || !val.accessKeyId || !val.secretAccessKey || !val.bucketName || !val.publicUrl) {
+  const resolved = await resolveR2VaultConfig(supabase, { fresh });
+  if (!resolved?.configured) {
     return null;
   }
 
-  const resolved = {
-    ...val,
-    accountId: String(val.accountId).trim(),
-    accessKeyId: String(val.accessKeyId).trim(),
-    secretAccessKey: String(val.secretAccessKey).trim(),
-    bucketName: String(val.bucketName).trim(),
-    publicUrl: String(val.publicUrl).trim().replace(/\/+$/, ''),
-  };
   cachedR2Config = resolved;
   cachedR2ConfigAt = now;
   return resolved;

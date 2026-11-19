@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { resolveR2VaultConfig } from './_lib/secretVault.js';
 
 export const MAX_FILE_BYTES = 1048576; // Strict 1 MB limit per photo
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
@@ -164,26 +165,9 @@ export function createR2PresignedPutUrl({
 
 let cachedR2Config = null;
 let cachedR2At = 0;
-const R2_CACHE_TTL_MS = 5 * 60 * 1000;
+const R2_CACHE_TTL_MS = 60 * 1000;
 
 async function resolveR2Config() {
-  if (
-    process.env.R2_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY &&
-    process.env.R2_BUCKET_NAME &&
-    process.env.R2_PUBLIC_URL
-  ) {
-    return {
-      enabled: true,
-      accountId: process.env.R2_ACCOUNT_ID.trim(),
-      accessKeyId: process.env.R2_ACCESS_KEY_ID.trim(),
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY.trim(),
-      bucketName: process.env.R2_BUCKET_NAME.trim(),
-      publicUrl: process.env.R2_PUBLIC_URL.trim().replace(/\/+$/, ''),
-    };
-  }
-
   if (cachedR2Config && Date.now() - cachedR2At < R2_CACHE_TTL_MS) {
     return cachedR2Config;
   }
@@ -192,29 +176,22 @@ async function resolveR2Config() {
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
     'https://bezbnymjcnmazdonfzky.supabase.co';
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) return null;
+  const serviceRoleKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
-  const { createClient } = await import('@supabase/supabase-js');
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const { data } = await supabase
-    .from('swedpersiska_settings')
-    .select('value')
-    .eq('key', 'r2_settings')
-    .maybeSingle();
+  let supabase = null;
+  if (supabaseUrl && serviceRoleKey) {
+    const { createClient } = await import('@supabase/supabase-js');
+    supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
 
-  const val = data?.value;
-  if (!val?.enabled || !val.accountId || !val.accessKeyId || !val.secretAccessKey || !val.bucketName || !val.publicUrl) {
+  const resolved = await resolveR2VaultConfig(supabase);
+  if (!resolved?.configured) {
     return null;
   }
-  cachedR2Config = {
-    ...val,
-    accountId: String(val.accountId).trim(),
-    accessKeyId: String(val.accessKeyId).trim(),
-    secretAccessKey: String(val.secretAccessKey).trim(),
-    bucketName: String(val.bucketName).trim(),
-    publicUrl: String(val.publicUrl).trim().replace(/\/+$/, ''),
-  };
+
+  cachedR2Config = resolved;
   cachedR2At = Date.now();
   return cachedR2Config;
 }

@@ -12,6 +12,11 @@ import {
 } from './_lib/stripeSecurity.js';
 import { CANONICAL_ORIGIN } from './_lib/seoCore.js';
 import { notifyIndexNow } from './_lib/indexNow.js';
+import {
+  getVaultSecret,
+  resolveR2VaultConfig,
+  resolveStripeSecretKey,
+} from './_lib/secretVault.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://bezbnymjcnmazdonfzky.supabase.co';
 const HAS_SERVICE_ROLE = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -26,6 +31,7 @@ function fetchWithTimeout(input, init = {}) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: { persistSession: false, autoRefreshToken: false },
   global: { fetch: fetchWithTimeout },
 });
 
@@ -309,8 +315,9 @@ async function getStripeConfig({ fresh = false } = {}) {
   }
   const enabled = stripeCfg.enabled !== false;
   const mode = stripeCfg.mode === 'live' ? 'live' : 'test';
-  const secretKey = String(process.env.STRIPE_SECRET_KEY || '').trim();
-  return { enabled, mode, secretKey, stripeCfg };
+  const resolved = await resolveStripeSecretKey(supabase, mode, { fresh });
+  const secretKey = String(resolved?.value || '').trim();
+  return { enabled, mode, secretKey, stripeCfg, secretSource: resolved?.source || 'none' };
 }
 
 async function createStripeCheckoutSession({ secretKey, amountOre, currency = 'sek', productName, successUrl, cancelUrl, customerEmail, metadata = {}, idempotencyKey = '' }) {
@@ -419,7 +426,15 @@ export default async function handler(req, res) {
           if (val === undefined) continue;
           if (key === 'stripe_settings' && val) {
             const stripeMode = val.mode === 'live' ? 'live' : 'test';
-            const keyCheck = validateStripeSecretKeyForMode(process.env.STRIPE_SECRET_KEY, stripeMode);
+            let resolvedSecret = '';
+            try {
+              const secRes = await resolveStripeSecretKey(supabase, stripeMode);
+              resolvedSecret = String(secRes?.value || '').trim();
+            } catch {
+              resolvedSecret = '';
+            }
+            const keyCheck = validateStripeSecretKeyForMode(resolvedSecret, stripeMode);
+            const checkoutOk = Boolean(val.enabled !== false && keyCheck.ok);
             settings.stripe_settings = {
               enabled: val.enabled,
               mode: val.mode,
@@ -428,7 +443,8 @@ export default async function handler(req, res) {
               currency: val.currency,
               vipDurationDays: val.vipDurationDays,
               vipBadgeText: val.vipBadgeText,
-              checkoutAvailable: Boolean(val.enabled !== false && keyCheck.ok),
+              checkoutAvailable: checkoutOk,
+              stripeReady: checkoutOk,
             };
           } else if (key === 'turnstile_settings' && val) {
             settings.turnstile_settings = {
@@ -437,12 +453,22 @@ export default async function handler(req, res) {
               siteKey: String(val.siteKey || '').replace(/[\s\u200B-\u200D\uFEFF]/g, ''),
               protectPostAd: val.protectPostAd,
             };
-          } else if (key === 'site_branding' && val) {
+          } else if (key === 'site_branding' && val && typeof val === 'object') {
             const rawName = (val.siteName || '').trim();
             const isLegacy = !rawName || /سوئد\s*پرشیا|سوید\s*پرشیا|پرشیا\s*سو|فارسی\s*نور|swedpersiska|farsi\s*nord|faris\s*nord/i.test(rawName);
             settings.site_branding = {
-              ...val,
               siteName: isLegacy ? 'لینک شو' : rawName,
+              siteSlogan: val.siteSlogan || '',
+              logoUrl: val.logoUrl || '',
+              faviconUrl: val.faviconUrl || '',
+              supportEmail: val.supportEmail || '',
+              supportTelegram: val.supportTelegram || '',
+              supportPhone: val.supportPhone || '',
+              socialInstagram: val.socialInstagram ?? '',
+              socialTelegram: val.socialTelegram || '',
+              socialWhatsapp: val.socialWhatsapp || '',
+              socialYoutube: val.socialYoutube || '',
+              socialLinkedin: val.socialLinkedin || '',
             };
           } else if (key === 'google_maps_settings' && val && typeof val === 'object') {
             const cleanKey = String(val.embedApiKey || '').replace(/[\p{Cc}\s\u200B-\u200D\uFEFF]/gu, '');
@@ -453,12 +479,20 @@ export default async function handler(req, res) {
               embedApiKey: safeKey,
               defaultZoom: Number.isInteger(zoomNum) && zoomNum >= 1 && zoomNum <= 20 ? zoomNum : 14,
             };
+          } else if (key === 'ad_lifecycle_settings' && val && typeof val === 'object') {
+            settings.ad_lifecycle_settings = {
+              enabled: val.enabled !== false,
+              inactivityDays: Number(val.inactivityDays) || 30,
+              warningDays: Number(val.warningDays) || 7,
+              softDeleteRetentionDays: Number(val.softDeleteRetentionDays) || 14,
+              freeBoostCooldownDays: Number(val.freeBoostCooldownDays) || 7,
+            };
           } else {
             settings[key] = val;
           }
         }
 
-        res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=600, stale-while-revalidate=3600');
+        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=600');
         return res.status(200).json({ ok: true, settings });
       }
 
@@ -986,49 +1020,65 @@ export default async function handler(req, res) {
 
         const settingsMap = await getCachedPublicSettingsMap();
 
-        // Strict server-side Turnstile verification when live mode & secret key are configured
-        const turnstileSecret = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
-        if (turnstileSecret) {
-          let requireLiveTurnstile = true;
-          const tsCfg = settingsMap.turnstile_settings;
-          if (tsCfg && (tsCfg.enabled === false || tsCfg.protectPostAd === false || tsCfg.mode !== 'live')) {
-            requireLiveTurnstile = false;
+        // Strict fail-closed server-side Turnstile verification when live mode is active
+        const tsCfg = settingsMap.turnstile_settings;
+        const requireLiveTurnstile = Boolean(
+          tsCfg && tsCfg.enabled !== false && tsCfg.protectPostAd !== false && tsCfg.mode === 'live'
+        );
+        if (requireLiveTurnstile) {
+          let turnstileSecret = '';
+          try {
+            const tsSecretRes = await getVaultSecret(supabase, 'turnstile_secret_key');
+            turnstileSecret = String(tsSecretRes?.value || '').trim();
+          } catch (err) {
+            console.error('[public] turnstile secret vault error:', err?.message);
+            return res.status(503).json({ ok: false, error: 'خطا در خواندن تنظیمات امنیتی سرور. لطفاً بعداً تلاش کنید.' });
+          }
+          if (!turnstileSecret) {
+            return res.status(503).json({
+              ok: false,
+              error: 'کپچای کلودفلر در حالت Live فعال است اما Secret Key آن در پنل مدیریت تنظیم نشده است.',
+            });
           }
 
-          if (requireLiveTurnstile) {
-            const cleanToken = String(turnstileToken || '').trim();
-            if (!cleanToken) {
-              return res.status(403).json({ ok: false, error: 'تایید امنیتی کپچا الزامی است. لطفاً مجدداً امتحان کنید.' });
+          const cleanToken = String(turnstileToken || '').trim();
+          if (!cleanToken) {
+            return res.status(403).json({ ok: false, error: 'تایید امنیتی کپچا الزامی است. لطفاً مجدداً امتحان کنید.' });
+          }
+          const tsCtrl = new AbortController();
+          const tsTimer = setTimeout(() => tsCtrl.abort(), 6000);
+          try {
+            const verifyBody = new URLSearchParams({
+              secret: turnstileSecret,
+              response: cleanToken,
+              remoteip: getTrustedClientIp(req),
+            });
+            const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+              method: 'POST',
+              body: verifyBody,
+              signal: tsCtrl.signal,
+            });
+            const tsJson = await tsRes.json().catch(() => ({}));
+            if (!tsRes.ok || !tsJson.success) {
+              return res.status(403).json({ ok: false, error: 'تایید امنیتی کپچا معتبر نیست. لطفاً مجدداً امتحان کنید.' });
             }
-            const tsCtrl = new AbortController();
-            const tsTimer = setTimeout(() => tsCtrl.abort(), 6000);
-            try {
-              const verifyBody = new URLSearchParams({
-                secret: turnstileSecret,
-                response: cleanToken,
-                remoteip: getTrustedClientIp(req),
-              });
-              const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-                method: 'POST',
-                body: verifyBody,
-                signal: tsCtrl.signal,
-              });
-              const tsJson = await tsRes.json().catch(() => ({}));
-              if (!tsRes.ok || !tsJson.success) {
-                return res.status(403).json({ ok: false, error: 'تایید امنیتی کپچا معتبر نیست. لطفاً مجدداً امتحان کنید.' });
-              }
-            } catch {
-              return res.status(503).json({ ok: false, error: 'خطا در بررسی امنیتی کپچا. لطفاً لحظاتی بعد دوباره تلاش کنید.' });
-            } finally {
-              clearTimeout(tsTimer);
-            }
+          } catch {
+            return res.status(503).json({ ok: false, error: 'خطا در بررسی امنیتی کپچا. لطفاً لحظاتی بعد دوباره تلاش کنید.' });
+          } finally {
+            clearTimeout(tsTimer);
           }
         }
 
         const cleanCountry = /^[a-z0-9_-]{2,10}$/i.test(String(country || '')) ? String(country).toLowerCase() : 'se';
         const cleanCategory = category || 'bostad';
         const cleanCity = String(city || 'Stockholm').trim().slice(0, 80);
-        const r2PublicBase = String(process.env.R2_PUBLIC_URL || '').trim().replace(/\/+$/, '');
+        let r2PublicBase = String(process.env.R2_PUBLIC_URL || '').trim().replace(/\/+$/, '');
+        if (!r2PublicBase) {
+          try {
+            const r2Resolved = await resolveR2VaultConfig(supabase);
+            if (r2Resolved?.publicUrl) r2PublicBase = r2Resolved.publicUrl;
+          } catch {}
+        }
         const safeImages = (Array.isArray(images) ? images : [])
           .filter(isSafeHttpUrl)
           .map((u) => {

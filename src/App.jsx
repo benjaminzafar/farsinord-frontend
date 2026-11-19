@@ -433,6 +433,7 @@ export default function App() {
             vipDurationDays: stripe.vipDurationDays,
             vipBadgeText: stripe.vipBadgeText,
             checkoutAvailable: Boolean(stripe.checkoutAvailable),
+            stripeReady: Boolean(stripe.stripeReady ?? stripe.checkoutAvailable),
           });
         }
         if (settings.turnstile_settings) {
