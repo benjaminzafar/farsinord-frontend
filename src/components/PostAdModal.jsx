@@ -24,7 +24,6 @@ import {
   CopyCheck,
   HelpCircle,
   Lock,
-  RefreshCw,
   Crown,
   Phone,
   Mail,
@@ -73,17 +72,6 @@ async function computeFileSha256(file) {
   } catch {
     return '';
   }
-}
-
-function generateClientPin() {
-  try {
-    if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
-      const arr = new Uint32Array(1);
-      window.crypto.getRandomValues(arr);
-      return String(10000000 + (arr[0] % 90000000));
-    }
-  } catch {}
-  return String(10000000 + Math.floor(Math.random() * 90000000));
 }
 
 function normalizeAsciiDigits(str) {
@@ -160,7 +148,7 @@ const COUNTRY_PHONE_PLACEHOLDERS = {
 };
 
 const WIZARD_STEPS = [
-  { num: 1, shortLabel: 'امنیت', subtitle: 'اطلاعات امنیتی، کد مدیریت و قوانین' },
+  { num: 1, shortLabel: 'امنیت', subtitle: 'حریم خصوصی، امنیت و قوانین انتشار' },
   { num: 2, shortLabel: 'اطلاعات آگهی', subtitle: 'انتخاب نوع تبلیغ و مشخصات آگهی' },
   { num: 3, shortLabel: 'تماس و نقشه', subtitle: 'راه‌های تماس و موقعیت روی نقشه گوگل' },
   { num: 4, shortLabel: 'تصویر و VIP', subtitle: 'افزودن عکس، پیشنهاد VIP و انتشار' },
@@ -217,9 +205,7 @@ export default function PostAdModal({
   const [copiedRef, setCopiedRef] = useState(false);
   const [copiedPin, setCopiedPin] = useState(false);
 
-  // Step 1 — Security, PIN & Rules
-  const [managePin, setManagePin] = useState(() => generateClientPin());
-  const [pinCopiedPreview, setPinCopiedPreview] = useState(false);
+  // Step 1 — Security & Rules
   const [rulesAccepted, setRulesAccepted] = useState(false);
   const [rulesHighlightError, setRulesHighlightError] = useState(false);
   const [showAllRules, setShowAllRules] = useState(false);
@@ -289,8 +275,6 @@ export default function PostAdModal({
   const currentCityObj = countryCities.find((c) => c.id === city);
   const currentCategoryObj = CATEGORIES.find((c) => c.id === category);
   const descriptionHasLink = containsLinkInDescription(description);
-  const cleanPinCandidate = normalizeAsciiDigits(managePin).trim();
-  const isPinValid = /^[0-9A-Za-z]{6,12}$/.test(cleanPinCandidate);
   const phonePlaceholder = COUNTRY_PHONE_PLACEHOLDERS[adCountry] || '+46 70 123 45 67';
 
   // Debounce area typing (450ms) so Google Maps iframe updates smoothly without spamming reloads
@@ -556,10 +540,6 @@ export default function PostAdModal({
   }, [price, priceNegotiable, priceType]);
 
   const validateStep1 = () => {
-    if (!isPinValid) {
-      showError('کد مدیریت باید ۶ تا ۱۲ رقم یا حرف انگلیسی باشد.');
-      return false;
-    }
     if (!rulesAccepted) {
       setRulesHighlightError(true);
       showError('لطفاً پیش از ادامه، قوانین انتشار آگهی را تایید کنید.');
@@ -755,7 +735,6 @@ export default function PostAdModal({
           normalizedWebsite && isValidWebsiteInput(normalizedWebsite) ? normalizedWebsite : null,
         images: allImages,
         image_hashes: cleanHashes,
-        pin_code: cleanPinCandidate,
         requestDuplicateReview,
         turnstileToken,
       });
@@ -812,9 +791,6 @@ export default function PostAdModal({
       if (type === 'ref') {
         setCopiedRef(true);
         setTimeout(() => setCopiedRef(false), 2000);
-      } else if (type === 'previewPin') {
-        setPinCopiedPreview(true);
-        setTimeout(() => setPinCopiedPreview(false), 2000);
       } else {
         setCopiedPin(true);
         setTimeout(() => setCopiedPin(false), 2000);
@@ -832,7 +808,7 @@ export default function PostAdModal({
       : `${dynamicVipAmount.toLocaleString('fa-IR')} کرون`;
 
   const activeStepMeta = WIZARD_STEPS[step - 1] || WIZARD_STEPS[0];
-  const isStep1SoftIncomplete = step === 1 && (!rulesAccepted || !isPinValid);
+  const isStep1SoftIncomplete = step === 1 && !rulesAccepted;
   const isStep3SoftIncomplete = step === 3 && activeContacts.length === 0;
   const visibleRules = showAllRules ? fullPolicyRules : compactPolicyRules;
 
@@ -1157,7 +1133,7 @@ export default function PostAdModal({
                 )}
 
                 {/* ======================================================
-                    STEP 1 — اطلاعات امنیتی (Security, Management PIN & Rules)
+                    STEP 1 — اطلاعات امنیتی (Security, Privacy & Rules)
                 ====================================================== */}
                 {step === 1 && (
                   <div className="space-y-3.5">
@@ -1175,7 +1151,7 @@ export default function PostAdModal({
                       <ul className="space-y-2 text-[11.5px] text-[#515154] leading-relaxed">
                         <li className="flex items-start gap-2">
                           <KeyRound className="w-3.5 h-3.5 block shrink-0 text-[#0066CC] mt-0.5" strokeWidth={2} aria-hidden="true" />
-                          <span>بدون نیاز به ثبت‌نام؛ مدیریت، ویرایش و حذف آگهی فقط با کد محرمانه زیر انجام می‌شود.</span>
+                          <span>بدون نیاز به ثبت‌نام؛ پس از ثبت آگهی، کد پیگیری و کد امنیتی مدیریت اختصاصی به شما نمایش داده می‌شود.</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <Lock className="w-3.5 h-3.5 block shrink-0 text-[#0066CC] mt-0.5" strokeWidth={2} aria-hidden="true" />
@@ -1183,80 +1159,12 @@ export default function PostAdModal({
                         </li>
                         <li className="flex items-start gap-2">
                           <ShieldCheck className="w-3.5 h-3.5 block shrink-0 text-[#0066CC] mt-0.5" strokeWidth={2} aria-hidden="true" />
-                          <span>تایید ضدربات کلودفلر برای جلوگیری از منقضی‌شدن کد، دقیقاً در مرحله ۴ پیش از انتشار انجام می‌شود.</span>
+                          <span>تایید ضدربات کلودفلر دقیقاً در مرحله آخر پیش از انتشار آگهی انجام می‌شود.</span>
                         </li>
                       </ul>
                     </div>
 
-                    {/* Zone 2: Management PIN Code */}
-                    <div className="rounded-2xl border border-[#ECEFF4] bg-[#F5F5F7] p-4 space-y-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <label
-                          htmlFor="post-ad-pin"
-                          className="inline-flex items-center gap-1.5 text-xs font-extrabold leading-none text-[#1D1D1F]"
-                        >
-                          <KeyRound className="w-4 h-4 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
-                          <span className="leading-none">کد مدیریت اختصاصی (محرمانه)</span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setManagePin(generateClientPin())}
-                          className="relative min-h-[30px] px-2.5 rounded-full inline-flex items-center gap-1 text-[11px] font-bold leading-none text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#ECECEF] dark:hover:!bg-white/[0.08] transition-colors active:scale-95 cursor-pointer before:content-[''] before:absolute before:-inset-y-1.5 before:-inset-x-1 sm:before:inset-0"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 block shrink-0" strokeWidth={2} aria-hidden="true" />
-                          <span className="leading-none">کد جدید</span>
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <input
-                          id="post-ad-pin"
-                          type="text"
-                          dir="ltr"
-                          maxLength={12}
-                          value={managePin}
-                          onChange={(e) => setManagePin(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') e.preventDefault();
-                          }}
-                          placeholder="۶ تا ۱۲ رقم یا حرف انگلیسی"
-                          className={`flex-1 h-11 rounded-xl border bg-[#FFFFFF] dark:bg-[#1C1F28] px-3.5 text-center font-mono text-[15px] font-bold focus:outline-none transition-colors ${
-                            isPinValid
-                              ? 'border-[#ECEFF4] dark:!border-white/[0.12] text-[#1D1D1F] focus:border-[#0066CC] dark:focus:!border-[#3B9BFF]'
-                              : 'border-rose-400 text-rose-600'
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          disabled={!isPinValid}
-                          onClick={() => copyToClipboard(cleanPinCandidate, 'previewPin')}
-                          className={`min-h-[44px] h-11 px-3.5 rounded-xl border text-xs font-bold leading-none inline-flex items-center justify-center gap-1.5 shrink-0 active:scale-95 transition-all cursor-pointer disabled:opacity-45 disabled:pointer-events-none ${
-                            pinCopiedPreview
-                              ? 'bg-emerald-50 border-emerald-200 dark:!border-emerald-500/35 text-emerald-700'
-                              : 'bg-[#FFFFFF] dark:bg-[#1C1F28] hover:bg-[#ECECEF] dark:hover:!bg-white/[0.10] border-[#ECEFF4] dark:!border-white/[0.12] text-[#1D1D1F]'
-                          }`}
-                        >
-                          {pinCopiedPreview ? (
-                            <Check className="w-3.5 h-3.5 block shrink-0" strokeWidth={2.5} aria-hidden="true" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5 block shrink-0" strokeWidth={2} aria-hidden="true" />
-                          )}
-                          <span className="leading-none">{pinCopiedPreview ? 'کپی شد' : 'کپی'}</span>
-                        </button>
-                      </div>
-
-                      {!isPinValid ? (
-                        <p className="text-[11px] font-semibold text-rose-600">
-                          کد مدیریت باید ۶ تا ۱۲ رقم یا حرف انگلیسی باشد.
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-[#6E6E73] leading-relaxed">
-                          ۶ تا ۱۲ رقم یا حرف انگلیسی • در آگهی نمایش داده نمی‌شود و برای ویرایش، بوست یا حذف آگهی لازم است.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Zone 3: Publishing Rules + Tactile Acceptance Checkbox */}
+                    {/* Zone 2: Publishing Rules + Tactile Acceptance Checkbox */}
                     <div
                       className={`rounded-2xl border overflow-hidden divide-y divide-[#F0F2F5] transition-colors ${
                         rulesHighlightError
@@ -2318,24 +2226,6 @@ export default function PostAdModal({
                           type="button"
                           onClick={() => goToStep(3)}
                           title="ویرایش تماس و موقعیت"
-                          className="p-1.5 rounded-lg text-[#6E6E73] hover:text-[#0066CC] hover:bg-[#ECECEF] transition-colors cursor-pointer shrink-0"
-                        >
-                          <Pencil className="w-3.5 h-3.5 block" strokeWidth={2} aria-hidden="true" />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 py-2.5">
-                        <div className="inline-flex items-center gap-1.5 min-w-0 truncate text-[#515154]">
-                          <KeyRound className="w-3.5 h-3.5 block shrink-0 text-[#0066CC]" strokeWidth={2} aria-hidden="true" />
-                          <span>کد مدیریت:</span>
-                          <bdi dir="ltr" className="font-mono font-bold text-[#1D1D1F]">
-                            {cleanPinCandidate}
-                          </bdi>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => goToStep(1)}
-                          title="ویرایش کد مدیریت"
                           className="p-1.5 rounded-lg text-[#6E6E73] hover:text-[#0066CC] hover:bg-[#ECECEF] transition-colors cursor-pointer shrink-0"
                         >
                           <Pencil className="w-3.5 h-3.5 block" strokeWidth={2} aria-hidden="true" />
