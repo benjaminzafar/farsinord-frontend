@@ -106,176 +106,201 @@
 }
 
 /* =====================================================================
-   HANDCRAFTED APPLE-INSPIRED DARK MODE TOKENS (.dark root class)
+   LIGHT MODE: SUBTLE BRIGHT SURFACE REFINEMENT
+   ===================================================================== */
+html:not(.dark),
+html:not(.dark) body {
+  background-color: #F8F9FB;
+}
+
+:where(html:not(.dark)) .bg-\[\#F5F5F7\] {
+  background-color: #F8F9FB;
+}
+
+:where(html:not(.dark)) .bg-\[\#F5F5F7\]\/90 {
+  background-color: rgba(248, 249, 251, 0.92);
+}
+
+:where(html:not(.dark)) .bg-\[\#FBFBFC\] {
+  background-color: #FFFFFF;
+}
+
+:where(html:not(.dark)) .border-\[\#E5E5EA\] {
+  border-color: #E8EBF0;
+}
+
+/* =====================================================================
+   SOFTENED MATTE DARK MODE TOKENS (:where(html.dark) for clean utility overrides)
    ===================================================================== */
 html.dark,
 html.dark body {
-  background-color: #0B0C10;
-  color: #F5F5F7;
+  background-color: #14171F;
+  color: #ECEEF4;
 }
 
-.dark .bg-\[\#F5F5F7\] {
-  background-color: #0B0C10;
+:where(html.dark) .bg-\[\#F5F5F7\] {
+  background-color: #14171F;
 }
 
-.dark .bg-\[\#F5F5F7\]\/90 {
-  background-color: rgba(11, 12, 16, 0.88);
+:where(html.dark) .bg-\[\#F5F5F7\]\/90 {
+  background-color: rgba(20, 23, 31, 0.9);
 }
 
-.dark .bg-\[\#FBFBFC\],
-.dark .bg-white {
-  background-color: #16181D;
+:where(html.dark) .bg-\[\#FBFBFC\],
+:where(html.dark) .bg-white {
+  background-color: #1C202A;
 }
 
-.dark .bg-white\/90,
-.dark .bg-white\/80 {
-  background-color: rgba(22, 24, 29, 0.92);
+:where(html.dark) .bg-white\/90,
+:where(html.dark) .bg-white\/80 {
+  background-color: rgba(28, 32, 42, 0.94);
 }
 
-.dark .bg-\[\#ECECEF\],
-.dark .bg-\[\#EBEBF0\],
-.dark .bg-slate-50,
-.dark .bg-slate-50\/60,
-.dark .bg-slate-100,
-.dark .bg-stone-50,
-.dark .bg-stone-100 {
-  background-color: #20232A;
+:where(html.dark) .bg-\[\#ECECEF\],
+:where(html.dark) .bg-\[\#EBEBF0\],
+:where(html.dark) .bg-slate-50,
+:where(html.dark) .bg-slate-50\/60,
+:where(html.dark) .bg-slate-100,
+:where(html.dark) .bg-stone-50,
+:where(html.dark) .bg-stone-100 {
+  background-color: #252A36;
 }
 
-.dark .bg-\[\#E5E5EA\]\/70 {
-  background-color: rgba(42, 45, 54, 0.75);
+:where(html.dark) .bg-\[\#E5E5EA\]\/70 {
+  background-color: rgba(48, 54, 69, 0.72);
 }
 
-.dark .hover\:bg-\[\#ECECEF\]:hover,
-.dark .hover\:bg-\[\#EBEBF0\]:hover,
-.dark .hover\:bg-\[\#F5F5F7\]:hover,
-.dark .hover\:bg-slate-100:hover,
-.dark .hover\:bg-slate-100\/80:hover,
-.dark .hover\:bg-slate-50:hover,
-.dark .hover\:bg-slate-200:hover {
-  background-color: #262A34;
+:where(html.dark) .hover\:bg-\[\#ECECEF\]:hover,
+:where(html.dark) .hover\:bg-\[\#EBEBF0\]:hover,
+:where(html.dark) .hover\:bg-\[\#F5F5F7\]:hover,
+:where(html.dark) .hover\:bg-slate-100:hover,
+:where(html.dark) .hover\:bg-slate-100\/80:hover,
+:where(html.dark) .hover\:bg-slate-50:hover,
+:where(html.dark) .hover\:bg-slate-200:hover {
+  background-color: #2C3240;
 }
 
-.dark .focus-within\:bg-white:focus-within,
-.dark .focus\:bg-white:focus {
-  background-color: #1D2027;
+:where(html.dark) .focus-within\:bg-white:focus-within,
+:where(html.dark) .focus\:bg-white:focus {
+  background-color: #2A303E;
 }
 
-.dark .border-\[\#E5E5EA\],
-.dark .border-\[\#ECECEF\],
-.dark .border-\[\#D2D2D7\],
-.dark .border-slate-200,
-.dark .border-slate-200\/80,
-.dark .border-slate-200\/90,
-.dark .border-slate-100,
-.dark .border-white\/40 {
-  border-color: #2A2D36;
+:where(html.dark) .border-\[\#E5E5EA\],
+:where(html.dark) .border-\[\#ECECEF\],
+:where(html.dark) .border-\[\#D2D2D7\],
+:where(html.dark) .border-slate-200,
+:where(html.dark) .border-slate-200\/80,
+:where(html.dark) .border-slate-200\/90,
+:where(html.dark) .border-slate-100,
+:where(html.dark) .border-white\/40,
+:where(html.dark) .border-white\/80 {
+  border-color: #303645;
 }
 
-.dark .divide-\[\#E5E5EA\] > :not([hidden]) ~ :not([hidden]) {
-  border-color: #2A2D36;
+:where(html.dark) .divide-\[\#E5E5EA\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #303645;
 }
 
-.dark .text-\[\#1D1D1F\],
-.dark .text-slate-950,
-.dark .text-slate-900,
-.dark .text-slate-800,
-.dark .text-stone-900 {
-  color: #F5F5F7;
+:where(html.dark) .text-\[\#1D1D1F\],
+:where(html.dark) .text-slate-950,
+:where(html.dark) .text-slate-900,
+:where(html.dark) .text-slate-800,
+:where(html.dark) .text-stone-900 {
+  color: #ECEEF4;
 }
 
-.dark .hover\:text-\[\#1D1D1F\]:hover,
-.dark .hover\:text-slate-950:hover,
-.dark .hover\:text-slate-900:hover,
-.dark .hover\:text-slate-800:hover {
+:where(html.dark) .hover\:text-\[\#1D1D1F\]:hover,
+:where(html.dark) .hover\:text-slate-950:hover,
+:where(html.dark) .hover\:text-slate-900:hover,
+:where(html.dark) .hover\:text-slate-800:hover {
   color: #FFFFFF;
 }
 
-.dark .text-\[\#515154\],
-.dark .text-slate-700,
-.dark .text-slate-600 {
-  color: #C7C7CC;
+:where(html.dark) .text-\[\#515154\],
+:where(html.dark) .text-slate-700,
+:where(html.dark) .text-slate-600 {
+  color: #C4C9D4;
 }
 
-.dark .text-\[\#6E6E73\],
-.dark .text-\[\#86868B\],
-.dark .text-slate-500,
-.dark .text-slate-400 {
-  color: #98989F;
+:where(html.dark) .text-\[\#6E6E73\],
+:where(html.dark) .text-\[\#86868B\],
+:where(html.dark) .text-slate-500,
+:where(html.dark) .text-slate-400 {
+  color: #949BA8;
 }
 
-.dark .placeholder\:text-\[\#86868B\]::placeholder,
-.dark .placeholder\:text-slate-400::placeholder {
-  color: #8E8E95;
+:where(html.dark) .placeholder\:text-\[\#86868B\]::placeholder,
+:where(html.dark) .placeholder\:text-slate-400::placeholder {
+  color: #8B93A3;
 }
 
-.dark .text-\[\#0066CC\],
-.dark .text-blue-700,
-.dark .text-blue-600 {
-  color: #3B9BFF;
+:where(html.dark) .text-\[\#0066CC\],
+:where(html.dark) .text-blue-700,
+:where(html.dark) .text-blue-600 {
+  color: #5CA9FF;
 }
 
-.dark .bg-\[\#0066CC\],
-.dark .bg-slate-950 {
-  background-color: #0A84FF;
+:where(html.dark) .bg-\[\#0066CC\],
+:where(html.dark) .bg-slate-950 {
+  background-color: #2E86DE;
 }
 
-.dark .hover\:bg-\[\#0055AA\]:hover {
-  background-color: #0071E3;
+:where(html.dark) .hover\:bg-\[\#0055AA\]:hover {
+  background-color: #1E75CC;
 }
 
-.dark .text-\[\#FBFBFC\] {
+:where(html.dark) .text-\[\#FBFBFC\] {
   color: #FFFFFF;
 }
 
-.dark .bg-\[\#EAF2FB\],
-.dark .bg-blue-50,
-.dark .bg-blue-50\/80 {
-  background-color: rgba(10, 132, 255, 0.16);
+:where(html.dark) .bg-\[\#EAF2FB\],
+:where(html.dark) .bg-blue-50,
+:where(html.dark) .bg-blue-50\/80 {
+  background-color: rgba(46, 134, 222, 0.16);
 }
 
-.dark .border-\[\#CDE0F5\] {
-  border-color: rgba(59, 155, 255, 0.35);
+:where(html.dark) .border-\[\#CDE0F5\] {
+  border-color: rgba(92, 169, 255, 0.35);
 }
 
-.dark .text-blue-900 {
-  color: #D6EBFF;
+:where(html.dark) .text-blue-900 {
+  color: #DCEBFF;
 }
 
-.dark .hover\:bg-blue-50:hover {
-  background-color: rgba(10, 132, 255, 0.14);
+:where(html.dark) .hover\:bg-blue-50:hover {
+  background-color: rgba(46, 134, 222, 0.14);
 }
 
-.dark .hover\:text-blue-900:hover {
+:where(html.dark) .hover\:text-blue-900:hover {
   color: #FFFFFF;
 }
 
-.dark .bg-rose-50\/70 {
+:where(html.dark) .bg-rose-50\/70 {
   background-color: rgba(244, 63, 94, 0.14);
 }
 
-.dark .hover\:bg-rose-100\/70:hover {
+:where(html.dark) .hover\:bg-rose-100\/70:hover {
   background-color: rgba(244, 63, 94, 0.22);
 }
 
-.dark .border-rose-200\/70,
-.dark .border-rose-200\/80 {
+:where(html.dark) .border-rose-200\/70,
+:where(html.dark) .border-rose-200\/80 {
   border-color: rgba(244, 63, 94, 0.35);
 }
 
-.dark .bg-emerald-50 {
+:where(html.dark) .bg-emerald-50 {
   background-color: rgba(16, 185, 129, 0.14);
 }
 
-.dark .bg-amber-50 {
+:where(html.dark) .bg-amber-50 {
   background-color: rgba(245, 158, 11, 0.14);
 }
 
-.dark .ad-card-perf:hover {
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+:where(html.dark) .ad-card-perf:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.36);
 }
 
 html.dark select option {
-  background-color: #16181D;
-  color: #F5F5F7;
+  background-color: #1C202A;
+  color: #ECEEF4;
 }

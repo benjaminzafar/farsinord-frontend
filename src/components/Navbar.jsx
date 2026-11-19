@@ -101,7 +101,7 @@ export default function Navbar({
         {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
         <div className="relative flex md:hidden h-16 items-center">
 
-          <div className="flex-1 flex items-center h-11 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] px-3 gap-2.5 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15">
+          <div className="flex-1 flex items-center h-11 rounded-2xl bg-white border border-[#E4E7EC] shadow-[0_1px_3px_rgba(15,23,42,0.05)] px-3 gap-2.5 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15 dark:bg-[#252A36] dark:border-[#343B4C]">
 
             {/* Search Input (Icon on Right — exact same vertical center as City Selector) */}
             <div className="relative flex-1 flex items-center gap-2 min-w-0 h-full">

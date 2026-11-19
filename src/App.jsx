@@ -1313,7 +1313,7 @@ export default function App() {
 
               {/* Flat Unified Search Capsule — Hairline-Divided (No Box-in-Box) */}
               <div className="pt-2 sm:pt-3 px-1 hidden md:block">
-                <div className="bg-[#FBFBFC] rounded-full p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] border border-white/40 max-w-2xl mx-auto flex items-center gap-1.5 transition-all">
+                <div className="bg-white rounded-full p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.16)] border border-white/80 dark:bg-[#222734] dark:border-[#343B4C] max-w-2xl mx-auto flex items-center gap-1.5 transition-all">
                   
                   {/* Keyword Input with Google-style Smart Autocomplete (Right side in RTL) */}
                   <div className="relative flex-1 flex items-center gap-2 h-10 px-3 min-w-0">
