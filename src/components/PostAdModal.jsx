@@ -244,11 +244,7 @@ export default function PostAdModal({
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [dragOverUpload, setDragOverUpload] = useState(false);
 
-  const vipEnabled = Boolean(
-    stripeSettings &&
-      stripeSettings.enabled !== false &&
-      stripeSettings.checkoutAvailable !== false
-  );
+  const vipEnabled = stripeSettings?.enabled !== false;
   const [wantVipPromotion, setWantVipPromotion] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);

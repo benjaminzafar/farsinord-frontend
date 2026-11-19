@@ -67,7 +67,10 @@ export default async function handler(req, res) {
 
   const webhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || '').trim();
   const serviceRoleKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    'https://bezbnymjcnmazdonfzky.supabase.co';
 
   if (!webhookSecret || !serviceRoleKey || !supabaseUrl) {
     return res.status(503).json({

@@ -48,11 +48,8 @@ export default function PaymentModal({
     targetCountry,
   });
 
-  const isGatewayReady = Boolean(
-    stripeSettings &&
-      stripeSettings.enabled !== false &&
-      stripeSettings.checkoutAvailable !== false
-  );
+  const isGatewayEnabled = stripeSettings?.enabled !== false;
+  const isCheckoutConfigured = stripeSettings?.checkoutAvailable !== false;
   const isTestMode = stripeSettings?.mode === 'test';
   const isAlreadyActiveVip = Boolean(ad?.is_active_vip);
   const isAdActive = !ad?.status || ad.status === 'active';
@@ -83,7 +80,7 @@ export default function PaymentModal({
     e.preventDefault();
     setErrorMsg('');
 
-    if (!isGatewayReady) {
+    if (!isGatewayEnabled) {
       setErrorMsg('درگاه پرداخت غیرفعال است.');
       return;
     }
@@ -291,10 +288,17 @@ export default function PaymentModal({
             </p>
           )}
 
-          {!isGatewayReady && (
+          {!isGatewayEnabled && (
             <div className="rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-2.5 text-xs text-rose-700 font-semibold flex items-center gap-2">
               <AlertCircle size={15} strokeWidth={1.75} className="block shrink-0" />
               <span>درگاه پرداخت غیرفعال است.</span>
+            </div>
+          )}
+
+          {isGatewayEnabled && !isCheckoutConfigured && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-xs text-amber-800 font-medium flex items-start gap-2 leading-relaxed">
+              <AlertCircle size={15} strokeWidth={1.75} className="block shrink-0 mt-0.5" />
+              <span>درگاه Stripe فعال است اما کلید سرور با حالت فعلی همخوانی ندارد؛ با زدن دکمه پرداخت علت دقیق نمایش داده می‌شود.</span>
             </div>
           )}
 
@@ -311,7 +315,7 @@ export default function PaymentModal({
           <div className="pt-1 space-y-2.5">
             <button
               type="submit"
-              disabled={loading || !isGatewayReady || !isAdActive}
+              disabled={loading || !isGatewayEnabled || !isAdActive}
               className="w-full h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] disabled:opacity-45 disabled:cursor-not-allowed text-[#FBFBFC] font-bold text-[13px] leading-none shadow-[0_4px_14px_rgba(0,102,204,0.22)] active:scale-[0.97] transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Lock size={14} strokeWidth={1.75} className="block shrink-0" />

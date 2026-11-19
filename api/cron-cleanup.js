@@ -44,7 +44,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ ok: false, error: 'Unauthorized cron or admin invocation' });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    'https://bezbnymjcnmazdonfzky.supabase.co';
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) {
     return res.status(503).json({
