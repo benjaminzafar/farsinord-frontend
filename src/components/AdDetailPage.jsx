@@ -19,11 +19,20 @@ import {
   ZoomIn,
   Globe,
   Flag,
-  X
+  X,
+  Navigation
 } from 'lucide-react';
 import CloudflareTurnstile from './CloudflareTurnstile';
+import GoogleMapEmbed from './GoogleMapEmbed';
 import { publicApi } from '../lib/apiClient';
 import { CATEGORIES, COUNTRIES, t } from '../lib/translations';
+import {
+  buildGoogleMapsQuery,
+  buildGoogleMapsEmbedUrl,
+  buildGoogleMapsSearchUrl,
+  resolveDisplayCityFa,
+  sanitizeLocationPart,
+} from '../lib/googleMaps';
 
 const IGNORED_EMPTY_PRICE_TYPES = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون', 'یورو', 'توافقی']);
 const FA_NUM_FMT = new Intl.NumberFormat('fa-IR');
@@ -50,7 +59,9 @@ export default function AdDetailPage({
   ad, 
   allAds = [], 
   lang = 'fa', 
+  countries = COUNTRIES,
   turnstileSettings = { enabled: true, mode: 'test', siteKey: '' },
+  googleMapsSettings = { enabled: true, embedApiKey: '', defaultZoom: 14 },
   onBack, 
   onSelectAd,
   onOpenPromote 
@@ -202,7 +213,8 @@ export default function AdDetailPage({
   // Find 4 VIP Promoted ads strictly within the same country (memoized before early return)
   const adId = ad?.id || '';
   const adCountryCode = ad?.country || 'se';
-  const adCountryObj = COUNTRIES.find(c => c.id === adCountryCode) || COUNTRIES[0];
+  const availableCountries = Array.isArray(countries) && countries.length > 0 ? countries : COUNTRIES;
+  const adCountryObj = availableCountries.find(c => c.id === adCountryCode) || COUNTRIES.find(c => c.id === adCountryCode) || COUNTRIES[0];
   const adCountryName = adCountryObj?.nameFa || 'سوئد';
   const displayVipAds = useMemo(() => {
     if (!adId) return [];
@@ -219,11 +231,45 @@ export default function AdDetailPage({
     return [...vipAds, ...fallbackAds].slice(0, 4);
   }, [allAds, adId, adCountryCode, renderNow]);
 
+  const cleanArea = sanitizeLocationPart(ad?.area, 120);
+  const cityFa = resolveDisplayCityFa({
+    city: ad?.city || '',
+    country: adCountryCode,
+    countries: availableCountries,
+  });
+  const mapQuery = buildGoogleMapsQuery({
+    area: cleanArea,
+    city: ad?.city || '',
+    country: adCountryCode,
+    countries: availableCountries,
+  });
+  const mapEmbedUrl = buildGoogleMapsEmbedUrl({
+    query: mapQuery,
+    country: adCountryCode,
+    hasArea: Boolean(cleanArea),
+    settings: googleMapsSettings,
+  });
+  const mapSearchUrl = buildGoogleMapsSearchUrl(mapQuery);
+  const canShowMap = Boolean(mapEmbedUrl && mapQuery);
+
   if (!ad) return null;
 
-  const images = (ad.images && ad.images.length > 0)
+  const hasRealPhotos = Array.isArray(ad.images) && ad.images.length > 0;
+  const images = hasRealPhotos
     ? ad.images
     : ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80'];
+  const showSidebarMap = canShowMap && hasRealPhotos;
+  const showHeroMap = canShowMap && !hasRealPhotos;
+  const displayLocationLine = cleanArea
+    ? `${cityFa || ad.city} • ${cleanArea}`
+    : `${cityFa || ad.city}${adCountryName ? `، ${adCountryName}` : ''}`;
+
+  const scrollToLocationMap = () => {
+    const el = document.getElementById('ad-location-map');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const catObj = CATEGORIES.find(c => c.id === ad.category);
   const catName = catObj ? (lang === 'fa' ? catObj.fa : catObj.sv) : ad.category;
@@ -297,7 +343,72 @@ export default function AdDetailPage({
           {/* MAIN CONTENT COLUMN (8 cols on Desktop) */}
           <main className="lg:col-span-8 space-y-5">
             
-            {/* Frameless Image Gallery (Unified with page plane) */}
+            {/* Hero Stage: Photo Gallery (or Google Map directly when ad has no photos) */}
+            {showHeroMap ? (
+              <section
+                id="ad-location-map"
+                className="scroll-mt-20 bg-[#FBFBFC] dark:!bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:!border-white/[0.06] overflow-hidden shadow-none"
+              >
+                <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 border-b border-[#F0F2F5] dark:!border-white/[0.05]">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EAF2FB] dark:!bg-[#0A84FF]/15 text-[#0066CC] shrink-0">
+                      <MapPin className="w-4 h-4 block shrink-0" strokeWidth={2} aria-hidden="true" />
+                    </div>
+                    <h2 className="text-sm font-extrabold text-[#1D1D1F] dark:!text-white leading-none truncate">
+                      موقعیت مکانی آگهی
+                    </h2>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isVipActive && (
+                      <span className="inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-[#0066CC] text-white text-[10.5px] font-bold leading-none">
+                        <Crown className="w-3 h-3 block shrink-0" aria-hidden="true" />
+                        <span className="leading-none">ویژه</span>
+                      </span>
+                    )}
+                    <span className="px-2.5 h-6 rounded-full bg-[#F5F5F7] dark:!bg-white/[0.06] text-[#1D1D1F] dark:!text-[#F5F5F7] text-[10.5px] font-bold leading-none inline-flex items-center">
+                      {catName}
+                    </span>
+                  </div>
+                </div>
+
+                <GoogleMapEmbed
+                  embedUrl={mapEmbedUrl}
+                  title={`نقشه موقعیت ${displayLocationLine}`}
+                  heightClass="h-[240px] sm:h-[320px] lg:h-[360px]"
+                  deferForLcp={false}
+                  mobileScrollGuard={true}
+                />
+
+                <div className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-t border-[#F0F2F5] dark:!border-white/[0.05]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="w-3.5 h-3.5 block shrink-0 text-[#86868B]" strokeWidth={2} aria-hidden="true" />
+                    <span className="text-xs font-semibold text-[#1D1D1F] dark:!text-[#F5F5F7] truncate">
+                      {displayLocationLine}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold leading-none shrink-0 ${
+                      cleanArea
+                        ? 'bg-[#EAF2FB] dark:!bg-[#0A84FF]/18 text-[#0066CC]'
+                        : 'bg-[#F5F5F7] dark:!bg-white/[0.06] text-[#6E6E73] dark:!text-[#98989F]'
+                    }`}>
+                      {cleanArea ? 'موقعیت آدرس' : 'موقعیت تقریبی (شهر)'}
+                    </span>
+                  </div>
+
+                  {mapSearchUrl && (
+                    <a
+                      href={mapSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-9 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] dark:!bg-white/[0.06] dark:hover:!bg-white/[0.12] border border-[#ECEFF4] dark:!border-white/[0.08] text-[#0066CC] text-xs font-bold leading-none inline-flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] shrink-0"
+                    >
+                      <Navigation className="w-3.5 h-3.5 block shrink-0" strokeWidth={2} aria-hidden="true" />
+                      <span className="leading-none">مسیریابی در گوگل مپ</span>
+                    </a>
+                  )}
+                </div>
+              </section>
+            ) : (
             <div className="space-y-2.5">
               {/* Big Stage Image (click to zoom) */}
               <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#F5F5F7] dark:bg-[#14161C] border border-[#F0F2F5] dark:border-white/[0.025] shadow-none group">
@@ -315,6 +426,18 @@ export default function AdDetailPage({
                   }}
                   className="w-full h-full object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.015]"
                 />
+
+                {/* Mobile-only Quick Jump to Map Pill (unused bottom-start corner) */}
+                {showSidebarMap && (
+                  <button
+                    type="button"
+                    onClick={scrollToLocationMap}
+                    className="lg:hidden absolute bottom-3 start-3 h-9 px-3 rounded-full bg-[#1D1D1F]/70 hover:bg-[#1D1D1F]/85 text-white text-xs font-bold leading-none inline-flex items-center gap-1.5 backdrop-blur-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <MapPin className="w-3.5 h-3.5 block shrink-0" strokeWidth={2} aria-hidden="true" />
+                    <span className="leading-none">نقشه</span>
+                  </button>
+                )}
 
                 {/* Subtle Circular Zoom Button */}
                 <button
@@ -384,6 +507,7 @@ export default function AdDetailPage({
                 </div>
               )}
             </div>
+            )}
 
             {/* Title, Price & Details Card (Unified Flat Surface, No Heavy Shadows) */}
             <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] p-5 sm:p-8 space-y-6 shadow-none">
@@ -407,10 +531,22 @@ export default function AdDetailPage({
 
                 {/* Clean Inline Meta Row */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs leading-none text-[#6E6E73] dark:text-[#98989F]">
-                  <span className="inline-flex items-center gap-1.5 font-semibold leading-none text-[#1D1D1F] dark:text-[#F5F5F7]">
-                    <MapPin size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
-                    <span className="leading-none">{ad.city}{ad.area ? `، ${ad.area}` : ''}</span>
-                  </span>
+                  {canShowMap ? (
+                    <button
+                      type="button"
+                      onClick={scrollToLocationMap}
+                      className="inline-flex items-center gap-1.5 font-semibold leading-none text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0066CC] transition-colors cursor-pointer"
+                      title="مشاهده موقعیت روی نقشه"
+                    >
+                      <MapPin size={14} strokeWidth={2} className="block text-[#0066CC] shrink-0" />
+                      <span className="leading-none">{cityFa || ad.city}{cleanArea ? `، ${cleanArea}` : ''}</span>
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 font-semibold leading-none text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      <MapPin size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                      <span className="leading-none">{cityFa || ad.city}{cleanArea ? `، ${cleanArea}` : ''}</span>
+                    </span>
+                  )}
 
                   <span className="inline-flex items-center gap-1.5 leading-none">
                     <Clock size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
@@ -711,9 +847,67 @@ export default function AdDetailPage({
 
           </main>
 
-          {/* SIDEBAR: 4 VIP PROMOTED ADS & MONETIZATION SLOTS (4 cols on Desktop) */}
-          <aside className="lg:col-span-4 lg:sticky lg:top-20 space-y-5">
-            
+          {/* SIDEBAR: GOOGLE MAP BESIDE AD PHOTO + STICKY VIP & MONETIZATION SLOTS (4 cols on Desktop) */}
+          <aside className="lg:col-span-4 lg:self-stretch space-y-5">
+
+            {/* 1. Dedicated Google Map Card (Directly beside Hero Photo on Desktop!) */}
+            {showSidebarMap && (
+              <section
+                id="ad-location-map"
+                className="scroll-mt-20 bg-[#FBFBFC] dark:!bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:!border-white/[0.06] overflow-hidden shadow-none"
+              >
+                <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 border-b border-[#F0F2F5] dark:!border-white/[0.05]">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EAF2FB] dark:!bg-[#0A84FF]/15 text-[#0066CC] shrink-0">
+                      <MapPin className="w-4 h-4 block shrink-0" strokeWidth={2} aria-hidden="true" />
+                    </div>
+                    <h2 className="text-sm font-extrabold text-[#1D1D1F] dark:!text-white leading-none truncate">
+                      موقعیت مکانی
+                    </h2>
+                  </div>
+
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold leading-none shrink-0 ${
+                    cleanArea
+                      ? 'bg-[#EAF2FB] dark:!bg-[#0A84FF]/18 text-[#0066CC]'
+                      : 'bg-[#F5F5F7] dark:!bg-white/[0.06] text-[#6E6E73] dark:!text-[#98989F]'
+                  }`}>
+                    {cleanArea ? 'موقعیت آدرس' : 'موقعیت تقریبی (شهر)'}
+                  </span>
+                </div>
+
+                <GoogleMapEmbed
+                  embedUrl={mapEmbedUrl}
+                  title={`نقشه موقعیت ${displayLocationLine}`}
+                  heightClass="h-[210px] sm:h-[220px] xl:h-[240px]"
+                  deferForLcp={true}
+                  mobileScrollGuard={true}
+                />
+
+                <div className="px-4 sm:px-5 py-3.5 space-y-2.5 border-t border-[#F0F2F5] dark:!border-white/[0.05]">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <MapPin className="w-3.5 h-3.5 block shrink-0 text-[#86868B] mt-0.5" strokeWidth={2} aria-hidden="true" />
+                    <span className="text-xs font-semibold text-[#1D1D1F] dark:!text-[#F5F5F7] leading-snug line-clamp-2">
+                      {displayLocationLine}
+                    </span>
+                  </div>
+
+                  {mapSearchUrl && (
+                    <a
+                      href={mapSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full h-9 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] dark:!bg-white/[0.06] dark:hover:!bg-white/[0.12] border border-[#ECEFF4] dark:!border-white/[0.08] text-[#0066CC] text-xs font-bold leading-none inline-flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
+                    >
+                      <Navigation className="w-3.5 h-3.5 block shrink-0" strokeWidth={2} aria-hidden="true" />
+                      <span className="leading-none">مسیریابی در گوگل مپ</span>
+                    </a>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* 2. Sticky VIP Sponsored Ads + Promote CTA */}
+            <div className="lg:sticky lg:top-20 space-y-5">
             {/* VIP Sponsored Ads List (Flat Unified Card, Hairline Dividers) */}
             <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] overflow-hidden shadow-none">
               
@@ -812,6 +1006,7 @@ export default function AdDetailPage({
                 <Crown size={15} className="text-white/90" />
                 <span>{isVipActive ? 'تمدید یا تغییر کشور ویژه' : 'ارتقا به آگهی ویژه'}</span>
               </button>
+            </div>
             </div>
 
           </aside>

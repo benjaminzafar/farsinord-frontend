@@ -256,6 +256,7 @@ const PUBLIC_SETTINGS_KEYS = [
   'stripe_settings',
   'turnstile_settings',
   'analytics_settings',
+  'google_maps_settings',
   'ad_lifecycle_settings',
   'podcast_settings',
 ];
@@ -382,6 +383,7 @@ export default async function handler(req, res) {
           'stripe_settings',
           'turnstile_settings',
           'analytics_settings',
+          'google_maps_settings',
           'ad_lifecycle_settings',
         ];
 
@@ -416,6 +418,15 @@ export default async function handler(req, res) {
             settings.site_branding = {
               ...val,
               siteName: isLegacy ? 'لینک شو' : rawName,
+            };
+          } else if (key === 'google_maps_settings' && val && typeof val === 'object') {
+            const cleanKey = String(val.embedApiKey || '').replace(/[\p{Cc}\s\u200B-\u200D\uFEFF]/gu, '');
+            const safeKey = /^AIza[0-9A-Za-z_-]{20,60}$/.test(cleanKey) ? cleanKey : '';
+            const zoomNum = Number(val.defaultZoom);
+            settings.google_maps_settings = {
+              enabled: val.enabled !== false,
+              embedApiKey: safeKey,
+              defaultZoom: Number.isInteger(zoomNum) && zoomNum >= 1 && zoomNum <= 20 ? zoomNum : 14,
             };
           } else {
             settings[key] = val;

@@ -78,6 +78,7 @@ export const publicApi = {
         'stripe_settings',
         'turnstile_settings',
         'analytics_settings',
+        'google_maps_settings',
         'ad_lifecycle_settings',
       ]);
     const settings = {};

@@ -315,6 +315,7 @@ export default function App() {
   });
   const [turnstileSettings, setTurnstileSettings] = useState({ enabled: true, mode: 'test', siteKey: '' });
   const [analyticsSettings, setAnalyticsSettings] = useState({ enabled: false, measurementId: '' });
+  const [googleMapsSettings, setGoogleMapsSettings] = useState({ enabled: true, embedApiKey: '', defaultZoom: 14 });
   const [seoSettings, setSeoSettings] = useState({
     se: {
       title: 'لینک شو سوئد | نیازمندی‌ها، مسکن، کاریابی و خدمات فارسی‌زبانان در سوئد',
@@ -447,6 +448,9 @@ export default function App() {
         }
         if (settings.analytics_settings) {
           setAnalyticsSettings(prev => ({ ...prev, ...settings.analytics_settings }));
+        }
+        if (settings.google_maps_settings && typeof settings.google_maps_settings === 'object') {
+          setGoogleMapsSettings(prev => ({ ...prev, ...settings.google_maps_settings }));
         }
         if (settings.podcast_settings) {
           setPodcastSettings(settings.podcast_settings);
@@ -1365,7 +1369,9 @@ export default function App() {
             ad={activeAdDetail}
             allAds={ads}
             lang={lang}
+            countries={portalCountries}
             turnstileSettings={turnstileSettings}
+            googleMapsSettings={googleMapsSettings}
             onBack={handleBackToFeed}
             onSelectAd={handleSelectAd}
             onOpenPromote={(targetAd) => handleOpenPayment(targetAd)}
@@ -1941,6 +1947,7 @@ export default function App() {
             countries={portalCountries}
             lifecycleSettings={lifecycleSettings}
             turnstileSettings={turnstileSettings}
+            googleMapsSettings={googleMapsSettings}
             stripeSettings={stripeSettings}
             onClose={handleClosePostAd}
             onOpenManageExisting={(refNum) => {
