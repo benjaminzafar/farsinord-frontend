@@ -132,15 +132,10 @@ const COUNTRY_PHONE_PLACEHOLDERS = {
 };
 
 const WIZARD_STEPS = [
-  { num: 1, label: 'امنیت' },
-  { num: 2, label: 'اطلاعات' },
-  { num: 3, label: 'تماس' },
-  { num: 4, label: 'عکس و VIP' },
-];
-
-const SHORT_RULES = [
-  'آگهی تکراری و لینک در متن مجاز نیست.',
-  'آگهی غیرفعال پس از هشدار حذف می‌شود.',
+  { num: 1, label: 'امنیت و قوانین' },
+  { num: 2, label: 'اطلاعات آگهی' },
+  { num: 3, label: 'تماس و نقشه' },
+  { num: 4, label: 'عکس و انتشار' },
 ];
 
 // Canonical LinkSho form tokens (verified against index.css Light & Dark overrides)
@@ -174,6 +169,12 @@ export default function PostAdModal({
 }) {
   const currentT = t.fa;
   const fullPolicyRules = buildAdPolicyRules(lifecycleSettings || {});
+  const defaultVisibleRules = [
+    fullPolicyRules[0],
+    fullPolicyRules[2],
+    fullPolicyRules[4],
+    fullPolicyRules[5],
+  ].filter(Boolean);
   const activeCountries = useMemo(
     () =>
       Array.isArray(countries) && countries.length > 0
@@ -816,7 +817,7 @@ export default function PostAdModal({
 
   const isStep1SoftIncomplete = step === 1 && !rulesAccepted;
   const isStep3SoftIncomplete = step === 3 && activeContacts.length === 0;
-  const visibleRules = showAllRules ? fullPolicyRules : SHORT_RULES;
+  const visibleRules = showAllRules ? fullPolicyRules : defaultVisibleRules;
 
   return (
     <div
@@ -916,13 +917,15 @@ export default function PostAdModal({
                   <Check size={24} strokeWidth={2.25} className="block" aria-hidden="true" />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <h3 className="text-base font-extrabold text-[#1D1D1F]">
-                    {successData.ad?.status === 'active' ? 'آگهی منتشر شد' : 'در انتظار تایید'}
+                    {successData.ad?.status === 'active'
+                      ? 'آگهی شما با موفقیت منتشر شد'
+                      : 'آگهی ثبت شد و پس از بررسی منتشر می‌شود'}
                   </h3>
-                  <p className="text-xs text-[#6E6E73]">
+                  <p className="text-xs text-[#6E6E73] leading-relaxed">
                     {successData.duplicateReviewFlagged
-                      ? 'برای بررسی مدیر ارسال شد.'
+                      ? 'آگهی شما برای بررسی مدیر ارسال شد و پس از تایید منتشر می‌شود. کدهای زیر را نگه دارید.'
                       : currentT.saveYourCredentials}
                   </p>
                 </div>
@@ -954,7 +957,7 @@ export default function PostAdModal({
                   <div className="flex items-center justify-between px-4 py-3.5">
                     <div>
                       <span className="block text-[10.5px] font-semibold text-[#86868B]">
-                        {currentT.pinCode}
+                        {currentT.pinCode} (محرمانه)
                       </span>
                       <span className="font-mono text-base font-black text-[#0066CC]">
                         <bdi dir="ltr">{successData.pinCode}</bdi>
@@ -974,8 +977,8 @@ export default function PostAdModal({
                     </button>
                   </div>
 
-                  <p className="px-4 py-2.5 text-[11px] text-[#6E6E73]">
-                    در این مرورگر ذخیره شد.
+                  <p className="px-4 py-3 text-[11.5px] text-[#515154] leading-relaxed">
+                    این کدها به‌صورت خودکار در همین مرورگر ذخیره شدند؛ اما حتماً آن‌ها را کپی یا یادداشت کنید تا در صورت پاک شدن حافظه مرورگر یا ورود با دستگاه دیگر، به مدیریت آگهی خود دسترسی داشته باشید.
                   </p>
                 </div>
 
@@ -1096,30 +1099,34 @@ export default function PostAdModal({
                 )}
 
                 {/* ======================================================
-                    STEP 1 — امنیت و قوانین (Flat, Ultra-Concise)
+                    STEP 1 — امنیت و قوانین (Clear & Self-Explanatory)
                 ====================================================== */}
                 {step === 1 && (
                   <div className="space-y-4">
-                    <div className="space-y-1.5 text-xs text-[#515154] leading-relaxed">
-                      <p>بدون ثبت‌نام؛ مدیریت با کد اختصاصی پس از ثبت آگهی.</p>
-                      <p>تلفن اختیاری است؛ اطلاعات تماس محفوظ می‌مانند.</p>
+                    <div className="space-y-2 text-xs text-[#515154] leading-relaxed">
+                      <p>
+                        <strong className="text-[#1D1D1F]">بدون نیاز به ثبت‌نام:</strong> پس از انتشار آگهی، یک «کد آگهی» و یک «کد مدیریت محرمانه» به شما نمایش داده می‌شود که در مرورگر ذخیره شده و باید آن را یادداشت کنید.
+                      </p>
+                      <p>
+                        <strong className="text-[#1D1D1F]">حفظ حریم خصوصی:</strong> وارد کردن شماره تلفن اختیاری است و راه‌های تماس شما پشت تایید امنیتی محافظت می‌شوند.
+                      </p>
                     </div>
 
                     <div className="rounded-2xl bg-[#F5F5F7] p-4 space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-extrabold text-[#1D1D1F] leading-none">
-                          قوانین
+                          قوانین انتشار و بوست رایگان
                         </span>
                         <button
                           type="button"
                           onClick={() => setShowAllRules((v) => !v)}
                           className="text-xs font-semibold text-[#0066CC] leading-none cursor-pointer"
                         >
-                          {showAllRules ? 'کمتر' : 'بیشتر'}
+                          {showAllRules ? 'نمای خلاصه' : 'مشاهده کامل'}
                         </button>
                       </div>
 
-                      <ul className="space-y-1.5 text-xs text-[#515154] leading-relaxed list-disc ps-4">
+                      <ul className="space-y-2 text-xs text-[#515154] leading-relaxed list-disc ps-4">
                         {visibleRules.map((rule, idx) => (
                           <li key={idx}>{rule}</li>
                         ))}
@@ -1155,7 +1162,7 @@ export default function PostAdModal({
                           )}
                         </span>
                         <span className="text-xs font-bold text-[#1D1D1F] leading-none">
-                          قوانین را می‌پذیرم <span className="text-rose-500">*</span>
+                          قوانین انتشار و بوست آگهی را خواندم و می‌پذیرم <span className="text-rose-500">*</span>
                         </span>
                       </label>
                     </div>
@@ -1369,8 +1376,8 @@ export default function PostAdModal({
                         </span>
                       </div>
 
-                      <p className="text-[11.5px] text-[#6E6E73] leading-snug">
-                        تلفن اختیاری است؛ تلگرام یا ایمیل امن‌تر است.
+                      <p className="text-[11.5px] text-[#6E6E73] leading-relaxed">
+                        وارد کردن حداقل یک راه تماس الزامی است. شماره تلفن اختیاری است و برای حفظ حریم خصوصی می‌توانید از آیدی تلگرام، واتساپ یا ایمیل استفاده کنید.
                       </p>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1401,8 +1408,8 @@ export default function PostAdModal({
                             className={UNIFIED_INPUT}
                           />
                           {openHelp === 'telegram' && (
-                            <p className="text-[11px] text-[#6E6E73] leading-snug">
-                              تلگرام ← <span dir="ltr" className="font-semibold">Settings → Username</span>
+                            <p className="text-[11px] text-[#6E6E73] leading-relaxed">
+                              در تلگرام به بخش <span dir="ltr" className="font-semibold">Settings → Username</span> بروید و آیدی خود را بسازید یا کپی کنید (شماره شما نمایش داده نمی‌شود).
                             </p>
                           )}
                         </div>
@@ -1455,8 +1462,8 @@ export default function PostAdModal({
                             className={UNIFIED_INPUT}
                           />
                           {openHelp === 'whatsapp' && (
-                            <p className="text-[11px] text-[#6E6E73] leading-snug">
-                              واتساپ ← <span dir="ltr" className="font-semibold">Profile → Username</span> یا شماره
+                            <p className="text-[11px] text-[#6E6E73] leading-relaxed">
+                              در واتساپ می‌توانید آیدی (<span dir="ltr" className="font-semibold">Settings → Profile → Username</span>) یا شماره با کد کشور مثل <span dir="ltr" className="font-semibold">+46...</span> وارد کنید.
                             </p>
                           )}
                         </div>
@@ -1676,14 +1683,15 @@ export default function PostAdModal({
                       <div className="space-y-1.5">
                         <div className={FIELD_LABEL_ROW}>
                           <label htmlFor="post-ad-area" className={FIELD_LABEL}>
-                            محله
+                            محله یا خیابان
                           </label>
+                          <span className="text-[11px] text-[#86868B] leading-none">تبدیل خودکار به نقشه</span>
                         </div>
                         <input
                           id="post-ad-area"
                           type="text"
                           maxLength={140}
-                          placeholder="Södermalm یا خیابان"
+                          placeholder="مثال: Södermalm یا نام خیابان"
                           value={area}
                           onChange={(e) => setArea(e.target.value)}
                           className={UNIFIED_INPUT}
@@ -1900,84 +1908,94 @@ export default function PostAdModal({
                       )}
                     </div>
 
-                    {/* Standard vs VIP Offer */}
+                    {/* Standard vs VIP Offer (Clear Explanation of Paid Plan Benefits) */}
                     {vipEnabled && (
                       <>
                         <div className="border-t border-[#F0F2F5]" />
-                        <div
-                          role="radiogroup"
-                          aria-label="نوع انتشار"
-                          className="grid grid-cols-2 gap-2.5"
-                        >
-                          <button
-                            type="button"
-                            role="radio"
-                            aria-checked={!wantVipPromotion}
-                            onClick={() => setWantVipPromotion(false)}
-                            className={`p-3.5 rounded-2xl border text-right flex flex-col justify-between gap-2 transition-colors active:scale-[0.98] cursor-pointer ${
-                              !wantVipPromotion
-                                ? 'bg-[#EAF2FB] border-[#0066CC] dark:border-[#0A84FF]'
-                                : 'bg-[#F5F5F7] border-[#ECEFF4] hover:border-[#D2D2D7]'
-                            }`}
+                        <div className="space-y-2">
+                          <span className="block text-xs font-extrabold text-[#1D1D1F] leading-none">
+                            انتخاب نوع انتشار آگهی
+                          </span>
+                          <div
+                            role="radiogroup"
+                            aria-label="نوع انتشار"
+                            className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
                           >
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-xs font-extrabold text-[#1D1D1F] leading-none">
-                                عادی
-                              </span>
-                              <span
-                                className={`flex h-4 w-4 items-center justify-center rounded-full border shrink-0 ${
-                                  !wantVipPromotion
-                                    ? 'bg-[#0066CC] border-[#0066CC] text-white'
-                                    : 'border-[#D2D2D7]'
-                                }`}
-                              >
-                                {!wantVipPromotion && (
-                                  <Check size={10} strokeWidth={3} className="block" aria-hidden="true" />
-                                )}
-                              </span>
-                            </div>
-                            <span className="text-xs font-bold text-emerald-700 leading-none">
-                              رایگان
-                            </span>
-                          </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={!wantVipPromotion}
+                              onClick={() => setWantVipPromotion(false)}
+                              className={`p-3.5 rounded-2xl border text-right flex flex-col justify-between gap-2 transition-colors active:scale-[0.98] cursor-pointer ${
+                                !wantVipPromotion
+                                  ? 'bg-[#EAF2FB] border-[#0066CC] dark:border-[#0A84FF]'
+                                  : 'bg-[#F5F5F7] border-[#ECEFF4] hover:border-[#D2D2D7]'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-extrabold text-[#1D1D1F] leading-none">
+                                  آگهی عادی
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span className="text-xs font-extrabold text-emerald-700 leading-none">
+                                    رایگان
+                                  </span>
+                                  <span
+                                    className={`flex h-4 w-4 items-center justify-center rounded-full border shrink-0 ${
+                                      !wantVipPromotion
+                                        ? 'bg-[#0066CC] border-[#0066CC] text-white'
+                                        : 'border-[#D2D2D7]'
+                                    }`}
+                                  >
+                                    {!wantVipPromotion && (
+                                      <Check size={10} strokeWidth={3} className="block" aria-hidden="true" />
+                                    )}
+                                  </span>
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-[#6E6E73] leading-relaxed">
+                                نمایش استاندارد در فهرست + امکان بوست رایگان هر ۷ روز یک‌بار
+                              </p>
+                            </button>
 
-                          <button
-                            type="button"
-                            role="radio"
-                            aria-checked={wantVipPromotion}
-                            onClick={() => setWantVipPromotion(true)}
-                            className={`p-3.5 rounded-2xl border text-right flex flex-col justify-between gap-2 transition-colors active:scale-[0.98] cursor-pointer ${
-                              wantVipPromotion
-                                ? 'bg-amber-50 border-amber-300'
-                                : 'bg-[#F5F5F7] border-[#ECEFF4] hover:border-[#D2D2D7]'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#1D1D1F] leading-none">
-                                <Crown size={14} strokeWidth={1.75} className="block shrink-0 text-amber-500" aria-hidden="true" />
-                                <span className="leading-none">VIP</span>
-                              </span>
-                              <span
-                                className={`flex h-4 w-4 items-center justify-center rounded-full border shrink-0 ${
-                                  wantVipPromotion
-                                    ? 'bg-amber-500 border-amber-500 text-white'
-                                    : 'border-[#D2D2D7]'
-                                }`}
-                              >
-                                {wantVipPromotion && (
-                                  <Check size={10} strokeWidth={3} className="block" aria-hidden="true" />
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-extrabold text-amber-800 leading-none tabular-nums">
-                                {vipPriceLabel}
-                              </span>
-                              <span className="text-[10.5px] font-semibold text-[#6E6E73] leading-none">
-                                • ۳× بازدید
-                              </span>
-                            </div>
-                          </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={wantVipPromotion}
+                              onClick={() => setWantVipPromotion(true)}
+                              className={`p-3.5 rounded-2xl border text-right flex flex-col justify-between gap-2 transition-colors active:scale-[0.98] cursor-pointer ${
+                                wantVipPromotion
+                                  ? 'bg-amber-50 border-amber-300'
+                                  : 'bg-[#F5F5F7] border-[#ECEFF4] hover:border-[#D2D2D7]'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#1D1D1F] leading-none">
+                                  <Crown size={14} strokeWidth={1.75} className="block shrink-0 text-amber-500" aria-hidden="true" />
+                                  <span className="leading-none">ویژه (VIP)</span>
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span className="text-xs font-extrabold text-amber-800 leading-none tabular-nums">
+                                    {vipPriceLabel}
+                                  </span>
+                                  <span
+                                    className={`flex h-4 w-4 items-center justify-center rounded-full border shrink-0 ${
+                                      wantVipPromotion
+                                        ? 'bg-amber-500 border-amber-500 text-white'
+                                        : 'border-[#D2D2D7]'
+                                    }`}
+                                  >
+                                    {wantVipPromotion && (
+                                      <Check size={10} strokeWidth={3} className="block" aria-hidden="true" />
+                                    )}
+                                  </span>
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-[#515154] leading-relaxed">
+                                نمایش ثابت در صدر فهرست {currentCountryObj.nameFa} به مدت {vipPricing.durationDays.toLocaleString('fa-IR')} روز، ۳ برابر بازدید بیشتر و معاف از حذف خودکار
+                              </p>
+                            </button>
+                          </div>
                         </div>
                       </>
                     )}

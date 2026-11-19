@@ -167,28 +167,36 @@ export default function PaymentModal({
           onSubmit={handleStartStripeCheckout}
           className="overflow-y-auto no-scrollbar px-5 sm:px-6 py-4 space-y-4"
         >
-          {/* Order Summary */}
-          <div className="rounded-2xl bg-[#F5F5F7] p-3.5 flex items-center justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <span className="block text-[11px] font-bold text-[#0066CC] leading-none">
-                VIP {targetCountryObj.nameFa} • {pricing.durationDays.toLocaleString('fa-IR')} روز
-              </span>
-              <h4 className="text-xs font-bold text-[#1D1D1F] truncate">
-                {ad?.title_fa || ad?.title || 'آگهی شما'}
-              </h4>
+          {/* Order Summary + Clear VIP Plan Benefits */}
+          <div className="rounded-2xl bg-[#F5F5F7] p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <span className="block text-[11px] font-bold text-[#0066CC] leading-none">
+                  اشتراک ویژه {targetCountryObj.nameFa} ({pricing.durationDays.toLocaleString('fa-IR')} روز)
+                </span>
+                <h4 className="text-xs font-bold text-[#1D1D1F] truncate">
+                  {ad?.title_fa || ad?.title || 'آگهی شما'}
+                </h4>
+              </div>
+
+              <div
+                className="text-left shrink-0 bg-[#FBFBFC] px-3 py-1.5 rounded-xl border border-[#ECEFF4]"
+                dir="ltr"
+              >
+                <span className="text-base font-black text-[#0066CC] tabular-nums">
+                  {pricing.amountMajor}
+                </span>
+                <span className="text-[11px] font-bold text-[#6E6E73] ms-1">
+                  {pricing.currency}
+                </span>
+              </div>
             </div>
 
-            <div
-              className="text-left shrink-0 bg-[#FBFBFC] px-3 py-1.5 rounded-xl border border-[#ECEFF4]"
-              dir="ltr"
-            >
-              <span className="text-base font-black text-[#0066CC] tabular-nums">
-                {pricing.amountMajor}
-              </span>
-              <span className="text-[11px] font-bold text-[#6E6E73] ms-1">
-                {pricing.currency}
-              </span>
-            </div>
+            <ul className="pt-2.5 border-t border-[#F0F2F5] space-y-1.5 text-[11.5px] text-[#515154] leading-relaxed list-disc ps-4">
+              <li>نمایش ثابت در صدر فهرست و بخش ویژه کشور {targetCountryObj.nameFa} به مدت {pricing.durationDays.toLocaleString('fa-IR')} روز</li>
+              <li>نشان متمایز VIP و دیده‌شدن تا ۳ برابر بیشتر توسط بازدیدکنندگان</li>
+              <li>معاف از حذف خودکار و بدون محدودیت ۷ روزه بوست</li>
+            </ul>
           </div>
 
           {/* Country Dropdown (Matches LinkSho Dropdown Spec) */}
