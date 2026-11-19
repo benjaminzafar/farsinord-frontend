@@ -278,7 +278,7 @@ export default function AdDetailPage({
             {/* Frameless Image Gallery (Unified with page plane) */}
             <div className="space-y-2.5">
               {/* Big Stage Image (click to zoom) */}
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#F0F2F5] dark:bg-[#1C202A] border border-[#ECEFF4] dark:border-white/[0.03] shadow-none group">
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#F5F5F7] dark:bg-[#14161C] border border-[#F0F2F5] dark:border-white/[0.025] shadow-none group">
                 <img
                   src={images[activeImageIdx]}
                   alt={ad.title}
@@ -346,7 +346,7 @@ export default function AdDetailPage({
                       key={idx}
                       type="button"
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#ECEFF4] dark:border-white/[0.03] ${
+                      className={`relative h-14 sm:h-16 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all cursor-pointer border border-[#F0F2F5] dark:border-white/[0.025] ${
                         activeImageIdx === idx 
                           ? 'ring-2 ring-[#0066CC] opacity-100' 
                           : 'opacity-65 hover:opacity-100'
@@ -360,10 +360,10 @@ export default function AdDetailPage({
             </div>
 
             {/* Title, Price & Details Card (Unified Flat Surface, No Heavy Shadows) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] p-5 sm:p-8 space-y-6 shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] p-5 sm:p-8 space-y-6 shadow-none">
               
               {/* Header: Title, Price & Unified Meta Row */}
-              <div className="space-y-3.5 pb-6 border-b border-[#F0F2F5] dark:border-white/[0.05]">
+              <div className="space-y-3.5 pb-6 border-b border-[#F0F2F5] dark:border-white/[0.025]">
                 <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 sm:gap-4">
                   <h1 className="text-xl sm:text-2xl font-black text-[#1D1D1F] dark:text-white leading-snug">
                     {lang === 'fa' && ad.title_fa ? ad.title_fa : ad.title}
@@ -417,7 +417,7 @@ export default function AdDetailPage({
               </div>
 
               {/* Contact Seller Section (Flat, Integrated Flow — No "Card on Card") */}
-              <div className="pt-6 border-t border-[#F0F2F5] dark:border-white/[0.05] flex flex-col items-center text-center space-y-4">
+              <div className="pt-6 border-t border-[#F0F2F5] dark:border-white/[0.025] flex flex-col items-center text-center space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">اطلاعات تماس با آگهی‌دهنده</h3>
                   {ad.contact_name && (
@@ -543,7 +543,7 @@ export default function AdDetailPage({
               </div>
 
               {/* Safety Notice & Report Abuse Section */}
-              <div className="pt-5 border-t border-[#F0F2F5] dark:border-white/[0.05] space-y-3">
+              <div className="pt-5 border-t border-[#F0F2F5] dark:border-white/[0.025] space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-xs text-[#6E6E73] dark:text-[#98989F]">
                     <ShieldCheck size={16} className="text-[#86868B] shrink-0" />
@@ -561,7 +561,7 @@ export default function AdDetailPage({
                 </div>
 
                 {reportOpen && (
-                  <div className="pt-3 border-t border-[#F0F2F5] dark:border-white/[0.05] space-y-2.5">
+                  <div className="pt-3 border-t border-[#F0F2F5] dark:border-white/[0.025] space-y-2.5">
                     {reportSent ? (
                       <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
                         گزارش شما با موفقیت برای بررسی مدیر ارسال شد. با تشکر از همکاری شما.
@@ -631,9 +631,9 @@ export default function AdDetailPage({
           <aside className="lg:col-span-4 lg:sticky lg:top-32 space-y-5">
             
             {/* VIP Sponsored Ads List (Flat Unified Card, Hairline Dividers) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] overflow-hidden shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] overflow-hidden shadow-none">
               
-              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#F0F2F5] dark:border-white/[0.05]">
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#F0F2F5] dark:border-white/[0.025]">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
                     <Crown size={15} />
@@ -650,7 +650,7 @@ export default function AdDetailPage({
               </div>
 
               {/* Flat Hairline-Divided Rows */}
-              <div className="divide-y divide-[#F0F2F5] dark:divide-white/[0.05]">
+              <div className="divide-y divide-[#F0F2F5] dark:divide-white/[0.025]">
                 {displayVipAds.map((vipAd) => {
                   const vipCat = CATEGORIES.find(c => c.id === vipAd.category);
                   const vipCover = (vipAd.images && vipAd.images.length > 0)
@@ -667,7 +667,7 @@ export default function AdDetailPage({
                       className="group flex items-center gap-3.5 px-4 sm:px-5 py-3.5 hover:bg-[#F5F5F7]/80 dark:hover:bg-white/[0.04] active:bg-[#EBEBF0] transition-colors cursor-pointer"
                     >
                       {/* Clean Thumbnail */}
-                      <div className="relative h-16 w-20 rounded-xl overflow-hidden shrink-0 bg-[#F5F5F7] dark:bg-white/[0.05] border border-[#ECEFF4] dark:border-white/[0.03]">
+                      <div className="relative h-16 w-20 rounded-xl overflow-hidden shrink-0 bg-[#F5F5F7] dark:bg-white/[0.05] border border-[#F0F2F5] dark:border-white/[0.025]">
                         <img
                           src={vipCover}
                           alt={vipAd.title}
@@ -704,7 +704,7 @@ export default function AdDetailPage({
             </div>
 
             {/* Monetization Promotion CTA Card (Unified Surface, Zero Box Shadow) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] p-5 space-y-3.5 shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#14161C] rounded-2xl sm:rounded-3xl border border-[#F0F2F5] dark:border-white/[0.025] p-5 space-y-3.5 shadow-none">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
                   <Sparkles size={16} />
