@@ -15,11 +15,53 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/llms.txt",
+      "destination": "/api/seo?mode=llms"
+    },
+    {
+      "source": "/llms-full.txt",
+      "destination": "/api/seo?mode=llms-full"
+    },
+    {
+      "source": "/feed.xml",
+      "destination": "/api/seo?mode=feed"
+    },
+    {
+      "source": "/rss.xml",
+      "destination": "/api/seo?mode=feed"
+    },
+    {
+      "source": "/linksho8f4c2e9a7b1d4e6f9a3c5b7d2e8f.txt",
+      "destination": "/api/seo?mode=indexnow-key"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },
     {
-      "source": "/((?!api/|sitemap\\.xml|robots\\.txt).*)",
+      "source": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "([gG]ooglebot|[gG]oogle-[eE]xtended|[bB]ingbot|[yY]andex|[dD]uck[dD]uck[bB]ot|[bB]aiduspider|[oO][aA][iI]-[sS]earch[bB]ot|[cC]hat[gG][pP][tT]-[uU]ser|[gG][pP][tT][bB]ot|[pP]erplexity[bB]ot|[pP]erplexity-[uU]ser|[cC]laude[bB]ot|[cC]laude-[wW]eb|[aA]nthropic-[aA][iI]|[aA]pplebot|[fF]acebookexternalhit|[tT]elegram[bB]ot|[wW]hats[aA]pp|[tT]witter[bB]ot|[lL]inked[iI]n[bB]ot|[sS]lackbot|[dD]iscordbot)"
+        }
+      ],
+      "destination": "/api/seo?mode=html"
+    },
+    {
+      "source": "/ad/:adRef",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "([gG]ooglebot|[gG]oogle-[eE]xtended|[bB]ingbot|[yY]andex|[dD]uck[dD]uck[bB]ot|[bB]aiduspider|[oO][aA][iI]-[sS]earch[bB]ot|[cC]hat[gG][pP][tT]-[uU]ser|[gG][pP][tT][bB]ot|[pP]erplexity[bB]ot|[pP]erplexity-[uU]ser|[cC]laude[bB]ot|[cC]laude-[wW]eb|[aA]nthropic-[aA][iI]|[aA]pplebot|[fF]acebookexternalhit|[tT]elegram[bB]ot|[wW]hats[aA]pp|[tT]witter[bB]ot|[lL]inked[iI]n[bB]ot|[sS]lackbot|[dD]iscordbot)"
+        }
+      ],
+      "destination": "/api/seo?mode=html&ad=:adRef"
+    },
+    {
+      "source": "/((?!api/|sitemap\\.xml|robots\\.txt|llms\\.txt|llms-full\\.txt|feed\\.xml|rss\\.xml|linksho8f4c2e9a7b1d4e6f9a3c5b7d2e8f\\.txt).*)",
       "destination": "/index.html"
     }
   ],

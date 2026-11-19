@@ -10,6 +10,8 @@ import {
   validateStripeSecretKeyForMode,
   verifyVerifiedCheckoutSession,
 } from './_lib/stripeSecurity.js';
+import { CANONICAL_ORIGIN } from './_lib/seoCore.js';
+import { notifyIndexNow } from './_lib/indexNow.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://bezbnymjcnmazdonfzky.supabase.co';
 const HAS_SERVICE_ROLE = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -660,6 +662,19 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: createRes?.error || 'خطا در ثبت آگهی' });
         }
 
+        if (createRes?.ad?.status === 'active') {
+          const slug = encodeURIComponent(refNum || createRes.ad.id);
+          await notifyIndexNow(
+            [
+              `${CANONICAL_ORIGIN}/?ad=${slug}`,
+              `${CANONICAL_ORIGIN}/?c=${encodeURIComponent(cleanCountry)}`,
+              `${CANONICAL_ORIGIN}/?c=${encodeURIComponent(cleanCountry)}&cat=${encodeURIComponent(cleanCategory)}`,
+              `${CANONICAL_ORIGIN}/`,
+            ],
+            { origin: CANONICAL_ORIGIN }
+          ).catch(() => {});
+        }
+
         return res.status(200).json({
           ok: true,
           ad: createRes.ad,
@@ -731,6 +746,19 @@ export default async function handler(req, res) {
             last_boosted_at: data?.last_boosted_at || null,
             cooldown_remaining_seconds: data?.cooldown_remaining_seconds || 0,
           });
+        }
+
+        if (data?.ad) {
+          const slug = encodeURIComponent(data.ad.reference_number || data.ad.id || id);
+          const boostedCountry = encodeURIComponent(data.ad.country || 'se');
+          await notifyIndexNow(
+            [
+              `${CANONICAL_ORIGIN}/?ad=${slug}`,
+              `${CANONICAL_ORIGIN}/?c=${boostedCountry}`,
+              `${CANONICAL_ORIGIN}/`,
+            ],
+            { origin: CANONICAL_ORIGIN }
+          ).catch(() => {});
         }
 
         return res.status(200).json({

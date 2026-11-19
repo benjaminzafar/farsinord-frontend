@@ -6,36 +6,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#F5F5F7" />
-    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+    <link rel="canonical" href="https://www.linksho.eu/" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="https://www.linksho.eu/sitemap.xml" />
+    <link rel="alternate" type="text/plain" title="LLMs.txt" href="https://www.linksho.eu/llms.txt" />
+    <link rel="alternate" type="application/rss+xml" title="لینک شو — جدیدترین آگهی‌ها" href="https://www.linksho.eu/feed.xml" />
+    <link rel="alternate" hreflang="fa-SE" href="https://www.linksho.eu/?c=se" />
+    <link rel="alternate" hreflang="fa-NO" href="https://www.linksho.eu/?c=no" />
+    <link rel="alternate" hreflang="fa-DK" href="https://www.linksho.eu/?c=dk" />
+    <link rel="alternate" hreflang="fa-FI" href="https://www.linksho.eu/?c=fi" />
+    <link rel="alternate" hreflang="fa-DE" href="https://www.linksho.eu/?c=de" />
+    <link rel="alternate" hreflang="fa-AT" href="https://www.linksho.eu/?c=at" />
+    <link rel="alternate" hreflang="fa-NL" href="https://www.linksho.eu/?c=nl" />
+    <link rel="alternate" hreflang="fa-FR" href="https://www.linksho.eu/?c=fr" />
+    <link rel="alternate" hreflang="x-default" href="https://www.linksho.eu/" />
+
     <title>لینک شو | نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان اروپا</title>
-    <meta name="description" content="لینک شو | مرجع جامع نیازمندی‌ها، مسکن، مشاغل و کسب‌وکارهای فارسی‌زبانان سراسر اروپا." />
+    <meta name="description" content="لینک شو | مرجع جامع نیازمندی‌ها، مسکن، مشاغل و کسب‌وکارهای فارسی‌زبانان سراسر اروپا (سوئد، نروژ، دانمارک، فنلاند، آلمان، اتریش، هلند و فرانسه)." />
     <meta name="keywords" content="لینک شو, LinkSho, نیازمندیهای فارسی زبانان اروپا, مسکن در اروپا, کاریابی در اروپا, کسب و کار فارسی زبانان اروپا" />
     
     <!-- Open Graph / Social Sharing -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="لینک شو" />
+    <meta property="og:url" content="https://www.linksho.eu/" />
     <meta property="og:title" content="لینک شو | نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان اروپا" />
     <meta property="og:description" content="ثبت و جستجوی رایگان آگهی‌های مسکن، رستوران، استخدام و خدمات تخصصی برای فارسی‌زبانان سراسر اروپا." />
+    <meta property="og:image" content="https://www.linksho.eu/images/cities/stockholm.jpg" />
     <meta property="og:locale" content="fa_IR" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="لینک شو | نیازمندی‌ها، مسکن و مشاغل فارسی‌زبانان اروپا" />
     <meta name="twitter:description" content="مرجع جامع نیازمندی‌ها، مسکن، کاریابی و خدمات جامعه فارسی‌زبانان اروپا." />
+    <meta name="twitter:image" content="https://www.linksho.eu/images/cities/stockholm.jpg" />
 
-    <!-- Structured Data (JSON-LD) for Search Engines -->
+    <!-- Structured Data (JSON-LD) for Search Engines & AI Crawlers -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "لینک شو | LinkSho",
-        "url": "https://www.linksho.eu/",
-        "inLanguage": "fa",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://www.linksho.eu/?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.linksho.eu/#organization",
+            "name": "لینک شو",
+            "alternateName": ["LinkSho", "لینک شو اروپا"],
+            "url": "https://www.linksho.eu/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://www.linksho.eu/favicon.svg"
+            },
+            "knowsLanguage": ["fa", "sv", "no", "da", "fi", "de", "nl", "fr", "en"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.linksho.eu/#website",
+            "name": "لینک شو | LinkSho",
+            "url": "https://www.linksho.eu/",
+            "inLanguage": "fa",
+            "publisher": { "@id": "https://www.linksho.eu/#organization" },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://www.linksho.eu/?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
       }
     </script>
 

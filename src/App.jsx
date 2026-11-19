@@ -27,6 +27,7 @@ import { publicApi } from './lib/apiClient';
 import { COUNTRIES, CATEGORIES, mergePortalCountries, t } from './lib/translations';
 import { getGdprConsent } from './lib/gdpr';
 import { matchesSmartSearch, getSearchSuggestions } from './lib/smartSearch';
+import { CANONICAL_SITE_ORIGIN, buildClientCanonicalUrl, buildClientSeoGraph } from './lib/seoSchema';
 
 const CountryBanner = lazy(() => import('./components/CountryBanner'));
 const LegalModal = lazy(() => import('./components/LegalModal'));
@@ -66,6 +67,7 @@ export default function App() {
   const [hasMoreAds, setHasMoreAds] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [renderNow] = useState(() => Date.now());
   const feedSentinelRef = useRef(null);
   const feedRequestSeqRef = useRef(0);
   const loadingMoreRef = useRef(false);
@@ -106,7 +108,13 @@ export default function App() {
     }
     return 'se';
   });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('q') || '';
+    } catch {}
+    return '';
+  });
   const [selectedCategory, setSelectedCategory] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -434,22 +442,40 @@ export default function App() {
     });
   }, [analyticsSettings.enabled, analyticsSettings.measurementId, gdprConsent?.analytics, selectedCountry, selectedCategory, activeAdDetail?.id]);
 
-  // Dynamic Country SEO (Document Title + Meta Description + Keywords + OpenGraph + Twitter)
+  // Dynamic Country, Category & Ad SEO (Title + Meta + OpenGraph + Clean Canonical + JSON-LD @graph)
   useEffect(() => {
     const cObj = portalCountries.find(c => c.id === selectedCountry) || portalCountries[0] || COUNTRIES[0];
     const cName = cObj?.nameFa || 'سوئد';
+    const catObj = selectedCategory && selectedCategory !== 'all'
+      ? CATEGORIES.find(c => c.id === selectedCategory)
+      : null;
     const activeSeo = seoSettings[selectedCountry] || {
       title: `${siteName} ${cName} | نیازمندی‌ها، مسکن، کاریابی و خدمات فارسی‌زبانان در ${cName}`,
       description: `${siteName} — محل رشد کسب و کار فارسی‌زبانان و مرجع آگهی‌های رایگان مسکن، رستوران، کاریابی و خدمات در سراسر ${cName}.`,
       keywords: `${siteName}, نیازمندیهای ${cName}, فارسی زبانان ${cName}, مسکن ${cName}, کار در ${cName}`,
     };
 
-    const pageTitle = activeAdDetail
-      ? `${activeAdDetail.title_fa || activeAdDetail.title} | ${siteName}`
-      : activeSeo.title;
-    const pageDesc = activeAdDetail
-      ? (activeAdDetail.description || '').slice(0, 155)
-      : activeSeo.description;
+    const pageMode = podcastOpen
+      ? 'podcast'
+      : websiteBuilderOpen
+        ? 'website-builder'
+        : 'feed';
+
+    let pageTitle = activeSeo.title;
+    let pageDesc = activeSeo.description;
+    if (activeAdDetail) {
+      pageTitle = `${activeAdDetail.title_fa || activeAdDetail.title} | ${siteName}`;
+      pageDesc = (activeAdDetail.description || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+    } else if (pageMode === 'podcast') {
+      pageTitle = `پادکست خبری و ویدیوهای فارسی‌زبانان اروپا | ${siteName}`;
+      pageDesc = `شنیدن جدیدترین پادکست‌های خبری و ویدیوهای منتخب فارسی‌زبانان اروپا در ${siteName}.`;
+    } else if (pageMode === 'website-builder') {
+      pageTitle = `طراحی وب‌سایت و سئو تخصصی در اروپا | ${siteName}`;
+      pageDesc = `طراحی وب‌سایت سریع، ریسپانسیو و سئوشده برای کسب‌وکارهای فارسی‌زبان در اروپا توسط ${siteName}.`;
+    } else if (catObj) {
+      pageTitle = `${catObj.fa} در ${cName} | ${siteName}`;
+      pageDesc = `جدیدترین آگهی‌های ${catObj.fa} برای فارسی‌زبانان در ${cName} — ثبت رایگان در ${siteName}.`;
+    }
 
     document.title = pageTitle;
 
@@ -466,7 +492,22 @@ export default function App() {
     };
 
     const countryIso = (selectedCountry || 'se').toUpperCase();
-    const origin = window.location.origin;
+    const origin =
+      typeof window !== 'undefined' && /^https?:\/\/(www\.)?linksho\.eu$/i.test(window.location.origin)
+        ? CANONICAL_SITE_ORIGIN
+        : (window.location.origin || CANONICAL_SITE_ORIGIN);
+    const canonicalUrl = buildClientCanonicalUrl({
+      origin,
+      adRef: activeAdDetail ? (activeAdDetail.reference_number || activeAdDetail.id) : '',
+      page: pageMode === 'feed' ? '' : pageMode,
+      country: activeAdDetail ? activeAdDetail.country : selectedCountry,
+      category: activeAdDetail ? '' : selectedCategory,
+      city: activeAdDetail ? '' : selectedCity,
+    });
+    const shareImage =
+      activeAdDetail?.images?.[0] ||
+      cObj?.heroImage ||
+      `${origin}/images/cities/stockholm.jpg`;
 
     setMeta('meta[name="description"]', 'name=description', pageDesc);
     setMeta('meta[name="keywords"]', 'name=keywords', activeSeo.keywords);
@@ -475,15 +516,13 @@ export default function App() {
     setMeta('meta[property="og:site_name"]', 'property=og:site_name', siteName);
     setMeta('meta[property="og:locale"]', 'property=og:locale', `fa_${countryIso}`);
     setMeta('meta[property="og:type"]', 'property=og:type', activeAdDetail ? 'article' : 'website');
-    setMeta('meta[property="og:url"]', 'property=og:url', window.location.href);
-    setMeta('meta[property="og:title"]', 'property=og:title', activeSeo.ogTitle || pageTitle);
-    setMeta('meta[property="og:description"]', 'property=og:description', activeSeo.ogDescription || pageDesc);
-    if (activeAdDetail?.images?.[0]) {
-      setMeta('meta[property="og:image"]', 'property=og:image', activeAdDetail.images[0]);
-      setMeta('meta[name="twitter:image"]', 'name=twitter:image', activeAdDetail.images[0]);
-    }
-    setMeta('meta[name="twitter:title"]', 'name=twitter:title', activeSeo.ogTitle || pageTitle);
-    setMeta('meta[name="twitter:description"]', 'name=twitter:description', activeSeo.ogDescription || pageDesc);
+    setMeta('meta[property="og:url"]', 'property=og:url', canonicalUrl);
+    setMeta('meta[property="og:title"]', 'property=og:title', (!activeAdDetail && !catObj && pageMode === 'feed' && activeSeo.ogTitle) ? activeSeo.ogTitle : pageTitle);
+    setMeta('meta[property="og:description"]', 'property=og:description', (!activeAdDetail && !catObj && pageMode === 'feed' && activeSeo.ogDescription) ? activeSeo.ogDescription : pageDesc);
+    setMeta('meta[property="og:image"]', 'property=og:image', shareImage.startsWith('/') ? `${origin}${shareImage}` : shareImage);
+    setMeta('meta[name="twitter:image"]', 'name=twitter:image', shareImage.startsWith('/') ? `${origin}${shareImage}` : shareImage);
+    setMeta('meta[name="twitter:title"]', 'name=twitter:title', (!activeAdDetail && !catObj && pageMode === 'feed' && activeSeo.ogTitle) ? activeSeo.ogTitle : pageTitle);
+    setMeta('meta[name="twitter:description"]', 'name=twitter:description', (!activeAdDetail && !catObj && pageMode === 'feed' && activeSeo.ogDescription) ? activeSeo.ogDescription : pageDesc);
 
     let canonicalEl = document.querySelector('link[rel="canonical"]');
     if (!canonicalEl) {
@@ -491,7 +530,7 @@ export default function App() {
       canonicalEl.setAttribute('rel', 'canonical');
       document.head.appendChild(canonicalEl);
     }
-    canonicalEl.setAttribute('href', window.location.href);
+    canonicalEl.setAttribute('href', canonicalUrl);
 
     // Localized hreflang alternate links for all active European countries + x-default
     const countriesList = (portalCountries && portalCountries.length > 0) ? portalCountries : COUNTRIES;
@@ -509,7 +548,7 @@ export default function App() {
     });
     appendHreflang('x-default', `${origin}/`);
 
-    // Dynamic localized JSON-LD structured data for country or active ad
+    // Rich @graph structured data for Google & AI search engines
     let ldEl = document.getElementById('linksho-dynamic-ld');
     if (!ldEl) {
       ldEl = document.createElement('script');
@@ -517,49 +556,23 @@ export default function App() {
       ldEl.type = 'application/ld+json';
       document.head.appendChild(ldEl);
     }
-    const ldData = activeAdDetail
-      ? {
-          '@context': 'https://schema.org',
-          '@type': 'Product',
-          name: activeAdDetail.title_fa || activeAdDetail.title,
-          description: pageDesc,
-          image: activeAdDetail.images?.[0] || `${origin}/favicon.svg`,
-          url: window.location.href,
-          inLanguage: `fa-${countryIso}`,
-          areaServed: {
-            '@type': 'Country',
-            name: cName,
-          },
-          ...(activeAdDetail.price
-            ? {
-                offers: {
-                  '@type': 'Offer',
-                  price: activeAdDetail.price,
-                  priceCurrency: activeAdDetail.currency || (selectedCountry === 'se' ? 'SEK' : selectedCountry === 'no' ? 'NOK' : selectedCountry === 'dk' ? 'DKK' : 'EUR'),
-                  availability: 'https://schema.org/InStock',
-                },
-              }
-            : {}),
-        }
-      : {
-          '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          name: pageTitle,
-          description: pageDesc,
-          url: `${origin}/?c=${selectedCountry}`,
-          inLanguage: `fa-${countryIso}`,
-          about: {
-            '@type': 'Country',
-            name: cName,
-          },
-          isPartOf: {
-            '@type': 'WebSite',
-            name: siteName,
-            url: `${origin}/`,
-          },
-        };
+    const ldData = buildClientSeoGraph({
+      origin,
+      siteName,
+      logoUrl,
+      socialLinks,
+      countryObj: cObj,
+      categoryId: selectedCategory,
+      activeAd: activeAdDetail,
+      adsList: ads,
+      pageMode,
+      pageTitle,
+      pageDesc,
+      canonicalUrl,
+      nowMs: renderNow,
+    });
     ldEl.textContent = JSON.stringify(ldData);
-  }, [selectedCountry, seoSettings, activeAdDetail, siteName, portalCountries]);
+  }, [selectedCountry, selectedCategory, selectedCity, seoSettings, activeAdDetail, podcastOpen, websiteBuilderOpen, siteName, logoUrl, socialLinks, portalCountries, ads, renderNow]);
 
   // Success Toast
   const [toastMsg, setToastMsg] = useState('');
@@ -733,7 +746,8 @@ export default function App() {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      const adParam = params.get('ad');
+      const pathMatch = String(window.location.pathname || '').match(/^\/ad\/([A-Za-z0-9_-]+)\/?$/);
+      const adParam = params.get('ad') || (pathMatch ? pathMatch[1] : '');
       if (adParam) {
         publicApi.fetchAdByParam(adParam).then((data) => {
           if (data) setActiveAdDetail(data);
@@ -1067,8 +1081,6 @@ export default function App() {
       return matchCat && matchCity && matchSearch;
     });
   }, [countryAds, selectedCategory, selectedCity, deferredSearchQuery]);
-
-  const [renderNow] = useState(() => Date.now());
 
   // Sort ads according to selected sort option while preserving Paid VIP ranking & boost sort_timestamp
   const sortedAds = useMemo(() => {
