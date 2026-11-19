@@ -1768,8 +1768,6 @@ export default function App() {
         )}
       </Suspense>
 
-      {/* Mobile Outer Viewport Rounded Frame (visual-only, zero layout shift) */}
-      <div className="mobile-viewport-frame md:hidden" aria-hidden="true" />
     </div>
   );
 }
