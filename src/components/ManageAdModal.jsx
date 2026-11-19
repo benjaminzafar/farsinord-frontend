@@ -77,13 +77,20 @@ function getStatusBadge(ad) {
   }
 }
 
-const CURRENCY_UNITS = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
+const IGNORED_EMPTY_PRICE_TYPES = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون', 'یورو', 'توافقی']);
 function formatManageAdPrice(ad) {
   const rawType = String(ad?.price_type || '').trim();
-  if (ad?.price) {
-    return `${Number(ad.price).toLocaleString('fa-IR')} ${!rawType || rawType === 'kr' ? 'کرون' : rawType}`;
+  const numericPrice = Number(ad?.price);
+  if (Number.isFinite(numericPrice) && numericPrice > 0) {
+    return `${numericPrice.toLocaleString('fa-IR')} ${!rawType || rawType === 'kr' || rawType === 'توافقی' || rawType === 'توافقی_کاربر' ? 'کرون' : rawType}`;
   }
-  if (rawType && !CURRENCY_UNITS.has(rawType.toLowerCase())) {
+  const hasExplicitUserTavafoghi =
+    rawType === 'توافقی_کاربر' ||
+    /توافقی/.test(`${ad?.title || ''} ${ad?.title_fa || ''} ${ad?.description || ''}`);
+  if (hasExplicitUserTavafoghi) {
+    return 'توافقی';
+  }
+  if (rawType && !IGNORED_EMPTY_PRICE_TYPES.has(rawType.toLowerCase())) {
     return rawType;
   }
   return '';

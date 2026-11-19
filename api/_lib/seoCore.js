@@ -240,17 +240,24 @@ function getPriceCurrency(ad, countryObj) {
   return 'EUR';
 }
 
+const IGNORED_EMPTY_PRICE_TYPES = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون', 'یورو', 'توافقی']);
+
 function formatAdPriceText(ad, countryObj) {
   const num = Number(ad?.price);
+  const rawType = String(ad?.price_type || '').trim();
   if (Number.isFinite(num) && num > 0) {
     const unit =
-      !ad.price_type || ad.price_type === 'kr'
+      !rawType || rawType === 'kr' || rawType === 'توافقی' || rawType === 'توافقی_کاربر'
         ? (getPriceCurrency(ad, countryObj) === 'EUR' ? 'یورو' : 'کرون')
-        : ad.price_type;
+        : rawType;
     return `${num.toLocaleString('fa-IR')} ${unit}`;
   }
-  if (ad?.price_type && ad.price_type !== 'kr') return String(ad.price_type);
-  return 'توافقی';
+  const hasExplicitUserTavafoghi =
+    rawType === 'توافقی_کاربر' ||
+    /توافقی/.test(`${ad?.title || ''} ${ad?.title_fa || ''} ${ad?.description || ''}`);
+  if (hasExplicitUserTavafoghi) return 'توافقی';
+  if (rawType && !IGNORED_EMPTY_PRICE_TYPES.has(rawType.toLowerCase())) return rawType;
+  return '';
 }
 
 function formatIsoDate(raw, fallback = new Date().toISOString()) {
@@ -755,7 +762,7 @@ export function renderCrawlerHtml({
     mainBodyHtml = `
     <article>
       <h1>${escapeHtml(adTitle)}</h1>
-      <p><strong>کشور:</strong> ${escapeHtml(resolveCountryMeta(activeAd.country || countryObj?.id).nameFa)} | <strong>شهر:</strong> ${escapeHtml(activeAd.city || cName)}${activeAd.area ? ` (${escapeHtml(activeAd.area)})` : ''} | <strong>دسته‌بندی:</strong> ${escapeHtml(adCat?.fa || activeAd.category || 'عمومی')} | <strong>قیمت:</strong> ${escapeHtml(adPrice)}</p>
+      <p><strong>کشور:</strong> ${escapeHtml(resolveCountryMeta(activeAd.country || countryObj?.id).nameFa)} | <strong>شهر:</strong> ${escapeHtml(activeAd.city || cName)}${activeAd.area ? ` (${escapeHtml(activeAd.area)})` : ''} | <strong>دسته‌بندی:</strong> ${escapeHtml(adCat?.fa || activeAd.category || 'عمومی')}${adPrice ? ` | <strong>قیمت:</strong> ${escapeHtml(adPrice)}` : ''}</p>
       ${adImgHtml ? `<div>${adImgHtml}</div>` : ''}
       <p>${escapeHtml(activeAd.description || '')}</p>
       <p><a href="${escapeHtml(`${base}/?c=${encodeURIComponent(activeAd.country || countryObj?.id || 'se')}`)}">مشاهده همه آگهی‌های ${escapeHtml(resolveCountryMeta(activeAd.country || countryObj?.id).nameFa)}</a></p>
@@ -773,7 +780,7 @@ export function renderCrawlerHtml({
         return `
       <article>
         <h2><a href="${escapeHtml(adHref)}">${escapeHtml(title)}</a></h2>
-        <p>${escapeHtml(catMeta?.fa || ad.category || '')} — ${escapeHtml(ad.city || cName)} — ${escapeHtml(priceText)}</p>
+        <p>${escapeHtml(catMeta?.fa || ad.category || '')} — ${escapeHtml(ad.city || cName)}${priceText ? ` — ${escapeHtml(priceText)}` : ''}</p>
         <p>${escapeHtml(excerpt)}</p>
       </article>`;
       })

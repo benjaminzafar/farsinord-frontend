@@ -6,6 +6,8 @@ import {
   Send,
   MessageCircle,
   Mail,
+  Headphones,
+  Laptop,
 } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
@@ -73,7 +75,9 @@ export default function Footer({
   onSelectCategory, 
   onOpenPostAd,
   onOpenManageAd,
-  onOpenLegal
+  onOpenLegal,
+  onOpenPodcast,
+  onOpenWebsiteBuilder,
 }) {
   const [failedLogoUrl, setFailedLogoUrl] = useState('');
 
@@ -121,7 +125,7 @@ export default function Footer({
   ].filter(item => Boolean(item.href));
 
   return (
-    <footer className="border-t border-[#E5E5EA] bg-[#FBFBFC] pt-10 pb-12 md:pb-8 text-[#515154] text-xs select-none font-vazir" dir="rtl">
+    <footer className="border-t border-[#E5E5EA] dark:border-white/[0.06] bg-[#FBFBFC] dark:bg-[#121317] pt-10 pb-12 md:pb-8 text-[#515154] dark:text-[#A1A1A6] text-xs select-none font-vazir transition-colors" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
         {/* Main Footer Grid: Brand + Socials on Right, Navigation & Legal Columns on Left */}
@@ -141,12 +145,12 @@ export default function Footer({
                     onError={() => setFailedLogoUrl(logoUrl)}
                   />
                 ) : brandingReady ? (
-                  <span className="font-black text-lg text-[#1D1D1F] tracking-tight">{siteName}</span>
+                  <span className="font-black text-lg text-[#1D1D1F] dark:text-white tracking-tight">{siteName}</span>
                 ) : (
-                  <span className="inline-block h-7 w-24 rounded-lg bg-[#ECECEF]/80 animate-pulse" aria-hidden="true" />
+                  <span className="inline-block h-7 w-24 rounded-lg bg-[#ECECEF]/80 dark:bg-white/[0.08] animate-pulse" aria-hidden="true" />
                 )}
               </div>
-              <p className="text-xs font-medium text-[#6E6E73]">
+              <p className="text-xs font-medium text-[#6E6E73] dark:text-[#A1A1A6]">
                 محل رشد کسب و کار فارسی‌زبانان
               </p>
             </div>
@@ -162,7 +166,7 @@ export default function Footer({
                     rel={id === 'email' ? undefined : 'noopener noreferrer'}
                     title={label}
                     aria-label={label}
-                    className="h-9 w-9 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] border border-[#E5E5EA] text-[#6E6E73] hover:text-[#1D1D1F] flex items-center justify-center transition-colors active:scale-95"
+                    className="h-9 w-9 rounded-full bg-[#F5F5F7] hover:bg-[#EBEBF0] dark:bg-white/[0.06] dark:hover:bg-white/[0.12] border border-[#E5E5EA] dark:border-white/[0.08] text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white flex items-center justify-center transition-colors active:scale-95"
                   >
                     <Icon size={15} className="block" />
                   </a>
@@ -173,10 +177,10 @@ export default function Footer({
 
           {/* Column 2 (2 cols): دسته‌بندی‌ها */}
           <div className="col-span-1 md:col-span-2 space-y-3">
-            <h4 className="font-extrabold text-[#1D1D1F] text-xs">
+            <h4 className="font-extrabold text-[#1D1D1F] dark:text-white text-xs">
               دسته‌بندی‌ها
             </h4>
-            <ul className="space-y-1.5 text-xs text-[#6E6E73]">
+            <ul className="space-y-1.5 text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
               {primaryCategories.map(cat => (
                 <li key={cat.id}>
                   <button
@@ -185,7 +189,7 @@ export default function Footer({
                       onSelectCategory?.(cat.id);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="py-1 hover:text-[#1D1D1F] transition-colors text-right cursor-pointer"
+                    className="py-1 hover:text-[#1D1D1F] dark:hover:text-white transition-colors text-right cursor-pointer"
                   >
                     {cat.fa}
                   </button>
@@ -196,10 +200,10 @@ export default function Footer({
 
           {/* Column 3 (2 cols): سایر بخش‌ها */}
           <div className="col-span-1 md:col-span-2 space-y-3">
-            <h4 className="font-extrabold text-[#1D1D1F] text-xs">
+            <h4 className="font-extrabold text-[#1D1D1F] dark:text-white text-xs">
               سایر بخش‌ها
             </h4>
-            <ul className="space-y-1.5 text-xs text-[#6E6E73]">
+            <ul className="space-y-1.5 text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
               {secondaryCategories.map(cat => (
                 <li key={cat.id}>
                   <button
@@ -208,7 +212,7 @@ export default function Footer({
                       onSelectCategory?.(cat.id);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="py-1 hover:text-[#1D1D1F] transition-colors text-right cursor-pointer"
+                    className="py-1 hover:text-[#1D1D1F] dark:hover:text-white transition-colors text-right cursor-pointer"
                   >
                     {cat.fa}
                   </button>
@@ -217,18 +221,18 @@ export default function Footer({
             </ul>
           </div>
 
-          {/* Column 4 (2 cols): ثبت و مدیریت */}
+          {/* Column 4 (2 cols): ثبت و خدمات */}
           <div className="col-span-1 md:col-span-2 space-y-3">
-            <h4 className="font-extrabold text-[#1D1D1F] text-xs">
-              ثبت و مدیریت
+            <h4 className="font-extrabold text-[#1D1D1F] dark:text-white text-xs">
+              ثبت و خدمات
             </h4>
-            <ul className="space-y-1.5 text-xs text-[#6E6E73]">
+            <ul className="space-y-1.5 text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
               {onOpenPostAd && (
                 <li>
                   <button
                     type="button"
                     onClick={onOpenPostAd}
-                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] transition-colors cursor-pointer"
+                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
                   >
                     <PlusCircle size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
                     <span className="leading-none">ثبت آگهی رایگان</span>
@@ -240,10 +244,34 @@ export default function Footer({
                   <button
                     type="button"
                     onClick={onOpenManageAd}
-                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] transition-colors cursor-pointer"
+                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
                   >
                     <KeyRound size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
                     <span className="leading-none">مدیریت آگهی</span>
+                  </button>
+                </li>
+              )}
+              {onOpenWebsiteBuilder && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={onOpenWebsiteBuilder}
+                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Laptop size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                    <span className="leading-none">سفارش طراحی سایت</span>
+                  </button>
+                </li>
+              )}
+              {onOpenPodcast && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={onOpenPodcast}
+                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Headphones size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
+                    <span className="leading-none">پادکست خبری</span>
                   </button>
                 </li>
               )}
@@ -252,7 +280,7 @@ export default function Footer({
                   <button
                     type="button"
                     onClick={onOpenCountryModal}
-                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] transition-colors cursor-pointer"
+                    className="py-1 inline-flex items-center gap-2 leading-none hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
                   >
                     <Globe size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
                     <span className="leading-none">کشور ({selectedCountryObj?.nameFa || 'انتخاب'})</span>
@@ -264,15 +292,15 @@ export default function Footer({
 
           {/* Column 5 (2 cols): قوانین و حریم خصوصی */}
           <div className="col-span-1 md:col-span-2 space-y-3">
-            <h4 className="font-extrabold text-[#1D1D1F] text-xs">
+            <h4 className="font-extrabold text-[#1D1D1F] dark:text-white text-xs">
               قوانین و حریم خصوصی
             </h4>
-            <ul className="space-y-1.5 text-xs text-[#6E6E73]">
+            <ul className="space-y-1.5 text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
               <li>
                 <button
                   type="button"
                   onClick={() => onOpenLegal?.('privacy')}
-                  className="py-1 hover:text-[#1D1D1F] transition-colors text-right cursor-pointer"
+                  className="py-1 hover:text-[#1D1D1F] dark:hover:text-white transition-colors text-right cursor-pointer"
                 >
                   حریم خصوصی
                 </button>
@@ -281,7 +309,7 @@ export default function Footer({
                 <button
                   type="button"
                   onClick={() => onOpenLegal?.('cookies')}
-                  className="py-1 hover:text-[#1D1D1F] transition-colors text-right cursor-pointer"
+                  className="py-1 hover:text-[#1D1D1F] dark:hover:text-white transition-colors text-right cursor-pointer"
                 >
                   سیاست کوکی‌ها
                 </button>
@@ -290,7 +318,7 @@ export default function Footer({
                 <button
                   type="button"
                   onClick={() => onOpenLegal?.('settings')}
-                  className="py-1 hover:text-[#1D1D1F] transition-colors text-right cursor-pointer"
+                  className="py-1 hover:text-[#1D1D1F] dark:hover:text-white transition-colors text-right cursor-pointer"
                 >
                   تنظیمات کوکی‌ها
                 </button>
@@ -300,7 +328,7 @@ export default function Footer({
                   href="/sitemap-index.xml"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="py-1 hover:text-[#1D1D1F] transition-colors inline-block"
+                  className="py-1 hover:text-[#1D1D1F] dark:hover:text-white transition-colors inline-block"
                 >
                   نقشه سایت
                 </a>
@@ -311,7 +339,7 @@ export default function Footer({
         </div>
 
         {/* Clean Minimal Bottom Copyright Bar — Text Only */}
-        <div className="border-t border-[#E5E5EA] pt-5 text-center text-[11px] text-[#86868B]">
+        <div className="border-t border-[#E5E5EA] dark:border-white/[0.06] pt-5 text-center text-[11px] text-[#86868B]">
           © {currentYear} {siteName} • تمامی حقوق محفوظ است.
         </div>
 

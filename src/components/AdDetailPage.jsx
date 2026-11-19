@@ -25,15 +25,22 @@ import CloudflareTurnstile from './CloudflareTurnstile';
 import { publicApi } from '../lib/apiClient';
 import { CATEGORIES, COUNTRIES, t } from '../lib/translations';
 
-const CURRENCY_UNITS = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
+const IGNORED_EMPTY_PRICE_TYPES = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون', 'یورو', 'توافقی']);
 const FA_NUM_FMT = new Intl.NumberFormat('fa-IR');
 
 function formatOptionalPrice(item) {
   const rawType = String(item?.price_type || '').trim();
-  if (item?.price) {
-    return `${FA_NUM_FMT.format(Number(item.price))} ${!rawType || rawType === 'kr' ? 'کرون' : rawType}`;
+  const numericPrice = Number(item?.price);
+  if (Number.isFinite(numericPrice) && numericPrice > 0) {
+    return `${FA_NUM_FMT.format(numericPrice)} ${!rawType || rawType === 'kr' || rawType === 'توافقی' || rawType === 'توافقی_کاربر' ? 'کرون' : rawType}`;
   }
-  if (rawType && !CURRENCY_UNITS.has(rawType.toLowerCase())) {
+  const hasExplicitUserTavafoghi =
+    rawType === 'توافقی_کاربر' ||
+    /توافقی/.test(`${item?.title || ''} ${item?.title_fa || ''} ${item?.description || ''}`);
+  if (hasExplicitUserTavafoghi) {
+    return 'توافقی';
+  }
+  if (rawType && !IGNORED_EMPTY_PRICE_TYPES.has(rawType.toLowerCase())) {
     return rawType;
   }
   return '';
@@ -771,26 +778,26 @@ export default function AdDetailPage({
       {/* Light Apple-Style Clean Photo Modal (Native Pinch-Zoom & Scroll) */}
       {zoomOpen && (
         <div
-          className="fixed inset-0 z-[70] bg-[#F5F5F7] flex flex-col select-none font-vazir"
+          className="fixed inset-0 z-[70] bg-[#F5F5F7] dark:bg-[#121317] flex flex-col select-none font-vazir"
           dir="rtl"
         >
           {/* Clean Top Header */}
-          <div className="flex items-center justify-between px-4 sm:px-6 h-14 bg-[#FBFBFC] border-b border-[#E5E5EA] shrink-0">
+          <div className="flex items-center justify-between px-4 sm:px-6 h-14 bg-[#FBFBFC] dark:bg-[#171920] border-b border-[#E5E5EA] dark:border-white/[0.08] shrink-0">
             <button
               type="button"
               onClick={() => setZoomOpen(false)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F] text-xs font-bold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold transition-colors cursor-pointer"
             >
               <X size={15} />
               <span>بستن</span>
             </button>
 
             {images.length > 1 ? (
-              <span className="px-3 py-1 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] text-[#515154] text-xs font-semibold font-mono">
+              <span className="px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] border border-[#E5E5EA] dark:border-white/[0.08] text-[#515154] dark:text-[#A1A1A6] text-xs font-semibold font-mono">
                 {activeImageIdx + 1} / {images.length}
               </span>
             ) : (
-              <span className="text-xs font-semibold text-[#6E6E73]">نمای کامل تصویر</span>
+              <span className="text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6]">نمای کامل تصویر</span>
             )}
 
             <button
@@ -802,7 +809,7 @@ export default function AdDetailPage({
                   applyPhotoTransform(2.2, 0, 0, true);
                 }
               }}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] text-[#1D1D1F] text-xs font-bold transition-colors cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#ECECEF] hover:bg-[#E2E2E7] dark:bg-white/[0.08] dark:hover:bg-white/[0.14] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold transition-colors cursor-pointer"
             >
               <ZoomIn size={14} />
               <span>{zoomed ? 'نمای عادی' : 'بزرگنمایی'}</span>
@@ -849,7 +856,7 @@ export default function AdDetailPage({
                     setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
                     resetPhotoZoom();
                   }}
-                  className="flex absolute start-3 sm:start-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
+                  className="flex absolute start-3 sm:start-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] dark:bg-[#171920] dark:hover:bg-white/[0.1] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#E5E5EA] dark:border-white/[0.1] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -859,7 +866,7 @@ export default function AdDetailPage({
                     setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
                     resetPhotoZoom();
                   }}
-                  className="flex absolute end-3 sm:end-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] text-[#1D1D1F] border border-[#E5E5EA] shadow-md items-center justify-center transition-colors cursor-pointer"
+                  className="flex absolute end-3 sm:end-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] dark:bg-[#171920] dark:hover:bg-white/[0.1] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#E5E5EA] dark:border-white/[0.1] shadow-md items-center justify-center transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -869,7 +876,7 @@ export default function AdDetailPage({
 
           {/* Clean Bottom Thumbnail Strip */}
           {images.length > 1 && (
-            <div className="px-4 py-3 bg-[#FBFBFC] border-t border-[#E5E5EA] flex items-center justify-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+            <div className="px-4 py-3 bg-[#FBFBFC] dark:bg-[#171920] border-t border-[#E5E5EA] dark:border-white/[0.08] flex items-center justify-center gap-2 overflow-x-auto no-scrollbar shrink-0">
               {images.map((img, idx) => (
                 <button
                   key={idx}
@@ -881,7 +888,7 @@ export default function AdDetailPage({
                   className={`h-12 w-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                     activeImageIdx === idx
                       ? 'border-[#0066CC] ring-2 ring-[#0066CC]/20 scale-105 opacity-100'
-                      : 'border-[#E5E5EA] opacity-60 hover:opacity-100'
+                      : 'border-[#E5E5EA] dark:border-white/[0.1] opacity-60 hover:opacity-100'
                   }`}
                 >
                   <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" />

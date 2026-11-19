@@ -2,7 +2,7 @@ import React from 'react';
 import { MapPin, Eye, Clock } from 'lucide-react';
 import { CATEGORIES } from '../lib/translations';
 
-const CURRENCY_UNITS = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
+const IGNORED_EMPTY_PRICE_TYPES = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون', 'یورو', 'توافقی']);
 const CATEGORY_MAP = new Map(CATEGORIES.map((c) => [c.id, c]));
 const FA_DATE_FMT = new Intl.DateTimeFormat('fa-IR', { month: 'short', day: 'numeric' });
 const SV_DATE_FMT = new Intl.DateTimeFormat('sv-SE', { month: 'short', day: 'numeric' });
@@ -12,11 +12,17 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
   const catObj = CATEGORY_MAP.get(ad.category);
   const catName = catObj ? (lang === 'fa' ? catObj.fa : catObj.sv) : ad.category;
   
-  // Format price only if specified (or if user explicitly entered a non-currency label like توافقی)
+  // Format price only if specified (or if user explicitly entered توافقی)
   const rawPriceType = String(ad.price_type || '').trim();
-  const displayPrice = ad.price
-    ? `${FA_NUM_FMT.format(Number(ad.price))} ${!rawPriceType || rawPriceType === 'kr' ? 'کرون' : rawPriceType}`
-    : (rawPriceType && !CURRENCY_UNITS.has(rawPriceType.toLowerCase()) ? rawPriceType : '');
+  const numericPrice = Number(ad.price);
+  const hasExplicitUserTavafoghi =
+    rawPriceType === 'توافقی_کاربر' ||
+    /توافقی/.test(`${ad.title || ''} ${ad.title_fa || ''} ${ad.description || ''}`);
+  const displayPrice = Number.isFinite(numericPrice) && numericPrice > 0
+    ? `${FA_NUM_FMT.format(numericPrice)} ${!rawPriceType || rawPriceType === 'kr' || rawPriceType === 'توافقی' || rawPriceType === 'توافقی_کاربر' ? 'کرون' : rawPriceType}`
+    : (hasExplicitUserTavafoghi
+        ? 'توافقی'
+        : (rawPriceType && !IGNORED_EMPTY_PRICE_TYPES.has(rawPriceType.toLowerCase()) ? rawPriceType : ''));
 
   const coverImage = (ad.images && ad.images.length > 0 && ad.images[0])
     ? ad.images[0]
@@ -37,10 +43,10 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
   return (
     <article
       onClick={() => onSelect(ad)}
-      className="ad-card-perf group relative flex flex-col bg-[#FBFBFC] dark:bg-[#171920] rounded-xl sm:rounded-2xl border border-[#ECEFF4] dark:border-white/[0.045] shadow-none hover:border-[#D2D2D7] dark:hover:border-white/[0.1] transition-all duration-200 cursor-pointer overflow-hidden active:scale-[0.99]"
+      className="ad-card-perf group relative flex flex-col bg-[#FBFBFC] dark:bg-[#171920] rounded-xl sm:rounded-2xl border border-[#ECEFF4] dark:border-white/[0.06] shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:shadow-[0_10px_28px_rgba(15,23,42,0.07)] dark:hover:shadow-[0_10px_28px_rgba(0,0,0,0.38)] hover:border-[#D2D2D7] dark:hover:border-white/[0.14] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden active:scale-[0.99]"
     >
       {/* Thumbnail */}
-      <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-[#ECECEF]">
+      <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-[#ECECEF] dark:bg-[#1E2028]">
         <img
           src={coverImage}
           alt={ad.title}
@@ -78,19 +84,19 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
           {/* Price */}
           {displayPrice && (
             <div className="flex items-center justify-between gap-1">
-              <span className="text-[13px] sm:text-[16.5px] font-extrabold text-[#0066CC] tabular-nums tracking-tight truncate">
+              <span className="text-[13px] sm:text-[16.5px] font-extrabold text-[#0066CC] dark:text-[#388BFD] tabular-nums tracking-tight truncate">
                 <bdi>{displayPrice}</bdi>
               </span>
             </div>
           )}
 
           {/* Title */}
-          <h3 className="text-[12px] sm:text-[14px] font-bold text-[#1D1D1F] group-hover:text-[#0066CC] transition-colors line-clamp-2 leading-snug">
+          <h3 className="text-[12px] sm:text-[14px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7] group-hover:text-[#0066CC] dark:group-hover:text-[#388BFD] transition-colors line-clamp-2 leading-snug">
             {lang === 'fa' && ad.title_fa ? ad.title_fa : ad.title}
           </h3>
 
           {/* Description */}
-          <p className="text-[11px] sm:text-[12px] text-[#515154] line-clamp-1 sm:line-clamp-2 leading-relaxed">
+          <p className="text-[11px] sm:text-[12px] text-[#515154] dark:text-[#A1A1A6] line-clamp-1 sm:line-clamp-2 leading-relaxed">
             {ad.description}
           </p>
         </div>

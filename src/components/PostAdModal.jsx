@@ -283,14 +283,22 @@ export default function PostAdModal({
         allImages.push(imageUrl.trim());
       }
 
+      const rawPriceTrimmed = String(price || '').trim();
+      const userTypedTavafoghi = /توافقی/.test(rawPriceTrimmed) || /توافقی/.test(String(priceType || ''));
+      const normalizedPriceDigits = rawPriceTrimmed
+        .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+        .replace(/,/g, '');
+      const parsedNumPrice = parseFloat(normalizedPriceDigits);
+      const hasValidNumPrice = Number.isFinite(parsedNumPrice) && parsedNumPrice > 0;
+
       const res = await publicApi.createAd({
         title: title.trim(),
         category,
         country: adCountry,
         city,
         area: area.trim() || null,
-        price: price ? parseFloat(price) : null,
-        price_type: priceType,
+        price: hasValidNumPrice ? parsedNumPrice : null,
+        price_type: !hasValidNumPrice && userTypedTavafoghi ? 'توافقی_کاربر' : priceType,
         description: description.trim(),
         contact_name: contactName.trim(),
         contact_phone: contactPhone.trim() || null,
@@ -739,8 +747,9 @@ export default function PostAdModal({
                     قیمت (اختیاری)
                   </label>
                   <input
-                    type="number"
-                    placeholder="مثال: 12000 (اختیاری)"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="مثال: 12000 یا توافقی (اختیاری)"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none"

@@ -4,6 +4,7 @@ import {
   MapPin, 
   PlusCircle, 
   CheckCircle2, 
+  Check,
   RefreshCw,
   X,
   ChevronDown,
@@ -1173,18 +1174,57 @@ export default function App() {
   const heroHeading = activeCountrySeo?.heroHeading || `نیازمندی‌های فارسی‌زبانان ${currentCountryObj.nameFa}`;
   const heroSubheading = activeCountrySeo?.heroSubheading || `مسکن، رستوران، خدمات و کاریابی در سراسر ${currentCountryObj.nameFa}`;
 
+  const [heroSearchFocused, setHeroSearchFocused] = useState(false);
+  const [heroCityOpen, setHeroCityOpen] = useState(false);
+  const [heroCityQuery, setHeroCityQuery] = useState('');
+  const heroCityRef = useRef(null);
+  const heroCityInputRef = useRef(null);
+  const feedSectionRef = useRef(null);
+
+  const filteredHeroCities = useMemo(() => {
+    const q = heroCityQuery.trim().toLowerCase();
+    if (!q) return availableCities;
+    return availableCities.filter(
+      (c) =>
+        (c.fa && c.fa.toLowerCase().includes(q)) ||
+        (c.id && c.id !== 'all' && c.id.toLowerCase().includes(q))
+    );
+  }, [availableCities, heroCityQuery]);
+
+  const handleHeroSearchSubmit = useCallback(() => {
+    setDebouncedSearchQuery(searchQuery.trim());
+    setHeroSearchFocused(false);
+    setHeroCityOpen(false);
+    if (feedSectionRef.current) {
+      feedSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [searchQuery]);
+
   useEffect(() => {
-    if (!sortMenuOpen) return;
+    if (!sortMenuOpen && !heroCityOpen) return;
     const handleOutside = (e) => {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target)) {
+      if (sortMenuOpen && sortMenuRef.current && !sortMenuRef.current.contains(e.target)) {
         setSortMenuOpen(false);
+      }
+      if (heroCityOpen && heroCityRef.current && !heroCityRef.current.contains(e.target)) {
+        setHeroCityOpen(false);
+        setHeroCityQuery('');
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSortMenuOpen(false);
+        setHeroCityOpen(false);
+        setHeroCityQuery('');
       }
     };
     document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [sortMenuOpen]);
-
-  const [heroSearchFocused, setHeroSearchFocused] = useState(false);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [sortMenuOpen, heroCityOpen]);
 
   const countryAds = useMemo(
     () => ads.filter(ad => ad.country === selectedCountry || (!ad.country && selectedCountry === 'se')),
@@ -1348,11 +1388,11 @@ export default function App() {
       ) : (
         <>
           {/* Hero Section - Always visible on Desktop; hidden on Mobile when filtering by category */}
-          <section className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-1 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
-          <div className="relative min-h-[156px] sm:min-h-[280px] md:min-h-[340px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-12 md:py-16">
+          <section className={`relative z-[35] w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2.5 sm:pt-3.5 pb-1 animate-in fade-in duration-200 ${selectedCategory !== 'all' ? 'hidden md:block' : 'block'}`}>
+          <div className="group relative min-h-[128px] sm:min-h-[196px] md:min-h-[224px] lg:min-h-[236px] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-4 sm:px-8 py-4 sm:py-6 md:py-7">
             
-            {/* Rounded Architectural Cityscape Backdrop */}
-            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#ECEFF4] dark:border-white/[0.04] bg-[#1D1D1F] pointer-events-none select-none">
+            {/* Rounded Architectural Cityscape Backdrop with Smooth Hover Zoom & Multi-Layer Contrast Scrim */}
+            <div className="absolute inset-0 z-0 rounded-2xl sm:rounded-3xl overflow-hidden border border-[#ECEFF4] dark:border-white/[0.06] bg-[#121317] pointer-events-none select-none">
               <img
                 key={activeHero.image}
                 src={activeHero.image}
@@ -1363,23 +1403,28 @@ export default function App() {
                 alt={activeHero.cityFa}
                 decoding="async"
                 fetchPriority="high"
-                className="w-full h-full object-cover object-center opacity-90 transition-all duration-700 ease-out"
+                className="w-full h-full object-cover object-center opacity-95 scale-100 group-hover:scale-[1.03] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/55" />
+              {/* Layer 1: Rich vertical architectural gradient (eliminates weak middle opacity) */}
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/55 to-slate-950/75" />
+              {/* Layer 2: Centered radial dark scrim directly behind header & subtitle text */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_42%,rgba(9,13,22,0.56)_0%,rgba(9,13,22,0.22)_65%,transparent_100%)]" />
+              {/* Layer 3: Interactive hover darkening so header text pops even more on hover */}
+              <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/20 transition-colors duration-300" />
             </div>
 
-            <div className="relative z-10 w-full max-w-3xl mx-auto text-center space-y-2 sm:space-y-4">
-              <h1 className="text-2xl sm:text-4xl md:text-[42px] font-black tracking-tight text-white leading-snug sm:leading-tight px-1 break-words drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]">
+            <div className="relative z-20 w-full max-w-3xl mx-auto text-center space-y-1.5 sm:space-y-2.5">
+              <h1 className="text-xl sm:text-3xl md:text-[33px] lg:text-[36px] font-black tracking-tight text-white leading-snug sm:leading-tight px-2 break-words [text-shadow:0_2px_16px_rgba(0,0,0,0.65),0_1px_3px_rgba(0,0,0,0.85)]">
                 {heroHeading}
               </h1>
 
-              <p className="text-xs sm:text-[15px] text-white/90 max-w-lg mx-auto leading-relaxed px-2 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.45)]">
+              <p className="text-xs sm:text-[14px] text-white/95 max-w-lg mx-auto leading-relaxed px-2 font-semibold [text-shadow:0_1px_10px_rgba(0,0,0,0.75),0_1px_2px_rgba(0,0,0,0.9)]">
                 {heroSubheading}
               </p>
 
               {/* Flat Unified Search Capsule — Hairline-Divided (No Box-in-Box) */}
-              <div className="pt-2 sm:pt-3 px-1 hidden md:block">
-                <div className="bg-[#FBFBFC] rounded-full p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] border border-white/40 max-w-2xl mx-auto flex items-center gap-1.5 transition-all">
+              <div className="pt-1.5 sm:pt-2.5 px-1 hidden md:block">
+                <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.24)] border border-white/50 dark:border-white/[0.08] max-w-2xl mx-auto flex items-center gap-1.5 transition-all focus-within:ring-2 focus-within:ring-[#0066CC]/30">
                   
                   {/* Keyword Input with Google-style Smart Autocomplete (Right side in RTL) */}
                   <div className="relative flex-1 flex items-center gap-2 h-10 px-3 min-w-0">
@@ -1390,16 +1435,27 @@ export default function App() {
                       type="text"
                       placeholder={currentT.searchPlaceholder}
                       value={searchQuery}
-                      onFocus={() => setHeroSearchFocused(true)}
-                      onBlur={() => setTimeout(() => setHeroSearchFocused(false), 150)}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full h-full bg-transparent border-0 text-xs font-medium leading-normal text-[#1D1D1F] placeholder-[#86868B] focus:outline-none text-right min-w-0"
+                      onFocus={() => {
+                        setHeroSearchFocused(true);
+                        setHeroCityOpen(false);
+                      }}
+                      onBlur={() => setTimeout(() => setHeroSearchFocused(false), 160)}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleHeroSearchSubmit();
+                        } else if (e.key === 'Escape') {
+                          setHeroSearchFocused(false);
+                        }
+                      }}
+                      className="w-full h-full bg-transparent border-0 text-xs font-medium leading-normal text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] focus:outline-none text-right min-w-0"
                     />
                     {searchQuery && (
                       <button
                         type="button"
-                        onClick={() => setSearchQuery('')}
-                        className="flex h-6 w-6 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] cursor-pointer transition-colors shrink-0"
+                        onClick={() => handleSearchChange('')}
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white cursor-pointer transition-colors shrink-0"
                         aria-label="پاک کردن جستجو"
                       >
                         <X size={14} strokeWidth={2} className="block" />
@@ -1407,14 +1463,15 @@ export default function App() {
                     )}
 
                     {heroSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.12)] p-1.5 z-50 space-y-0.5 text-right">
+                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] rounded-2xl shadow-[0_18px_45px_rgba(15,23,42,0.16)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.55)] p-1.5 z-50 space-y-0.5 text-right">
                         {searchSuggestions.map((item, idx) => (
                           <button
                             key={`${item.label}-${idx}`}
                             type="button"
                             onMouseDown={(e) => {
                               e.preventDefault();
-                              setSearchQuery(item.label);
+                              handleSearchChange(item.label);
+                              setDebouncedSearchQuery(item.label.trim());
                               setHeroSearchFocused(false);
                             }}
                             className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
@@ -1433,39 +1490,125 @@ export default function App() {
                   </div>
 
                   {/* Clean Hairline Divider (No inner box) */}
-                  <div className="h-5 w-px bg-[#F0F2F5] dark:bg-white/[0.05] shrink-0" />
+                  <div className="h-5 w-px bg-[#E5E7EB] dark:bg-white/[0.08] shrink-0" />
 
-                  {/* Flat Borderless City Selector (Flex-aligned on exact same baseline) */}
-                  <div className="relative flex items-center h-10 px-2.5 shrink-0">
-                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold leading-none text-[#1D1D1F]">
-                      <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
+                  {/* Custom Modern City Selector Popover (Replaces ugly OS native <select>) */}
+                  <div ref={heroCityRef} className="relative flex items-center h-10 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHeroCityOpen((prev) => {
+                          const next = !prev;
+                          if (next) {
+                            setHeroSearchFocused(false);
+                            setTimeout(() => heroCityInputRef.current?.focus(), 40);
+                          } else {
+                            setHeroCityQuery('');
+                          }
+                          return next;
+                        });
+                      }}
+                      aria-expanded={heroCityOpen}
+                      aria-haspopup="listbox"
+                      aria-label="انتخاب شهر"
+                      className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-semibold leading-none transition-colors cursor-pointer select-none ${
+                        heroCityOpen || selectedCity !== 'all'
+                          ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF]'
+                          : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      <span className={`flex h-4 w-4 items-center justify-center shrink-0 ${selectedCity !== 'all' || heroCityOpen ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`}>
                         <MapPin size={15} strokeWidth={2} className="block" />
                       </span>
-                      <span className="truncate max-w-[96px] leading-none">
+                      <span className="truncate max-w-[104px] leading-none">
                         {availableCities.find(c => c.id === selectedCity)?.fa || 'همه شهرها'}
                       </span>
                       <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
-                        <ChevronDown size={14} strokeWidth={2} className="block" />
+                        <ChevronDown size={14} strokeWidth={2} className={`block transition-transform duration-200 ${heroCityOpen ? 'rotate-180 text-[#0066CC] dark:text-[#58A6FF]' : ''}`} />
                       </span>
-                    </div>
-                    <select
-                      value={selectedCity}
-                      onChange={(e) => setSelectedCity(e.target.value)}
-                      aria-label="انتخاب شهر"
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    >
-                      {availableCities.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.fa}
-                        </option>
-                      ))}
-                    </select>
+                    </button>
+
+                    {heroCityOpen && (
+                      <div
+                        role="listbox"
+                        aria-label="فهرست شهرها"
+                        className="absolute end-0 top-full mt-2.5 w-64 rounded-2xl bg-white dark:bg-[#171920] border border-slate-200/90 dark:border-white/[0.08] shadow-[0_18px_45px_rgba(15,23,42,0.16)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.55)] p-2 z-50 text-right animate-in fade-in zoom-in-95 duration-150"
+                      >
+                        {availableCities.length > 5 && (
+                          <div className="relative flex items-center mb-1.5 pb-1.5 border-b border-[#F0F2F5] dark:border-white/[0.06]">
+                            <Search size={13} className="absolute right-2.5 text-[#86868B] pointer-events-none" />
+                            <input
+                              ref={heroCityInputRef}
+                              type="text"
+                              value={heroCityQuery}
+                              onChange={(e) => setHeroCityQuery(e.target.value)}
+                              placeholder="جستجوی سریع شهر..."
+                              className="w-full h-8 pr-8 pl-7 rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:ring-1 focus:ring-[#0066CC]"
+                            />
+                            {heroCityQuery && (
+                              <button
+                                type="button"
+                                onClick={() => setHeroCityQuery('')}
+                                className="absolute left-2 text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white cursor-pointer"
+                                aria-label="پاک کردن جستجوی شهر"
+                              >
+                                <X size={12} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-0.5 pr-0.5">
+                          {filteredHeroCities.length === 0 ? (
+                            <div className="py-4 text-center text-xs text-[#86868B]">
+                              شهری با این نام یافت نشد
+                            </div>
+                          ) : (
+                            filteredHeroCities.map((c) => {
+                              const isSelected = selectedCity === c.id;
+                              return (
+                                <button
+                                  key={c.id}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={isSelected}
+                                  onClick={() => {
+                                    handleCityChange(c.id);
+                                    setHeroCityOpen(false);
+                                    setHeroCityQuery('');
+                                  }}
+                                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF] font-bold'
+                                      : 'text-[#1D1D1F] dark:text-[#E5E5EA] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] font-semibold'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <MapPin size={13} className={`shrink-0 ${isSelected ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`} />
+                                    <span className="truncate leading-none">{c.fa}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    {c.id !== 'all' && (
+                                      <span className="text-[10px] font-medium text-[#86868B] dark:text-[#98989F] leading-none" dir="ltr">
+                                        {c.id}
+                                      </span>
+                                    )}
+                                    {isSelected && <Check size={14} strokeWidth={2.5} className="text-[#0066CC] dark:text-[#58A6FF] shrink-0" />}
+                                  </div>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* CTA Button */}
                   <button
                     type="button"
-                    className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-xs font-bold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                    onClick={handleHeroSearchSubmit}
+                    className="h-10 px-6 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-[#FBFBFC] text-xs font-bold leading-none transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
                   >
                     <Search size={15} strokeWidth={2} className="block shrink-0" />
                     <span className="leading-none">{currentT.searchBtn}</span>
@@ -1483,7 +1626,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
         <div
           ref={categoryStripRef}
-          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] dark:bg-[#171920] p-1 rounded-full border border-[#ECEFF4] dark:border-white/[0.05] shadow-none"
+          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] dark:bg-[#171920] p-1 rounded-full border border-[#ECEFF4] dark:border-white/[0.06] shadow-none"
         >
           {pillStyle.ready && (
             <div
@@ -1508,11 +1651,11 @@ export default function App() {
                 className={`relative z-10 h-8 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-full text-xs font-bold leading-none whitespace-nowrap transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer shrink-0 active:scale-[0.94] select-none ${
                   isActive
                     ? (pillStyle.ready ? 'text-[#FBFBFC]' : 'bg-[#0066CC] text-[#FBFBFC] shadow-2xs')
-                    : 'text-[#515154] hover:text-[#1D1D1F]'
+                    : 'text-[#515154] hover:text-[#1D1D1F] hover:bg-[#F5F5F7]/80 dark:text-[#A1A1A6] dark:hover:text-[#F5F5F7] dark:hover:bg-white/[0.06]'
                 }`}
               >
                 <span className="flex h-4 w-4 items-center justify-center shrink-0">
-                  <CatIcon size={14} strokeWidth={2} className={`block transition-colors duration-200 ${isActive ? 'text-[#FBFBFC]' : 'text-[#86868B]'}`} />
+                  <CatIcon size={14} strokeWidth={2} className={`block transition-colors duration-200 ${isActive ? 'text-[#FBFBFC]' : 'text-[#86868B] dark:text-[#98989F]'}`} />
                 </span>
                 <span className="leading-none">{cat.fa}</span>
               </button>
@@ -1528,7 +1671,7 @@ export default function App() {
       <main
         onTouchStart={handleFeedTouchStart}
         onTouchEnd={handleFeedTouchEnd}
-        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-visible"
+        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7 overflow-visible"
       >
         <div key={selectedCategory} className="space-y-6 sm:space-y-8 animate-in fade-in duration-200 ease-out">
         
@@ -1536,10 +1679,10 @@ export default function App() {
         {featuredAds.length > 0 && (
           <section className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between px-1">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
                 {currentT.featuredAds}
               </h2>
-              <span className="text-[11px] sm:text-xs font-medium text-slate-500 tabular-nums">
+              <span className="text-[11px] sm:text-xs font-medium text-[#6E6E73] dark:text-[#A1A1A6] tabular-nums">
                 {featuredAds.length.toLocaleString('fa-IR')} آگهی
               </span>
             </div>
@@ -1559,23 +1702,50 @@ export default function App() {
         )}
 
         {/* Regular Stream / All Ads */}
-        <section className="space-y-3 sm:space-y-4">
+        <section ref={feedSectionRef} className="space-y-3 sm:space-y-4 scroll-mt-28">
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <h2 className="text-base sm:text-lg font-bold text-[#1D1D1F] tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
                 {currentT.recentAds}
               </h2>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.04] text-[#515154] dark:text-[#A1A1A6] text-[11px] font-bold tabular-nums">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] text-[11px] font-bold tabular-nums">
                 {(searchQuery.trim() === debouncedSearchQuery ? totalAdsCount : sortedAds.length).toLocaleString('fa-IR')} آگهی
               </span>
               {selectedCategory !== 'all' && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EAF2FB] text-[#0066CC] text-xs font-semibold border border-[#CDE0F5]">
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EAF2FB] dark:bg-[#0066CC]/20 text-[#0066CC] dark:text-[#58A6FF] text-xs font-semibold border border-[#CDE0F5] dark:border-[#0066CC]/30">
                   <span>{CATEGORIES.find(c => c.id === selectedCategory)?.fa}</span>
                   <button
                     type="button"
-                    onClick={() => setSelectedCategory('all')}
-                    className="hover:text-[#004C99] p-0.5 cursor-pointer"
+                    onClick={() => handleCategoryChange('all')}
+                    className="hover:text-[#004C99] dark:hover:text-white p-0.5 cursor-pointer"
                     title="حذف فیلتر دسته"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+              {selectedCity !== 'all' && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EAF2FB] dark:bg-[#0066CC]/20 text-[#0066CC] dark:text-[#58A6FF] text-xs font-semibold border border-[#CDE0F5] dark:border-[#0066CC]/30">
+                  <MapPin size={11} className="shrink-0" />
+                  <span>{availableCities.find(c => c.id === selectedCity)?.fa || selectedCity}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCityChange('all')}
+                    className="hover:text-[#004C99] dark:hover:text-white p-0.5 cursor-pointer"
+                    title="حذف فیلتر شهر"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+              {searchQuery.trim() && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-semibold border border-[#ECEFF4] dark:border-white/[0.08]">
+                  <span className="truncate max-w-[140px]">«{searchQuery.trim()}»</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSearchChange('')}
+                    className="text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white p-0.5 cursor-pointer"
+                    title="حذف جستجو"
                   >
                     <X size={12} />
                   </button>
@@ -1585,11 +1755,11 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedCategory('all');
-                    setSelectedCity('all');
-                    setSearchQuery('');
+                    handleCategoryChange('all');
+                    handleCityChange('all');
+                    handleSearchChange('');
                   }}
-                  className="text-xs font-semibold text-[#515154] hover:text-[#1D1D1F] flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-semibold text-[#515154] hover:text-[#1D1D1F] dark:text-[#A1A1A6] dark:hover:text-white flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw size={12} />
                   <span>پاک‌سازی</span>
@@ -1602,40 +1772,45 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setSortMenuOpen((v) => !v)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] hover:bg-[#ECECEF] dark:hover:bg-white/[0.06] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold transition-colors active:scale-95 cursor-pointer select-none"
+                aria-expanded={sortMenuOpen}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors active:scale-95 cursor-pointer select-none ${
+                  sortBy
+                    ? 'bg-[#EAF2FB] border-[#CDE0F5] text-[#0066CC] dark:bg-[#0066CC]/20 dark:border-[#0066CC]/30 dark:text-[#58A6FF]'
+                    : 'bg-[#FBFBFC] dark:bg-[#171920] hover:bg-[#ECECEF] dark:hover:bg-white/[0.06] border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] dark:text-[#F5F5F7]'
+                }`}
               >
                 <span>{SORT_LABELS[sortBy] || 'مرتب‌سازی'}</span>
                 <ChevronDown
                   size={14}
-                  className={`text-[#86868B] transition-transform duration-200 ${sortMenuOpen ? 'rotate-180' : ''}`}
+                  className={`transition-transform duration-200 ${sortMenuOpen ? 'rotate-180' : ''} ${sortBy ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`}
                 />
               </button>
 
               {sortMenuOpen && (
-                <div className="absolute end-0 top-full mt-1.5 w-40 rounded-2xl bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_12px_32px_rgba(29,29,31,0.08)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.5)] divide-y divide-[#F0F2F5] dark:divide-white/[0.038] overflow-hidden z-30 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute end-0 top-full mt-1.5 w-44 rounded-2xl bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_14px_36px_rgba(29,29,31,0.12)] dark:shadow-[0_14px_36px_rgba(0,0,0,0.55)] p-1.5 z-30 animate-in fade-in zoom-in-95 duration-150 space-y-0.5">
                   {[
                     { id: 'newest', label: 'جدیدترین' },
                     { id: 'most_viewed', label: 'پربازدیدترین' },
                     { id: 'price_asc', label: 'ارزان‌ترین' },
                     { id: 'price_desc', label: 'گران‌ترین' },
                   ].map((s) => {
-                    const isSelected = sortBy === s.id;
+                    const isSelected = sortBy === s.id || (!sortBy && s.id === 'newest');
                     return (
                       <button
                         key={s.id}
                         type="button"
                         onClick={() => {
-                          setSortBy(isSelected ? null : s.id);
+                          setSortBy(s.id === 'newest' && sortBy === 'newest' ? null : s.id);
                           setSortMenuOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3.5 py-2.5 text-right text-xs font-bold transition-colors cursor-pointer ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-right text-xs font-bold transition-colors cursor-pointer ${
                           isSelected
-                            ? 'bg-[#F5F5F7] text-[#1D1D1F]'
-                            : 'text-[#515154] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]'
+                            ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF]'
+                            : 'text-[#515154] dark:text-[#C7C7CC] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] hover:text-[#1D1D1F] dark:hover:text-white'
                         }`}
                       >
                         <span>{s.label}</span>
-                        {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#1D1D1F] dark:bg-white" />}
+                        {isSelected && <Check size={14} strokeWidth={2.5} className="text-[#0066CC] dark:text-[#58A6FF] shrink-0" />}
                       </button>
                     );
                   })}
@@ -1648,20 +1823,20 @@ export default function App() {
             /* Loading skeletons */
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
               {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-[#E5E5EA]/70 animate-pulse" />
+                <div key={i} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-[#E5E5EA]/70 dark:bg-white/[0.06] animate-pulse" />
               ))}
             </div>
           ) : sortedAds.length === 0 ? (
             /* Empty State */
-            <div className="rounded-2xl border border-dashed border-[#D2D2D7] bg-[#FBFBFC] p-10 text-center space-y-3">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#ECECEF] text-[#6E6E73]">
+            <div className="rounded-2xl border border-dashed border-[#D2D2D7] dark:border-white/[0.1] bg-[#FBFBFC] dark:bg-[#171920] p-10 text-center space-y-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#ECECEF] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#A1A1A6]">
                 <Search size={20} />
               </div>
               <div className="space-y-0.5">
-                <h3 className="text-sm font-semibold text-[#1D1D1F]">
+                <h3 className="text-sm font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
                   {currentT.noAdsFound}
                 </h3>
-                <p className="text-xs text-[#6E6E73]">
+                <p className="text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
                   فیلترها را تغییر دهید یا اولین آگهی را ثبت کنید.
                 </p>
               </div>
@@ -1691,7 +1866,7 @@ export default function App() {
               {loadingMore && (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5 pt-2">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={`more-sk-${i}`} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-[#E5E5EA]/70 animate-pulse" />
+                    <div key={`more-sk-${i}`} className="h-56 sm:h-64 rounded-xl sm:rounded-2xl bg-[#E5E5EA]/70 dark:bg-white/[0.06] animate-pulse" />
                   ))}
                 </div>
               )}
@@ -1701,7 +1876,7 @@ export default function App() {
                     type="button"
                     disabled={loadingMore}
                     onClick={loadMoreAds}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] border border-[#E5E5EA] text-xs font-bold text-[#1D1D1F] shadow-2xs transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FBFBFC] hover:bg-[#ECECEF] dark:bg-[#171920] dark:hover:bg-white/[0.08] border border-[#E5E5EA] dark:border-white/[0.08] text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7] shadow-2xs transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
                   >
                     {loadingMore
                       ? 'در حال بارگذاری...'

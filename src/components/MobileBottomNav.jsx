@@ -50,6 +50,7 @@ export default function MobileBottomNav({
   onOpenManageAd,
   onOpenLegal,
   onOpenPodcast,
+  onOpenWebsiteBuilder,
 }) {
   const [collectionSheetOpen, setCollectionSheetOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -90,8 +91,8 @@ export default function MobileBottomNav({
             onClick={handleGoHome}
             className={`h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isHomeActive 
-                ? 'text-[#0066CC] font-bold' 
-                : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
+                ? 'text-[#0066CC] dark:text-[#58A6FF] font-bold' 
+                : 'text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white font-medium'
             }`}
           >
             <span className="flex h-6 w-6 items-center justify-center shrink-0">
@@ -106,8 +107,8 @@ export default function MobileBottomNav({
             onClick={() => setCollectionSheetOpen(true)}
             className={`relative h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               isCollectionActive 
-                ? 'text-[#0066CC] font-bold' 
-                : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
+                ? 'text-[#0066CC] dark:text-[#58A6FF] font-bold' 
+                : 'text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white font-medium'
             }`}
           >
             <span className="relative flex h-6 w-6 items-center justify-center shrink-0">
@@ -123,7 +124,7 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={onOpenPostAd}
-            className="h-12 flex flex-col items-center justify-center gap-1 rounded-xl text-[#1D1D1F] font-bold cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88]"
+            className="h-12 flex flex-col items-center justify-center gap-1 rounded-xl text-[#1D1D1F] dark:text-[#F5F5F7] font-bold cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88]"
             title="ثبت رایگان آگهی"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0066CC] text-[#FBFBFC] shrink-0">
@@ -136,7 +137,7 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={onOpenManageAd}
-            className="h-12 flex flex-col items-center justify-center gap-1 rounded-xl text-[#6E6E73] hover:text-[#1D1D1F] font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
+            className="h-12 flex flex-col items-center justify-center gap-1 rounded-xl text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white font-medium transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer"
             title="مدیریت یا حذف آگهی با کد امنیتی"
           >
             <span className="flex h-6 w-6 items-center justify-center shrink-0">
@@ -154,8 +155,8 @@ export default function MobileBottomNav({
             }}
             className={`h-12 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.88] cursor-pointer ${
               moreSheetOpen
-                ? 'text-[#0066CC] font-bold'
-                : 'text-[#6E6E73] hover:text-[#1D1D1F] font-medium'
+                ? 'text-[#0066CC] dark:text-[#58A6FF] font-bold'
+                : 'text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white font-medium'
             }`}
             title="امکانات بیشتر"
           >
@@ -201,10 +202,10 @@ export default function MobileBottomNav({
                   <LayoutGrid size={18} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-sm text-slate-950">
+                  <h3 className="font-extrabold text-sm text-slate-950 dark:text-white">
                     دسته‌بندی‌ها
                   </h3>
-                  <span className="text-[11px] text-slate-500 font-medium">
+                  <span className="text-[11px] text-slate-500 dark:text-[#A1A1A6] font-medium">
                     انتخاب موضوع آگهی
                   </span>
                 </div>
@@ -214,7 +215,7 @@ export default function MobileBottomNav({
                 type="button"
                 onClick={() => setCollectionSheetOpen(false)}
                 aria-label="بستن"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] active:scale-95 transition-all cursor-pointer shrink-0"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white active:scale-95 transition-all cursor-pointer shrink-0"
               >
                 <X size={18} />
               </button>
@@ -234,15 +235,15 @@ export default function MobileBottomNav({
                     onClick={() => handleCategoryClick(cat.id)}
                     className={`flex items-center justify-between p-3 rounded-2xl border text-right transition-all cursor-pointer active:scale-[0.98] ${
                       isSelected
-                        ? 'border-[#0066CC] bg-blue-50/80 shadow-2xs ring-1 ring-[#0066CC]'
-                        : 'border-slate-200/80 bg-slate-50/60 hover:bg-slate-100/80'
+                        ? 'border-[#0066CC] bg-blue-50/80 dark:bg-[#0066CC]/20 shadow-2xs ring-1 ring-[#0066CC]'
+                        : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.04] hover:bg-slate-100/80 dark:hover:bg-white/[0.08]'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl border shrink-0 ${meta.bg}`}>
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl border shrink-0 ${meta.bg} dark:bg-white/[0.06] dark:text-[#A1A1A6] dark:border-white/[0.06]`}>
                         <IconComponent size={17} strokeWidth={2} className="block" />
                       </div>
-                      <span className={`text-xs leading-none truncate ${isSelected ? 'font-black text-blue-900' : 'font-bold text-slate-800'}`}>
+                      <span className={`text-xs leading-none truncate ${isSelected ? 'font-black text-blue-900 dark:text-[#58A6FF]' : 'font-bold text-slate-800 dark:text-[#F5F5F7]'}`}>
                         {cat.fa}
                       </span>
                     </div>
@@ -258,17 +259,17 @@ export default function MobileBottomNav({
             </div>
 
             {/* Bottom Actions within sheet */}
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-[#A1A1A6]">
               <button
                 type="button"
                 onClick={() => {
                   setCollectionSheetOpen(false);
                   onOpenCountryModal?.();
                 }}
-                className="inline-flex items-center gap-1.5 hover:text-blue-600 transition-colors cursor-pointer font-medium leading-none"
+                className="inline-flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-[#58A6FF] transition-colors cursor-pointer font-medium leading-none"
               >
                 <span className="flex h-4 w-4 items-center justify-center shrink-0">
-                  <Globe size={14} strokeWidth={2} className="block text-slate-400" />
+                  <Globe size={14} strokeWidth={2} className="block text-slate-400 dark:text-[#A1A1A6]" />
                 </span>
                 <span className="leading-none">تغییر کشور ({currentCountryObj.nameFa})</span>
               </button>
@@ -327,8 +328,8 @@ export default function MobileBottomNav({
                   {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
                 </div>
                 <div className="text-right">
-                  <span className="block text-[13px] font-bold text-[#1D1D1F]">حالت تیره</span>
-                  <span className="block text-[11px] text-[#6E6E73]">
+                  <span className="block text-[13px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">حالت تیره</span>
+                  <span className="block text-[11px] text-[#6E6E73] dark:text-[#A1A1A6]">
                     {theme === 'dark' ? 'فعال' : 'غیرفعال'}
                   </span>
                 </div>
@@ -361,11 +362,11 @@ export default function MobileBottomNav({
                   <Globe size={18} />
                 </div>
                 <div className="text-right">
-                  <span className="block text-[13px] font-bold text-[#1D1D1F]">کشور</span>
-                  <span className="block text-[11px] text-[#6E6E73]">{currentCountryObj.nameFa}</span>
+                  <span className="block text-[13px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">کشور</span>
+                  <span className="block text-[11px] text-[#6E6E73] dark:text-[#A1A1A6]">{currentCountryObj.nameFa}</span>
                 </div>
               </div>
-              <ChevronLeft size={16} className="text-[#6E6E73]" />
+              <ChevronLeft size={16} className="text-[#6E6E73] dark:text-[#A1A1A6]" />
             </button>
 
             {/* GDPR & Cookies */}
@@ -382,16 +383,38 @@ export default function MobileBottomNav({
                   <ShieldCheck size={18} />
                 </div>
                 <div className="text-right">
-                  <span className="block text-[13px] font-bold text-[#1D1D1F]">حریم خصوصی و کوکی‌ها</span>
-                  <span className="block text-[11px] text-[#6E6E73]">تنظیمات GDPR</span>
+                  <span className="block text-[13px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">حریم خصوصی و کوکی‌ها</span>
+                  <span className="block text-[11px] text-[#6E6E73] dark:text-[#A1A1A6]">تنظیمات GDPR</span>
                 </div>
               </div>
-              <ChevronLeft size={16} className="text-[#6E6E73]" />
+              <ChevronLeft size={16} className="text-[#6E6E73] dark:text-[#A1A1A6]" />
             </button>
 
-            {/* Media Section */}
+            {/* Services & Media Section */}
             <div className="pt-2 space-y-2">
-              <span className="block text-[11px] font-bold text-[#6E6E73] px-1">رسانه</span>
+              <span className="block text-[11px] font-bold text-[#6E6E73] dark:text-[#A1A1A6] px-1">خدمات و رسانه</span>
+
+              {onOpenWebsiteBuilder && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreSheetOpen(false);
+                    onOpenWebsiteBuilder?.();
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-white/[0.04] hover:bg-[#ECECEF] dark:hover:bg-white/[0.08] border border-[#ECEFF4] dark:border-white/[0.05] transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-[#EAF2FB] dark:bg-[#0066CC]/20 text-[#0066CC] dark:text-[#58A6FF] flex items-center justify-center shrink-0">
+                      <Laptop size={18} />
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-[13px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">سفارش طراحی سایت</span>
+                      <span className="block text-[11px] text-[#6E6E73] dark:text-[#A1A1A6]">طراحی سایت و سئو در اروپا</span>
+                    </div>
+                  </div>
+                  <ChevronLeft size={16} className="text-[#6E6E73] dark:text-[#A1A1A6]" />
+                </button>
+              )}
 
               <button
                 type="button"
@@ -399,15 +422,15 @@ export default function MobileBottomNav({
                   setMoreSheetOpen(false);
                   onOpenPodcast?.();
                 }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/80 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-50/70 hover:bg-rose-100/70 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 border border-rose-200/80 dark:border-rose-800/40 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0">
                     <Headphones size={18} />
                   </div>
                   <div className="text-right">
-                    <span className="block text-[13px] font-bold text-[#1D1D1F]">پادکست خبری</span>
-                    <span className="block text-[11px] text-[#6E6E73]">خبرها و ویدیوهای یوتیوب</span>
+                    <span className="block text-[13px] font-bold text-[#1D1D1F] dark:text-rose-100">پادکست خبری</span>
+                    <span className="block text-[11px] text-[#6E6E73] dark:text-rose-300/70">خبرها و ویدیوهای یوتیوب</span>
                   </div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
