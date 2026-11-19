@@ -6,10 +6,12 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
   const catObj = CATEGORIES.find(c => c.id === ad.category);
   const catName = catObj ? (lang === 'fa' ? catObj.fa : catObj.sv) : ad.category;
   
-  // Format price in clean Persian
+  // Format price only if specified (or if user explicitly entered a non-currency label like توافقی)
+  const currencyUnits = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
+  const rawPriceType = String(ad.price_type || '').trim();
   const displayPrice = ad.price
-    ? `${Number(ad.price).toLocaleString('fa-IR')} ${!ad.price_type || ad.price_type === 'kr' ? 'کرون' : ad.price_type}`
-    : (ad.price_type && ad.price_type !== 'kr' ? ad.price_type : 'توافقی');
+    ? `${Number(ad.price).toLocaleString('fa-IR')} ${!rawPriceType || rawPriceType === 'kr' ? 'کرون' : rawPriceType}`
+    : (rawPriceType && !currencyUnits.has(rawPriceType.toLowerCase()) ? rawPriceType : '');
 
   const coverImage = (ad.images && ad.images.length > 0 && ad.images[0])
     ? ad.images[0]
@@ -68,11 +70,13 @@ export default React.memo(function AdCard({ ad, lang, onSelect, priority = false
       <div className="flex flex-1 flex-col p-2.5 sm:p-4 justify-between space-y-2 sm:space-y-3">
         <div className="space-y-1 sm:space-y-1.5">
           {/* Price */}
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[13px] sm:text-[16.5px] font-extrabold text-[#0066CC] tabular-nums tracking-tight truncate">
-              <bdi>{displayPrice}</bdi>
-            </span>
-          </div>
+          {displayPrice && (
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[13px] sm:text-[16.5px] font-extrabold text-[#0066CC] tabular-nums tracking-tight truncate">
+                <bdi>{displayPrice}</bdi>
+              </span>
+            </div>
+          )}
 
           {/* Title */}
           <h3 className="text-[12px] sm:text-[14px] font-bold text-[#1D1D1F] group-hover:text-[#0066CC] transition-colors line-clamp-2 leading-snug">

@@ -734,7 +734,7 @@ export default function PostAdModal({
                   </label>
                   <input
                     type="number"
-                    placeholder="مثال: 12000 (خالی = توافقی)"
+                    placeholder="مثال: 12000 (اختیاری)"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none"

@@ -187,9 +187,19 @@ export default function AdDetailPage({
   const catObj = CATEGORIES.find(c => c.id === ad.category);
   const catName = catObj ? (lang === 'fa' ? catObj.fa : catObj.sv) : ad.category;
 
-  const displayPrice = ad.price 
-    ? `${Number(ad.price).toLocaleString('sv-SE')} ${ad.price_type || 'kr'}`
-    : (ad.price_type || (lang === 'fa' ? 'توافقی' : 'Enligt överenskommelse'));
+  const currencyUnits = new Set(['kr', '€', 'sek', 'nok', 'dkk', 'eur', 'usd', '$', 'کرون']);
+  const formatOptionalPrice = (item) => {
+    const rawType = String(item?.price_type || '').trim();
+    if (item?.price) {
+      return `${Number(item.price).toLocaleString('sv-SE')} ${rawType || 'kr'}`;
+    }
+    if (rawType && !currencyUnits.has(rawType.toLowerCase())) {
+      return rawType;
+    }
+    return '';
+  };
+
+  const displayPrice = formatOptionalPrice(ad);
 
   const dateStr = ad.created_at 
     ? new Date(ad.created_at).toLocaleDateString(lang === 'fa' ? 'fa-IR' : 'sv-SE', {
@@ -370,11 +380,13 @@ export default function AdDetailPage({
                   </h1>
                   
                   {/* Price Clean Display */}
-                  <div className="shrink-0">
-                    <span className="text-xl sm:text-2xl font-black text-[#0066CC] tabular-nums tracking-tight">
-                      <bdi>{displayPrice}</bdi>
-                    </span>
-                  </div>
+                  {displayPrice && (
+                    <div className="shrink-0">
+                      <span className="text-xl sm:text-2xl font-black text-[#0066CC] tabular-nums tracking-tight">
+                        <bdi>{displayPrice}</bdi>
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Clean Inline Meta Row */}
@@ -656,9 +668,7 @@ export default function AdDetailPage({
                   const vipCover = (vipAd.images && vipAd.images.length > 0)
                     ? vipAd.images[0]
                     : 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=400&q=80';
-                  const vipPrice = vipAd.price 
-                    ? `${Number(vipAd.price).toLocaleString('sv-SE')} ${vipAd.price_type || 'kr'}`
-                    : (vipAd.price_type || 'توافقی');
+                  const vipPrice = formatOptionalPrice(vipAd);
 
                   return (
                     <article
@@ -687,9 +697,11 @@ export default function AdDetailPage({
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-[#1D1D1F] dark:text-[#F5F5F7] tabular-nums">
-                            {vipPrice}
-                          </span>
+                          {vipPrice && (
+                            <span className="text-xs font-black text-[#1D1D1F] dark:text-[#F5F5F7] tabular-nums">
+                              {vipPrice}
+                            </span>
+                          )}
                           <span className="text-[10px] text-[#86868B] dark:text-[#98989F] flex items-center gap-0.5">
                             <MapPin size={9} className="text-[#86868B]" />
                             {vipAd.city}
