@@ -1486,10 +1486,7 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* Clean Hairline Divider (No inner box) */}
-                  <div className="h-5 w-px bg-[#E5E7EB] dark:bg-white/[0.08] shrink-0" />
-
-                  {/* Custom Modern City Selector Popover (Replaces ugly OS native <select>) */}
+                  {/* Custom Modern City Selector Popover (Unified Brand Blue Pill on Desktop) */}
                   <div ref={heroCityRef} className="relative flex items-center h-10 shrink-0">
                     <button
                       type="button"
@@ -1508,20 +1505,20 @@ export default function App() {
                       aria-expanded={heroCityOpen}
                       aria-haspopup="listbox"
                       aria-label="انتخاب شهر"
-                      className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-semibold leading-none transition-colors cursor-pointer select-none ${
-                        heroCityOpen || selectedCity !== 'all'
-                          ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF]'
-                          : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06]'
+                      className={`inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-full text-xs font-bold leading-none text-[#FBFBFC] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer select-none shadow-xs ${
+                        heroCityOpen
+                          ? 'bg-[#0055AA] ring-2 ring-[#0066CC]/30'
+                          : 'bg-[#0066CC] hover:bg-[#0055AA]'
                       }`}
                     >
-                      <span className={`flex h-4 w-4 items-center justify-center shrink-0 ${selectedCity !== 'all' || heroCityOpen ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`}>
+                      <span className="flex h-4 w-4 items-center justify-center shrink-0 text-white/95">
                         <MapPin size={15} strokeWidth={2} className="block" />
                       </span>
-                      <span className="truncate max-w-[104px] leading-none">
+                      <span className="truncate max-w-[110px] leading-none">
                         {availableCities.find(c => c.id === selectedCity)?.fa || 'همه شهرها'}
                       </span>
-                      <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
-                        <ChevronDown size={14} strokeWidth={2} className={`block transition-transform duration-200 ${heroCityOpen ? 'rotate-180 text-[#0066CC] dark:text-[#58A6FF]' : ''}`} />
+                      <span className="flex h-4 w-4 items-center justify-center shrink-0 text-white/85">
+                        <ChevronDown size={14} strokeWidth={2} className={`block transition-transform duration-200 ${heroCityOpen ? 'rotate-180' : ''}`} />
                       </span>
                     </button>
 
