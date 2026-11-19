@@ -1,4 +1,5 @@
 import { PUBLIC_AD_COLUMNS, PUBLIC_AD_LIST_COLUMNS } from './urlUtils';
+import { extractServerSearchTokens, buildTitleDescriptionOrFilter } from './smartSearch';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
@@ -156,15 +157,9 @@ export const publicApi = {
       query = query.eq('is_featured', true).or(`promotion_expires_at.is.null,promotion_expires_at.gt.${nowIso}`);
     }
     if (q && String(q).trim()) {
-      const sanitized = String(q)
-        .slice(0, 100)
-        .replace(/[,()"'\\*%_]/g, ' ')
-        .replace(/ي/g, 'ی')
-        .replace(/ك/g, 'ک')
-        .trim();
-      if (sanitized) {
-        const term = `%${sanitized}%`;
-        query = query.or(`title.ilike.${term},title_fa.ilike.${term},description.ilike.${term},city.ilike.${term},reference_number.ilike.${term}`);
+      const searchTokens = extractServerSearchTokens(q);
+      for (const tok of searchTokens) {
+        query = query.or(buildTitleDescriptionOrFilter(tok));
       }
     }
 

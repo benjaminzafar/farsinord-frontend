@@ -28,7 +28,7 @@ import { publicApi } from './lib/apiClient';
 import { COUNTRIES, CATEGORIES, mergePortalCountries, t } from './lib/translations';
 import { getGdprConsent } from './lib/gdpr';
 import { getInitialTheme, applyThemeToDocument } from './lib/theme';
-import { matchesSmartSearch, getSearchSuggestions } from './lib/smartSearch';
+import { matchesSmartSearch, getSearchSuggestions, scoreSmartSearchMatch } from './lib/smartSearch';
 import { CANONICAL_SITE_ORIGIN, buildClientCanonicalUrl, buildClientSeoGraph } from './lib/seoSchema';
 
 function readCachedBranding() {
@@ -1245,9 +1245,29 @@ export default function App() {
     [ads, selectedCountry]
   );
 
+  const scopedAdsForSearch = useMemo(() => {
+    const seenIds = new Set();
+    const combined = [];
+    const addIfScoped = (ad) => {
+      if (!ad) return;
+      const key = ad.id || ad.reference_number;
+      if (key && seenIds.has(key)) return;
+      const matchCountry = ad.country === selectedCountry || (!ad.country && selectedCountry === 'se');
+      const matchCat = selectedCategory === 'all' || ad.category === selectedCategory;
+      const matchCity = selectedCity === 'all' || ad.city === selectedCity;
+      if (matchCountry && matchCat && matchCity) {
+        if (key) seenIds.add(key);
+        combined.push(ad);
+      }
+    };
+    for (const ad of featuredAdsList) addIfScoped(ad);
+    for (const ad of countryAds) addIfScoped(ad);
+    return combined;
+  }, [featuredAdsList, countryAds, selectedCountry, selectedCategory, selectedCity]);
+
   const searchSuggestions = useMemo(
-    () => getSearchSuggestions(deferredSearchQuery, { ads: countryAds, cities: availableCities, categories: CATEGORIES }),
-    [deferredSearchQuery, countryAds, availableCities]
+    () => getSearchSuggestions(deferredSearchQuery, { ads: scopedAdsForSearch }),
+    [deferredSearchQuery, scopedAdsForSearch]
   );
 
   const filteredAds = useMemo(() => {
@@ -1293,13 +1313,19 @@ export default function App() {
       }
       return ts;
     };
+    const hasSearchQuery = Boolean(deferredSearchQuery.trim());
     return copy.sort((a, b) => {
       const vA = isVip(a);
       const vB = isVip(b);
       if (vA !== vB) return vB ? 1 : -1;
+      if (hasSearchQuery) {
+        const sA = scoreSmartSearchMatch(a, deferredSearchQuery);
+        const sB = scoreSmartSearchMatch(b, deferredSearchQuery);
+        if (sA !== sB) return sB - sA;
+      }
       return getSortTs(b) - getSortTs(a);
     });
-  }, [filteredAds, sortBy, renderNow]);
+  }, [filteredAds, sortBy, renderNow, deferredSearchQuery]);
 
   // Active Featured (VIP) ads subset
   const featuredAds = useMemo(

@@ -372,7 +372,7 @@ export const t = {
     heroSubheading: 'مسکن، رستوران، استخدام و خدمات فارسی‌زبانان اروپا',
     postAdBtn: 'ثبت آگهی رایگان',
     manageAdBtn: 'مدیریت آگهی',
-    searchPlaceholder: 'جستجو در مسکن، رستوران، خدمات...',
+    searchPlaceholder: 'جستجو در عنوان و متن آگهی‌ها...',
     searchBtn: 'جستجو',
     filterByCity: 'انتخاب شهر',
     featuredAds: 'آگهی‌های ویژه',

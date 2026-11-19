@@ -751,12 +751,42 @@ export default async function handler(req, res) {
 
       const sanitizedSearch = search
         ? search
-            .replace(/[,()"'\\*%_]/g, ' ')
+            .replace(/[,()"'`’\\*%_]/g, ' ')
+            .replace(/[\u064B-\u065F\u0670]/g, '')
             .replace(/ي/g, 'ی')
             .replace(/ك/g, 'ک')
+            .replace(/ة/g, 'ه')
             .replace(/\s+/g, ' ')
             .trim()
         : '';
+
+      const searchTokens = [];
+      if (sanitizedSearch) {
+        for (const tok of sanitizedSearch.split(' ')) {
+          if (!tok || searchTokens.includes(tok)) continue;
+          searchTokens.push(tok);
+          if (searchTokens.length >= 6) break;
+        }
+      }
+
+      const buildTitleDescriptionOrFilter = (token) => {
+        const variants = new Set([token]);
+        const asciiDigits = token
+          .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+          .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+        const persianDigits = asciiDigits.replace(/[0-9]/g, (d) => String.fromCharCode(0x06f0 + Number(d)));
+        variants.add(asciiDigits);
+        variants.add(persianDigits);
+        if (token.startsWith('ا')) variants.add('آ' + token.slice(1));
+        else if (token.startsWith('آ')) variants.add('ا' + token.slice(1));
+        const clauses = [];
+        for (const v of variants) {
+          if (!v) continue;
+          const term = `%${v}%`;
+          clauses.push(`title.ilike.${term}`, `title_fa.ilike.${term}`, `description.ilike.${term}`);
+        }
+        return clauses.join(',');
+      };
 
       const applyFilters = (baseQuery, isFeaturedQuery = false) => {
         let query = baseQuery.eq('status', 'active').is('deleted_at', null);
@@ -767,9 +797,8 @@ export default async function handler(req, res) {
           const nowIso = new Date().toISOString();
           query = query.eq('is_featured', true).or(`promotion_expires_at.is.null,promotion_expires_at.gt.${nowIso}`);
         }
-        if (sanitizedSearch) {
-          const term = `%${sanitizedSearch}%`;
-          query = query.or(`title.ilike.${term},title_fa.ilike.${term},description.ilike.${term},city.ilike.${term},reference_number.ilike.${term}`);
+        for (const tok of searchTokens) {
+          query = query.or(buildTitleDescriptionOrFilter(tok));
         }
         return query;
       };
