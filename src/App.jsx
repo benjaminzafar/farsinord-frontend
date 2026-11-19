@@ -1205,7 +1205,7 @@ export default function App() {
   );
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#FBFBFC] dark:bg-[#0B0C10] text-[#1D1D1F] dark:text-[#F5F5F7] overflow-x-clip w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#FBFBFC] dark:bg-[#121317] text-[#1D1D1F] dark:text-[#F5F5F7] overflow-x-clip w-full max-w-full pb-16 md:pb-0 ${lang === 'fa' ? 'font-vazir' : ''}`}>
 
       {/* Geolocation Country Detection Pop-Up Modal */}
       <Suspense fallback={null}>
@@ -1413,11 +1413,11 @@ export default function App() {
         </section>
 
       {/* Horizontal Sticky Category Strip with Apple-feel sliding pill (Desktop Only) */}
-      <div className="hidden md:block sticky top-16 z-30 bg-[#FBFBFC]/90 dark:bg-[#0B0C10]/90 backdrop-blur-md py-2.5 sm:py-3">
+      <div className="hidden md:block sticky top-16 z-30 bg-[#FBFBFC]/90 dark:bg-[#121317]/90 backdrop-blur-md py-2.5 sm:py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-auto no-scrollbar scroll-smooth">
         <div
           ref={categoryStripRef}
-          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] dark:bg-[#16181D] p-1 rounded-full border border-[#ECEFF4] dark:border-white/[0.06] shadow-none"
+          className="relative flex items-center gap-1 w-max mx-auto bg-[#FBFBFC] dark:bg-[#171920] p-1 rounded-full border border-[#ECEFF4] dark:border-white/[0.05] shadow-none"
         >
           {pillStyle.ready && (
             <div

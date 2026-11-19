@@ -231,7 +231,7 @@ export default function AdDetailPage({
   const displayVipAds = [...vipAds, ...fallbackAds].slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-[#FBFBFC] dark:bg-[#0B0C10] text-[#1D1D1F] dark:text-[#F5F5F7] pb-20 font-vazir" dir="rtl">
+    <div className="min-h-screen bg-[#FBFBFC] dark:bg-[#121317] text-[#1D1D1F] dark:text-[#F5F5F7] pb-20 font-vazir" dir="rtl">
       
       {/* Inline quiet navigation (no bar / no menu look) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex items-center justify-between gap-3">
@@ -313,7 +313,7 @@ export default function AdDetailPage({
                 )}
 
                 {/* Category Badge */}
-                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#16181D]/90 border border-[#ECEFF4]/60 dark:border-white/[0.04] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
+                <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#FBFBFC]/90 dark:bg-[#171920]/90 border border-[#ECEFF4]/60 dark:border-white/[0.04] backdrop-blur-md text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-bold">
                   {catName}
                 </div>
 
@@ -360,7 +360,7 @@ export default function AdDetailPage({
             </div>
 
             {/* Title, Price & Details Card (Unified Flat Surface, No Heavy Shadows) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] p-5 sm:p-8 space-y-6 shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] p-5 sm:p-8 space-y-6 shadow-none">
               
               {/* Header: Title, Price & Unified Meta Row */}
               <div className="space-y-3.5 pb-6 border-b border-[#F0F2F5] dark:border-white/[0.025]">
@@ -631,7 +631,7 @@ export default function AdDetailPage({
           <aside className="lg:col-span-4 lg:sticky lg:top-32 space-y-5">
             
             {/* VIP Sponsored Ads List (Flat Unified Card, Hairline Dividers) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] overflow-hidden shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] overflow-hidden shadow-none">
               
               <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[#F0F2F5] dark:border-white/[0.025]">
                 <div className="flex items-center gap-2.5">
@@ -704,7 +704,7 @@ export default function AdDetailPage({
             </div>
 
             {/* Monetization Promotion CTA Card (Unified Surface, Zero Box Shadow) */}
-            <div className="bg-[#FBFBFC] dark:bg-[#16181D] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] p-5 space-y-3.5 shadow-none">
+            <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-2xl sm:rounded-3xl border border-[#ECEFF4] dark:border-white/[0.03] p-5 space-y-3.5 shadow-none">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#98989F]">
                   <Sparkles size={16} />

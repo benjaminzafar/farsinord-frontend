@@ -101,7 +101,7 @@ export default function Navbar({
         {/* MOBILE VIEW: Full-Width Search (Right) & City Selector (Left) Capsule */}
         <div className="relative flex md:hidden h-16 items-center">
 
-          <div className="pointer-events-auto flex-1 flex items-center h-12 rounded-full bg-white/95 dark:bg-[#16181D]/95 backdrop-blur-md border border-[#E5E5EA] dark:border-white/[0.065] shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_14px_rgba(0,0,0,0.35)] px-3.5 gap-2.5 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15">
+          <div className="pointer-events-auto flex-1 flex items-center h-12 rounded-full bg-white/95 dark:bg-[#171920]/95 backdrop-blur-md border border-[#E5E5EA] dark:border-white/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_14px_rgba(0,0,0,0.35)] px-3.5 gap-2.5 transition-all min-w-0 focus-within:bg-white focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/15">
 
             {/* Search Input (Icon on Right — exact same vertical center as City Selector) */}
             <div className="relative flex-1 flex items-center gap-2 min-w-0 h-full">
@@ -165,7 +165,7 @@ export default function Navbar({
 
           {/* Google-style Smart Autocomplete Suggestions (Mobile) */}
           {mobileSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
-            <div className="pointer-events-auto absolute inset-x-0 top-[62px] bg-[#FBFBFC] dark:bg-[#16181D] border border-[#E5E5EA] dark:border-white/[0.065] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] dark:shadow-[0_14px_40px_rgba(0,0,0,0.5)] p-1.5 z-50 space-y-0.5">
+            <div className="pointer-events-auto absolute inset-x-0 top-[62px] bg-[#FBFBFC] dark:bg-[#171920] border border-[#E5E5EA] dark:border-white/[0.06] rounded-2xl shadow-[0_14px_40px_rgba(29,29,31,0.16)] dark:shadow-[0_14px_40px_rgba(0,0,0,0.5)] p-1.5 z-50 space-y-0.5">
               {searchSuggestions.map((item, idx) => (
                 <button
                   key={`${item.label}-${idx}`}
