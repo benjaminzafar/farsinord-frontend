@@ -536,7 +536,7 @@ export default function PostAdModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto font-vazir"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto font-vazir"
       dir="rtl"
     >
       {/* Backdrop */}
@@ -545,13 +545,8 @@ export default function PostAdModal({
         onClick={onClose}
       />
 
-      {/* Mobile-First Bottom Sheet / Desktop Modal Card */}
-      <div className="relative w-full sm:max-w-xl bg-[#FBFBFC] dark:bg-[#171920] rounded-t-[28px] sm:rounded-3xl shadow-2xl border-t sm:border border-[#ECEFF4] dark:border-white/[0.08] overflow-hidden flex flex-col max-h-[94dvh] sm:max-h-[90vh] z-10 animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
-        {/* Mobile Grab Handle */}
-        <div className="sm:hidden pt-2.5 pb-0.5 flex justify-center shrink-0">
-          <div className="w-10 h-1 rounded-full bg-[#D2D2D7] dark:bg-white/15" />
-        </div>
-
+      {/* Centered Modal Box (Mobile & Desktop) */}
+      <div className="relative w-full max-w-xl bg-[#FBFBFC] dark:bg-[#171920] rounded-3xl shadow-2xl border border-[#ECEFF4] dark:border-white/[0.08] overflow-hidden flex flex-col max-h-[90dvh] z-10 animate-in zoom-in-95 duration-150">
         {/* Clean Compact Modal Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-[#ECEFF4] dark:border-white/[0.06] shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -1562,9 +1557,9 @@ export default function PostAdModal({
             )}
           </div>
 
-          {/* Sticky Mobile-First Bottom Action Bar */}
+          {/* Sticky Bottom Action Bar */}
           {!successData && (
-            <div className="px-4 sm:px-6 py-3.5 pb-[max(env(safe-area-inset-bottom),0.875rem)] bg-[#FBFBFC] dark:bg-[#171920] border-t border-[#ECEFF4] dark:border-white/[0.06] flex items-center gap-2.5 shrink-0">
+            <div className="px-4 sm:px-6 py-3.5 bg-[#FBFBFC] dark:bg-[#171920] border-t border-[#ECEFF4] dark:border-white/[0.06] flex items-center gap-2.5 shrink-0">
               {step > 1 && (
                 <button
                   type="button"
