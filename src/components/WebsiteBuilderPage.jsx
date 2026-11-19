@@ -15,33 +15,69 @@ import {
   PhoneCall,
   Sparkles,
 } from 'lucide-react';
+import { isSafeHttpUrl } from '../lib/urlUtils';
 
 const SETUP_PRICE = 1500;
 const MONTHLY_PRICE = 260;
-const CURRENCY = 'SEK';
+const FA_SUB_DATE_FMT = new Intl.DateTimeFormat('fa-IR');
+const FA_NUM_FMT = new Intl.NumberFormat('fa-IR');
 
 const SIMPLE_FAQS = [
   {
     q: 'تعرفه ۱,۵۰۰ کرون راه‌اندازی و ۲۶۰ کرون ماهانه شامل چه خدماتی است؟',
-    a: 'هزینه ۱,۵۰۰ کرون به‌صورت یک‌بار برای طراحی و راه‌اندازی وب‌سایت، راهنمایی ساخت و اتصال ربات تلگرام جهت دریافت سفارش‌ها و اتصال درگاه پرداخت Stripe است. پس از آن، هزینه نگهداری و اشتراک ماهانه ۲۶۰ کرون بوده و هر ماه پیش از پایان دوره، فاکتور تمدید برای شما ارسال می‌شود.',
+    a: '۱,۵۰۰ کرون هزینه یک‌بار طراحی سایت، اتصال ربات تلگرام و درگاه Stripe است. اشتراک نگهداری ماهانه ۲۶۰ کرون بوده و فاکتور تمدید پیش از پایان هر دوره ارسال می‌شود.',
   },
   {
     q: 'اتصال ربات تلگرام و درگاه پرداخت Stripe چگونه انجام می‌شود؟',
-    a: 'پس از ثبت سفارش، تیم فنی ما شما را در ساخت ربات تلگرام اختصاصی‌تان راهنمایی کرده و آن را به وب‌سایت متصل می‌کند تا سفارش‌های مشتریان به‌صورت آنی در تلگرام دریافت شوند. درگاه پرداخت آنلاین Stripe نیز روی وب‌سایت شما فعال می‌گردد.',
+    a: 'تیم فنی ما ساخت ربات تلگرام اختصاصی را به شما آموزش داده و آن را برای دریافت آنی سفارش‌ها به سایت متصل می‌کند. درگاه پرداخت Stripe نیز هم‌زمان فعال می‌شود.',
   },
   {
     q: 'آیا دامنه (Domain) و ایمیل اختصاصی شامل این پکیج هستند؟',
-    a: 'خیر، دامنه و ایمیل اختصاصی شامل این پکیج نیستند و می‌توانید دامنه دلخواه خود را از هر شرکتی تهیه کنید. پس از آماده‌سازی وب‌سایت، تیم پشتیبانی هنگام تماس با شما نحوه اتصال دامنه را به‌طور کامل راهنمایی می‌کند.',
+    a: 'خیر؛ دامنه دلخواه خود را می‌توانید از هر ثبت‌کننده‌ای تهیه کنید. پس از آماده‌سازی سایت، تیم پشتیبانی اتصال دامنه را گام‌به‌گام با شما انجام می‌دهد.',
   },
   {
     q: 'راه‌اندازی و تحویل وب‌سایت چقدر زمان می‌برد؟',
-    a: 'وب‌سایت و پنل مدیریت شما حداکثر ظرف ۲۴ ساعت پس از ثبت سفارش آماده و دیپلوی شده و تمامی جزئیات دسترسی به ایمیل شما ارسال خواهد شد.',
+    a: 'وب‌سایت و پنل مدیریت حداکثر ظرف ۲۴ ساعت پس از ثبت سفارش آماده شده و اطلاعات ورود به ایمیل شما ارسال می‌شود.',
   },
   {
     q: 'ظرفیت فضای ابری و میزان ترافیک مجاز چقدر است؟',
-    a: 'پکیج پایه شامل ۵ گیگابایت فضای دیتابیس ابری اختصاصی، ۹ گیگابایت (9 GB) حافظه ذخیره‌سازی برای تصاویر و عکس‌ها و ظرفیت پردازش تا ۱۰۰,۰۰۰ درخواست روزانه است. در صورت رشد ترافیک و نیاز به منابع بیشتر، با هماهنگی تیم پشتیبانی و پرداخت هزینه ارتقا، ظرفیت وب‌سایت شما افزایش می‌یابد.',
+    a: 'پکیج پایه شامل ۵ گیگابایت دیتابیس ابری، ۹ گیگابایت فضای تصاویر و تا ۱۰۰,۰۰۰ درخواست روزانه است و در صورت رشد کسب‌وکار قابل ارتقاست.',
   },
 ];
+
+const WebsiteBuilderFaqSection = React.memo(function WebsiteBuilderFaqSection() {
+  const [openFaqIdx, setOpenFaqIdx] = useState(-1);
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-black text-[#1D1D1F] px-1">سوالات متداول</h2>
+      <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06] divide-y divide-[#ECEFF4] dark:divide-white/[0.038] overflow-hidden">
+        {SIMPLE_FAQS.map((item, idx) => {
+          const isOpen = openFaqIdx === idx;
+          return (
+            <div key={idx}>
+              <button
+                type="button"
+                onClick={() => setOpenFaqIdx(isOpen ? -1 : idx)}
+                className="w-full px-5 py-4 flex items-center justify-between gap-3 text-right hover:bg-[#F5F5F7]/75 transition-colors cursor-pointer"
+              >
+                <span className="text-xs sm:text-[13px] font-bold text-[#1D1D1F]">{item.q}</span>
+                <ChevronDown
+                  size={15}
+                  className={`block text-[#86868B] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#0066CC]' : ''}`}
+                />
+              </button>
+              {isOpen && (
+                <div className="px-5 pb-4 text-xs text-[#515154] leading-relaxed">
+                  {item.a}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+});
 
 export default function WebsiteBuilderPage({
   stripeSettings = null,
@@ -71,10 +107,9 @@ export default function WebsiteBuilderPage({
   const [manageLoading, setManageLoading] = useState(false);
   const [manageMsg, setManageMsg] = useState('');
 
-  // Collapsed by default so page stays calm
-  const [openFaqIdx, setOpenFaqIdx] = useState(-1);
-
-  const isTestMode = stripeSettings?.mode !== 'live';
+  // Use Stripe Hosted Checkout whenever Stripe is in live mode or server has Stripe configured (PCI-DSS SAQ-A safe)
+  const useHostedStripeCheckout = stripeSettings?.mode === 'live' || stripeSettings?.stripeReady !== false;
+  const isOfflineDemoMode = !useHostedStripeCheckout;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -101,7 +136,7 @@ export default function WebsiteBuilderPage({
     };
 
     if (isCancelled) {
-      setErrorMsg('پرداخت لغو شد. در صورت تمایل می‌توانید دوباره اقدام کنید.');
+      setErrorMsg('پرداخت لغو شد.');
       cleanUrl();
       return;
     }
@@ -141,7 +176,7 @@ export default function WebsiteBuilderPage({
         .then((json) => {
           if (json?.ok && json.subscription) {
             setManagedSub(json.subscription);
-            setManageMsg('پرداخت تایید شد و اشتراک شما برای ۳۰ روز دیگر تمدید گردید.');
+            setManageMsg('پرداخت تایید و اشتراک شما ۳۰ روز تمدید شد.');
           } else {
             setErrorMsg(json?.error || 'تایید پرداخت تمدید با خطا مواجه شد.');
           }
@@ -166,7 +201,7 @@ export default function WebsiteBuilderPage({
     e.preventDefault();
     setErrorMsg('');
     if (!storeName.trim() || !phone.trim() || !companyNumber.trim() || !email.trim()) {
-      setErrorMsg('لطفاً همه ۴ کادر بالا را پر کنید تا بتوانیم سایت را بسازیم و به شما خبر دهیم.');
+      setErrorMsg('لطفاً تمام موارد الزامی را تکمیل کنید.');
       return;
     }
     setStep(3);
@@ -176,7 +211,7 @@ export default function WebsiteBuilderPage({
     e.preventDefault();
     setErrorMsg('');
 
-    if (isTestMode && (!cardHolder.trim() || !cardNumber.trim() || !cardExpiry.trim() || !cardCvc.trim())) {
+    if (isOfflineDemoMode && (!cardHolder.trim() || !cardNumber.trim() || !cardExpiry.trim() || !cardCvc.trim())) {
       setErrorMsg('لطفاً مشخصات کارت بانکی را کامل وارد کنید.');
       return;
     }
@@ -184,7 +219,7 @@ export default function WebsiteBuilderPage({
     setSubmitting(true);
     try {
       const payload = {
-        action: isTestMode ? 'submit_website_order' : 'create_website_checkout',
+        action: isOfflineDemoMode ? 'submit_website_order' : 'create_website_checkout',
         name: storeName.trim(),
         phone: phone.trim(),
         companyNumber: companyNumber.trim(),
@@ -197,17 +232,17 @@ export default function WebsiteBuilderPage({
       });
       const json = await res.json();
       if (!json?.ok) {
-        setErrorMsg(json?.error || 'مشکلی پیش آمد. لطفاً دوباره امتحان کنید.');
+        setErrorMsg(json?.error || 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.');
         return;
       }
-      if (!isTestMode && json.checkoutUrl) {
+      if (json.checkoutUrl && isSafeHttpUrl(json.checkoutUrl)) {
         window.location.href = json.checkoutUrl;
         return;
       }
       setSubmittedOrder(json.order);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
-      setErrorMsg('اتصال به سرور برقرار نشد. لطفاً دوباره امتحان کنید.');
+      setErrorMsg('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.');
     } finally {
       setSubmitting(false);
     }
@@ -219,7 +254,7 @@ export default function WebsiteBuilderPage({
     setManageMsg('');
     const clean = manageCodeInput.replace(/\D/g, '').trim();
     if (clean.length !== 8) {
-      setErrorMsg('کد مدیریت باید دقیقاً ۸ رقم باشد.');
+      setErrorMsg('کد مدیریت باید ۸ رقم باشد.');
       return;
     }
     setManageLoading(true);
@@ -235,11 +270,11 @@ export default function WebsiteBuilderPage({
       });
       const json = await res.json();
       if (!json?.ok) {
-        setErrorMsg(json?.error || 'این کد پیدا نشد.');
+        setErrorMsg(json?.error || 'اشتراکی با این کد یافت نشد.');
         setManagedSub(null);
         return;
       }
-      if (json.requiresStripeCheckout && json.checkoutUrl) {
+      if (json.requiresStripeCheckout && json.checkoutUrl && isSafeHttpUrl(json.checkoutUrl)) {
         window.location.href = json.checkoutUrl;
         return;
       }
@@ -258,15 +293,18 @@ export default function WebsiteBuilderPage({
     }
   };
 
+  const safeWebsiteUrl = managedSub?.websiteUrl && isSafeHttpUrl(managedSub.websiteUrl) ? managedSub.websiteUrl : '';
+  const safePanelUrl = managedSub?.panelUrl && isSafeHttpUrl(managedSub.panelUrl) ? managedSub.panelUrl : '';
+
   return (
-    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] pb-20 font-vazir" dir="rtl">
+    <div className="min-h-screen bg-[#FBFBFC] dark:bg-[#121317] text-[#1D1D1F] dark:text-[#F5F5F7] pb-20 font-vazir" dir="rtl">
       {/* Inline Quiet Breadcrumb Navigation (Matches AdDetailPage) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 leading-none">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 -ms-1 px-1 h-8 text-[13px] font-semibold leading-none text-[#0066CC] hover:text-[#0055AA] transition-colors active:opacity-60 cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 -ms-1 px-1.5 h-10 sm:h-8 text-[13px] font-semibold leading-none text-[#0066CC] hover:text-[#0055AA] transition-colors active:opacity-60 cursor-pointer shrink-0"
           >
             <ArrowRight size={15} strokeWidth={2} className="block shrink-0" />
             <span className="leading-none">بازگشت</span>
@@ -276,15 +314,15 @@ export default function WebsiteBuilderPage({
             <span>/</span>
             <span>خانه</span>
             <span>/</span>
-            <span className="text-[#1D1D1F] font-semibold">ساخت وب‌سایت اختصاصی</span>
+            <span className="text-[#1D1D1F] dark:text-[#F5F5F7] font-semibold">ساخت وب‌سایت اختصاصی</span>
           </div>
         </div>
 
-        <div className="inline-flex items-center p-1 rounded-full bg-[#FBFBFC] border border-[#E5E5EA]">
+        <div className="inline-flex items-center p-1 rounded-full bg-[#F5F5F7] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06]">
           <button
             type="button"
             onClick={() => { setPageMode('order'); setErrorMsg(''); }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+            className={`h-8 px-3.5 rounded-full text-xs font-bold leading-none inline-flex items-center justify-center cursor-pointer transition-colors ${
               pageMode === 'order' ? 'bg-[#0066CC] text-white' : 'text-[#6E6E73] hover:text-[#1D1D1F]'
             }`}
           >
@@ -293,11 +331,11 @@ export default function WebsiteBuilderPage({
           <button
             type="button"
             onClick={() => { setPageMode('manage'); setErrorMsg(''); }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+            className={`h-8 px-3.5 rounded-full text-xs font-bold leading-none inline-flex items-center justify-center cursor-pointer transition-colors ${
               pageMode === 'manage' ? 'bg-[#0066CC] text-white' : 'text-[#6E6E73] hover:text-[#1D1D1F]'
             }`}
           >
-            مدیریت اشتراک (کد ۸ رقمی)
+            مدیریت اشتراک
           </button>
         </div>
       </div>
@@ -307,11 +345,15 @@ export default function WebsiteBuilderPage({
         <main className="space-y-6">
             {pageMode === 'manage' ? (
               /* MANAGE SUBSCRIPTION */
-              <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] border border-[#E5E5EA] p-5 sm:p-8 space-y-5">
-                <div className="text-center space-y-1.5">
-                  <KeyRound size={26} className="mx-auto text-[#0066CC]" />
-                  <h1 className="text-lg sm:text-xl font-black text-[#1D1D1F]">مدیریت اشتراک شما</h1>
-                  <p className="text-xs text-[#6E6E73]">کد ۸ رقمی خود را بنویسید تا وضعیت سایتتان را ببینید.</p>
+              <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06] p-5 sm:p-8 space-y-5">
+                <div className="text-center space-y-2">
+                  <div className="h-11 w-11 mx-auto rounded-2xl bg-[#F5F5F7] dark:bg-white/[0.06] text-[#0066CC] flex items-center justify-center">
+                    <KeyRound size={20} className="block" />
+                  </div>
+                  <div className="space-y-1">
+                    <h1 className="text-lg sm:text-xl font-black text-[#1D1D1F]">مدیریت اشتراک وب‌سایت</h1>
+                    <p className="text-xs text-[#6E6E73]">کد ۸ رقمی اشتراک را برای مشاهده وضعیت یا تمدید وارد کنید.</p>
+                  </div>
                 </div>
 
                 {errorMsg && (
@@ -341,21 +383,21 @@ export default function WebsiteBuilderPage({
                   <button
                     type="submit"
                     disabled={manageLoading}
-                    className="h-11 px-5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold cursor-pointer shrink-0 transition-colors"
+                    className="h-11 px-5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold leading-none inline-flex items-center justify-center cursor-pointer shrink-0 transition-colors"
                   >
-                    {manageLoading ? 'صبر کنید...' : 'مشاهده'}
+                    {manageLoading ? 'در حال بررسی...' : 'مشاهده وضعیت'}
                   </button>
                 </form>
 
                 {managedSub && (
-                  <div className="pt-4 border-t border-[#E5E5EA] space-y-3 text-xs">
+                  <div className="pt-4 border-t border-[#ECEFF4] dark:border-white/[0.06] space-y-3 text-xs">
                     <div className="flex justify-between">
                       <span className="text-[#6E6E73]">نام سایت:</span>
                       <strong>{managedSub.name}</strong>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#6E6E73]">وضعیت:</span>
-                      <strong className={managedSub.status === 'cancelled' ? 'text-rose-600' : 'text-emerald-700'}>
+                      <strong className={managedSub.status === 'cancelled' ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700'}>
                         {managedSub.status === 'cancelled'
                           ? 'لغو شده'
                           : managedSub.status === 'pending_setup'
@@ -365,31 +407,35 @@ export default function WebsiteBuilderPage({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#6E6E73]">تاریخ پایان دوره:</span>
-                      <strong>{managedSub.expiresAt ? new Date(managedSub.expiresAt).toLocaleDateString('fa-IR') : '-'}</strong>
+                      <strong>
+                        {managedSub.expiresAt && Number.isFinite(Date.parse(managedSub.expiresAt))
+                          ? FA_SUB_DATE_FMT.format(new Date(managedSub.expiresAt))
+                          : '-'}
+                      </strong>
                     </div>
 
-                    {(managedSub.websiteUrl || managedSub.panelUrl) && (
+                    {(safeWebsiteUrl || safePanelUrl) && (
                       <div className="pt-2 flex flex-wrap gap-2">
-                        {managedSub.websiteUrl && (
+                        {safeWebsiteUrl && (
                           <a
-                            href={managedSub.websiteUrl}
+                            href={safeWebsiteUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="h-9 px-3.5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-semibold inline-flex items-center gap-1.5"
+                            className="h-10 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] text-xs font-semibold leading-none inline-flex items-center gap-1.5 transition-colors"
                           >
-                            <span>مشاهده وب‌سایت</span>
-                            <ExternalLink size={12} className="text-[#0066CC]" />
+                            <span className="leading-none">مشاهده وب‌سایت</span>
+                            <ExternalLink size={12} className="block text-[#0066CC] shrink-0" />
                           </a>
                         )}
-                        {managedSub.panelUrl && (
+                        {safePanelUrl && (
                           <a
-                            href={managedSub.panelUrl}
+                            href={safePanelUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="h-9 px-3.5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-semibold inline-flex items-center gap-1.5"
+                            className="h-10 px-4 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] text-xs font-semibold leading-none inline-flex items-center gap-1.5 transition-colors"
                           >
-                            <span>ورود به پنل فروش</span>
-                            <ExternalLink size={12} className="text-[#0066CC]" />
+                            <span className="leading-none">ورود به پنل فروش</span>
+                            <ExternalLink size={12} className="block text-[#0066CC] shrink-0" />
                           </a>
                         )}
                       </div>
@@ -400,17 +446,17 @@ export default function WebsiteBuilderPage({
                         type="button"
                         disabled={manageLoading}
                         onClick={() => handleManageAction('renew')}
-                        className="flex-1 h-10 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        className="flex-1 h-10 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold leading-none inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                       >
-                        <RefreshCw size={13} />
-                        <span>تمدید ۱ ماهه ({MONTHLY_PRICE} کرون)</span>
+                        <RefreshCw size={13} className="block shrink-0" />
+                        <span className="leading-none">تمدید ماهانه ({FA_NUM_FMT.format(MONTHLY_PRICE)} کرون)</span>
                       </button>
                       {managedSub.status !== 'cancelled' && (
                         <button
                           type="button"
                           disabled={manageLoading}
                           onClick={() => handleManageAction('cancel')}
-                          className="h-10 px-4 rounded-full bg-[#F5F5F7] hover:bg-rose-50 text-rose-600 border border-[#E5E5EA] text-xs font-bold cursor-pointer transition-colors"
+                          className="h-10 px-4 rounded-full bg-[#F5F5F7] hover:bg-rose-50 text-rose-700 dark:text-rose-300 border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-bold leading-none inline-flex items-center justify-center cursor-pointer transition-colors"
                         >
                           لغو اشتراک
                         </button>
@@ -421,18 +467,20 @@ export default function WebsiteBuilderPage({
               </div>
             ) : submittedOrder ? (
               /* FINAL CONFIRMATION SCREEN */
-              <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] border border-[#E5E5EA] p-6 sm:p-10 text-center space-y-6">
-                <CheckCircle2 size={46} className="mx-auto text-emerald-600" />
+              <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06] p-6 sm:p-10 text-center space-y-6">
+                <div className="h-14 w-14 mx-auto rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                  <CheckCircle2 size={28} className="block" />
+                </div>
                 <div className="space-y-2">
-                  <h1 className="text-xl sm:text-2xl font-black text-[#1D1D1F]">تبریک! سفارش شما ثبت شد</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-[#1D1D1F]">سفارش شما با موفقیت ثبت شد</h1>
                   <p className="text-xs sm:text-sm text-[#515154] leading-relaxed">
-                    تیم ما ظرف <strong className="text-[#1D1D1F]">۲۴ ساعت آینده</strong> سایت و پنل فروش شما را آماده می‌کند، با شما تماس می‌گیرد و اطلاعات ورود را به ایمیل{' '}
-                    <strong className="font-mono text-[#0066CC]" dir="ltr">{submittedOrder.email}</strong> می‌فرستد.
+                    وب‌سایت و پنل فروش شما حداکثر ظرف <strong className="text-[#1D1D1F]">۲۴ ساعت</strong> آماده شده و اطلاعات ورود به ایمیل{' '}
+                    <strong className="font-mono text-[#0066CC]" dir="ltr">{submittedOrder.email}</strong> ارسال می‌شود.
                   </p>
                 </div>
 
-                <div className="py-4 border-y border-[#E5E5EA] space-y-2">
-                  <span className="text-xs font-bold text-[#6E6E73] block">کد ۸ رقمی مدیریت اشتراک شما (این کد را نگه دارید)</span>
+                <div className="py-4 border-y border-[#ECEFF4] dark:border-white/[0.06] space-y-2">
+                  <span className="text-xs font-bold text-[#6E6E73] block">کد ۸ رقمی مدیریت اشتراک (ذخیره کنید)</span>
                   <div className="flex items-center justify-center gap-3">
                     <span className="font-mono text-2xl font-black tracking-widest text-[#1D1D1F] select-all" dir="ltr">
                       {submittedOrder.manageCode}
@@ -440,10 +488,10 @@ export default function WebsiteBuilderPage({
                     <button
                       type="button"
                       onClick={() => copyManageCode(submittedOrder.manageCode)}
-                      className="h-8 px-3 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                      className="h-9 px-3.5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] dark:border-white/[0.06] text-xs font-bold leading-none inline-flex items-center gap-1.5 cursor-pointer transition-colors"
                     >
-                      {copiedCode ? <Check size={13} /> : <Copy size={13} />}
-                      <span>{copiedCode ? 'کپی شد' : 'کپی'}</span>
+                      {copiedCode ? <Check size={13} className="block shrink-0" /> : <Copy size={13} className="block shrink-0" />}
+                      <span className="leading-none">{copiedCode ? 'کپی شد' : 'کپی'}</span>
                     </button>
                   </div>
                 </div>
@@ -451,21 +499,21 @@ export default function WebsiteBuilderPage({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="h-11 px-8 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold cursor-pointer transition-colors"
+                  className="h-11 px-8 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold leading-none inline-flex items-center justify-center cursor-pointer transition-colors"
                 >
                   بازگشت به صفحه اصلی
                 </button>
               </div>
             ) : (
               /* SIMPLE 3-STEP WIZARD */
-              <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] border border-[#E5E5EA] p-5 sm:p-8 space-y-6">
+              <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06] p-5 sm:p-8 space-y-6">
                 {/* Calm Step Progress Bar */}
-                <div className="flex items-center justify-between text-xs font-bold border-b border-[#E5E5EA] pb-4">
-                  <span className={step === 1 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۱. آشنایی و دمو</span>
-                  <span className="text-[#D2D2D7]">←</span>
-                  <span className={step === 2 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۲. مشخصات شما</span>
-                  <span className="text-[#D2D2D7]">←</span>
-                  <span className={step === 3 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۳. پرداخت ({SETUP_PRICE} کرون)</span>
+                <div className="flex items-center justify-between text-xs font-bold border-b border-[#ECEFF4] dark:border-white/[0.06] pb-4">
+                  <span className={step === 1 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۱. معرفی و دمو</span>
+                  <ArrowLeft size={13} className="block text-[#86868B] shrink-0" />
+                  <span className={step === 2 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۲. مشخصات کسب‌وکار</span>
+                  <ArrowLeft size={13} className="block text-[#86868B] shrink-0" />
+                  <span className={step === 3 ? 'text-[#0066CC]' : 'text-[#86868B]'}>۳. پرداخت ({FA_NUM_FMT.format(SETUP_PRICE)} کرون)</span>
                 </div>
 
                 {errorMsg && (
@@ -483,7 +531,7 @@ export default function WebsiteBuilderPage({
                         راه‌اندازی وب‌سایت و فروشگاه آنلاین اختصاصی
                       </h1>
                       <p className="text-xs sm:text-sm text-[#6E6E73] leading-relaxed">
-                        هزینه راه‌اندازی و طراحی اولیه <strong>{SETUP_PRICE.toLocaleString('en-US')} کرون</strong> و اشتراک ماهانه نگهداری <strong>{MONTHLY_PRICE} کرون</strong> است. پیش از پایان هر دوره، فاکتور ۲۶۰ کرون به‌صورت ماهانه برای شما ارسال می‌شود.
+                        هزینه طراحی و راه‌اندازی اولیه <strong>{FA_NUM_FMT.format(SETUP_PRICE)} کرون</strong> و اشتراک ماهانه نگهداری <strong>{FA_NUM_FMT.format(MONTHLY_PRICE)} کرون</strong> است.
                       </p>
                     </div>
 
@@ -493,19 +541,19 @@ export default function WebsiteBuilderPage({
                         href="https://swedpersiska.vercel.app"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="h-11 px-4 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-between transition-colors"
+                        className="h-11 px-4 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] text-xs font-bold leading-none inline-flex items-center justify-between transition-colors"
                       >
-                        <span>مشاهده دمو وب‌سایت</span>
-                        <ExternalLink size={14} className="text-[#0066CC]" />
+                        <span className="leading-none">مشاهده دمو وب‌سایت</span>
+                        <ExternalLink size={14} className="block text-[#0066CC] shrink-0" />
                       </a>
                       <a
                         href="https://linksho-seller.vercel.app"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="h-11 px-4 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold inline-flex items-center justify-between transition-colors"
+                        className="h-11 px-4 rounded-2xl bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] text-xs font-bold leading-none inline-flex items-center justify-between transition-colors"
                       >
-                        <span>مشاهده دمو پنل فروش</span>
-                        <ExternalLink size={14} className="text-[#0066CC]" />
+                        <span className="leading-none">مشاهده دمو پنل فروش</span>
+                        <ExternalLink size={14} className="block text-[#0066CC] shrink-0" />
                       </a>
                     </div>
 
@@ -515,54 +563,54 @@ export default function WebsiteBuilderPage({
                         <span className="h-7 w-7 rounded-full bg-[#0066CC]/10 text-[#0066CC] font-black flex items-center justify-center shrink-0">۱</span>
                         <div className="pt-0.5">
                           <strong className="text-[#1D1D1F] block">ثبت مشخصات کسب‌وکار</strong>
-                          <span>نام وب‌سایت یا فروشگاه، شماره تماس، شماره ثبت شرکت و ایمیل رسمی خود را وارد کنید.</span>
+                          <span>نام برند یا فروشگاه، شماره تماس، شماره ثبت شرکت و ایمیل رسمی خود را وارد کنید.</span>
                         </div>
                       </div>
 
                       <div className="flex items-start gap-3">
                         <span className="h-7 w-7 rounded-full bg-[#0066CC]/10 text-[#0066CC] font-black flex items-center justify-center shrink-0">۲</span>
                         <div className="pt-0.5">
-                          <strong className="text-[#1D1D1F] block">طراحی وب‌سایت با گواهی SSL، اتصال ربات تلگرام و درگاه Stripe</strong>
-                          <span>وب‌سایت شما حداکثر ظرف ۲۴ ساعت با گواهی امنیتی SSL (HTTPS) آماده می‌شود. تیم ما در ساخت و اتصال ربات تلگرام برای دریافت آنی سفارش‌ها و راه‌اندازی درگاه پرداخت با امنیت فوق‌العاده بالا توسط Stripe همراه شماست.</span>
+                          <strong className="text-[#1D1D1F] block">آماده‌سازی وب‌سایت، ربات تلگرام و درگاه Stripe</strong>
+                          <span>وب‌سایت شما حداکثر ظرف ۲۴ ساعت با گواهی SSL، ربات تلگرام دریافت سفارش و درگاه پرداخت Stripe آماده می‌شود.</span>
                         </div>
                       </div>
 
                       <div className="flex items-start gap-3">
                         <span className="h-7 w-7 rounded-full bg-[#0066CC]/10 text-[#0066CC] font-black flex items-center justify-center shrink-0">۳</span>
                         <div className="pt-0.5">
-                          <strong className="text-[#1D1D1F] block">راهنمایی اتصال دامنه اختصاصی</strong>
-                          <span>دامنه و ایمیل اختصاصی شامل این پکیج نیستند؛ پس از آماده‌شدن وب‌سایت، تیم پشتیبانی هنگام تماس نحوه اتصال دامنه را به‌طور کامل راهنمایی می‌کند.</span>
+                          <strong className="text-[#1D1D1F] block">اتصال دامنه اختصاصی</strong>
+                          <span>پس از تحویل سایت، تیم پشتیبانی اتصال دامنه اختصاصی شما را گام‌به‌گام انجام می‌دهد.</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Cloud Specs, SSL & Ad Link Note */}
-                    <div className="pt-4 border-t border-[#E5E5EA] space-y-2 text-xs text-[#6E6E73]">
-                      <p className="flex items-center gap-2">
-                        <Sparkles size={14} className="text-[#0066CC] shrink-0" />
-                        <span>زیرساخت ابری اختصاصی: <strong>۵ گیگابایت</strong> دیتابیس ابری، <strong>۹ گیگابایت (9 GB)</strong> فضای ذخیره تصاویر و عکس‌ها و ظرفیت <strong>۱۰۰,۰۰۰ درخواست روزانه</strong> (قابل ارتقا با هماهنگی پشتیبانی و هزینه جداگانه).</span>
+                    <div className="pt-4 border-t border-[#ECEFF4] dark:border-white/[0.06] space-y-2.5 text-xs text-[#6E6E73]">
+                      <p className="flex items-start gap-2.5">
+                        <Sparkles size={14} className="mt-0.5 block text-[#0066CC] shrink-0" />
+                        <span>زیرساخت ابری اختصاصی: <strong>۵ گیگابایت</strong> دیتابیس ابری، <strong>۹ گیگابایت</strong> فضای تصاویر و ظرفیت <strong>۱۰۰,۰۰۰ درخواست روزانه</strong>.</span>
                       </p>
-                      <p className="flex items-center gap-2">
-                        <Lock size={14} className="text-emerald-600 shrink-0" />
-                        <span>مجهز به <strong>گواهی امنیتی SSL (HTTPS)</strong> و پردازش پرداخت با <strong>امنیت فوق‌العاده بالا توسط Stripe</strong>.</span>
+                      <p className="flex items-start gap-2.5">
+                        <Lock size={14} className="mt-0.5 block text-emerald-600 shrink-0" />
+                        <span>مجهز به <strong>گواهی امنیتی SSL (HTTPS)</strong> و درگاه پرداخت رسمی <strong>Stripe</strong>.</span>
                       </p>
-                      <p className="flex items-center gap-2">
-                        <PhoneCall size={14} className="text-emerald-600 shrink-0" />
-                        <span>پشتیبانی اختصاصی جهت اتصال دامنه و دریافت کد ۸ رقمی مدیریت اشتراک.</span>
+                      <p className="flex items-start gap-2.5">
+                        <PhoneCall size={14} className="mt-0.5 block text-emerald-600 shrink-0" />
+                        <span>پشتیبانی اختصاصی اتصال دامنه و کد ۸ رقمی مدیریت اشتراک.</span>
                       </p>
-                      <p className="flex items-center gap-2">
-                        <CheckCircle2 size={14} className="text-[#0066CC] shrink-0" />
-                        <span>پس از تکمیل وب‌سایت، می‌توانید آدرس وب‌سایت خود را در آگهی‌های لینک شو نمایش دهید.</span>
+                      <p className="flex items-start gap-2.5">
+                        <CheckCircle2 size={14} className="mt-0.5 block text-[#0066CC] shrink-0" />
+                        <span>امکان درج لینک مستقیم وب‌سایت شما در آگهی‌های لینک شو.</span>
                       </p>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="w-full h-11 sm:h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+                      className="w-full h-11 sm:h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold leading-none inline-flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
                     >
-                      <span>شروع ساخت وب‌سایت</span>
-                      <ArrowLeft size={16} />
+                      <span className="leading-none">شروع سفارش وب‌سایت</span>
+                      <ArrowLeft size={16} className="block shrink-0" />
                     </button>
                   </div>
                 )}
@@ -571,25 +619,25 @@ export default function WebsiteBuilderPage({
                 {step === 2 && (
                   <form onSubmit={handleStep2Next} className="space-y-5">
                     <div>
-                      <h2 className="text-lg font-black text-[#1D1D1F]">مشخصات خودتان را بنویسید</h2>
-                      <p className="text-xs text-[#6E6E73] mt-0.5">فقط همین ۴ مورد لازم است:</p>
+                      <h2 className="text-lg font-black text-[#1D1D1F]">مشخصات کسب‌وکار</h2>
+                      <p className="text-xs text-[#6E6E73] mt-0.5">اطلاعات زیر را برای راه‌اندازی وب‌سایت تکمیل کنید:</p>
                     </div>
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">۱. نام سایت یا فروشگاه شما *</label>
+                        <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">۱. نام وب‌سایت یا فروشگاه *</label>
                         <input
                           type="text"
                           required
                           value={storeName}
                           onChange={(e) => setStoreName(e.target.value)}
-                          placeholder="مثلاً: رستوران زعفران"
+                          placeholder="مثال: رستوران زعفران"
                           className="w-full h-11 rounded-xl bg-[#F5F5F7] border border-[#D2D2D7] px-3.5 text-xs focus:bg-white focus:border-[#0066CC] focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">۲. شماره تماس شما *</label>
+                        <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">۲. شماره تماس *</label>
                         <input
                           type="tel"
                           required
@@ -615,7 +663,7 @@ export default function WebsiteBuilderPage({
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">۴. ایمیل شما (اطلاعات سایت به این ایمیل می‌آید) *</label>
+                        <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">۴. ایمیل رسمی (دریافت اطلاعات دسترسی) *</label>
                         <input
                           type="email"
                           required
@@ -632,16 +680,17 @@ export default function WebsiteBuilderPage({
                       <button
                         type="button"
                         onClick={() => setStep(1)}
-                        className="h-11 px-5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold cursor-pointer transition-colors"
+                        className="h-11 px-5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] text-xs font-bold leading-none inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                       >
-                        قبلی
+                        <ArrowRight size={15} className="block shrink-0" />
+                        <span className="leading-none">قبلی</span>
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                        className="flex-1 h-11 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold leading-none inline-flex items-center justify-center gap-2 cursor-pointer transition-colors"
                       >
-                        <span>ادامه به پرداخت</span>
-                        <ArrowLeft size={15} />
+                        <span className="leading-none">ادامه به پرداخت</span>
+                        <ArrowLeft size={15} className="block shrink-0" />
                       </button>
                     </div>
                   </form>
@@ -652,12 +701,12 @@ export default function WebsiteBuilderPage({
                   <form onSubmit={handleSubmitOrder} className="space-y-5">
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <h2 className="text-lg font-black text-[#1D1D1F]">پرداخت پلان ساخت و شروع</h2>
+                        <h2 className="text-lg font-black text-[#1D1D1F]">تایید و پرداخت</h2>
                         <p className="text-xs text-[#6E6E73] mt-0.5">
-                          مبلغ راه‌اندازی: {SETUP_PRICE} {CURRENCY} (ماهانه بعدی: {MONTHLY_PRICE} {CURRENCY} با ارسال فاکتور قبل از پایان دوره)
+                          هزینه راه‌اندازی: {FA_NUM_FMT.format(SETUP_PRICE)} کرون • اشتراک ماهانه: {FA_NUM_FMT.format(MONTHLY_PRICE)} کرون
                         </p>
                       </div>
-                      {isTestMode && (
+                      {isOfflineDemoMode && (
                         <button
                           type="button"
                           onClick={() => {
@@ -673,7 +722,7 @@ export default function WebsiteBuilderPage({
                       )}
                     </div>
 
-                    {isTestMode ? (
+                    {isOfflineDemoMode ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F]">
                           <CreditCard size={15} className="text-[#0066CC]" />
@@ -718,13 +767,13 @@ export default function WebsiteBuilderPage({
                         </div>
                       </div>
                     ) : (
-                      <div className="p-4 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] space-y-1.5 text-xs text-[#515154]">
+                      <div className="p-4 rounded-2xl bg-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.06] space-y-1.5 text-xs text-[#515154]">
                         <div className="flex items-center gap-1.5 font-bold text-[#1D1D1F]">
-                          <Lock size={14} className="text-emerald-600 shrink-0" />
-                          <span>پرداخت امن با درگاه رسمی Stripe</span>
+                          <Lock size={14} className="block text-emerald-600 shrink-0" />
+                          <span>درگاه رسمی Stripe</span>
                         </div>
                         <p className="leading-relaxed">
-                          با کلیک روی دکمه زیر، به صفحه پرداخت امن Stripe (گواهی SSL/TLS) هدایت می‌شوید و پس از تکمیل پرداخت، کد ۸ رقمی اشتراک شما بلافاصله صادر می‌شود.
+                          پرداخت در صفحه رمزنگاری‌شده Stripe انجام می‌شود و بلافاصله پس از تایید، کد ۸ رقمی مدیریت اشتراک شما صادر خواهد شد.
                         </p>
                       </div>
                     )}
@@ -733,17 +782,18 @@ export default function WebsiteBuilderPage({
                       <button
                         type="button"
                         onClick={() => setStep(2)}
-                        className="h-11 px-5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#E5E5EA] text-[#1D1D1F] text-xs font-bold cursor-pointer transition-colors"
+                        className="h-11 px-5 rounded-full bg-[#F5F5F7] hover:bg-[#ECECEF] border border-[#ECEFF4] dark:border-white/[0.06] text-[#1D1D1F] text-xs font-bold leading-none inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                       >
-                        قبلی
+                        <ArrowRight size={15} className="block shrink-0" />
+                        <span className="leading-none">قبلی</span>
                       </button>
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="flex-1 h-11 sm:h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60"
+                        className="flex-1 h-11 sm:h-12 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs sm:text-sm font-bold leading-none inline-flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60"
                       >
-                        <Lock size={15} />
-                        <span>{submitting ? 'در حال ثبت...' : 'پرداخت و ثبت سفارش'}</span>
+                        <Lock size={15} className="block shrink-0" />
+                        <span className="leading-none">{submitting ? 'در حال انتقال...' : `پرداخت ${FA_NUM_FMT.format(SETUP_PRICE)} کرون`}</span>
                       </button>
                     </div>
                   </form>
@@ -751,35 +801,8 @@ export default function WebsiteBuilderPage({
               </div>
             )}
 
-            {/* SIMPLE FAQ ACCORDION (Hairline-divided, matches site flat design) */}
-            <section className="space-y-3">
-              <h2 className="text-sm font-black text-[#1D1D1F] px-1">سوالات متداول</h2>
-              <div className="rounded-2xl sm:rounded-3xl bg-[#FBFBFC] border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden">
-                {SIMPLE_FAQS.map((item, idx) => {
-                  const isOpen = openFaqIdx === idx;
-                  return (
-                    <div key={idx}>
-                      <button
-                        type="button"
-                        onClick={() => setOpenFaqIdx(isOpen ? -1 : idx)}
-                        className="w-full px-5 py-4 flex items-center justify-between gap-3 text-right hover:bg-[#F5F5F7]/75 transition-colors cursor-pointer"
-                      >
-                        <span className="text-xs sm:text-[13px] font-bold text-[#1D1D1F]">{item.q}</span>
-                        <ChevronDown
-                          size={15}
-                          className={`text-[#86868B] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#0066CC]' : ''}`}
-                        />
-                      </button>
-                      {isOpen && (
-                        <div className="px-5 pb-4 text-xs text-[#515154] leading-relaxed">
-                          {item.a}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+            {/* Memoized FAQ Accordion */}
+            <WebsiteBuilderFaqSection />
           </main>
       </div>
     </div>

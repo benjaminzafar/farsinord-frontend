@@ -18,7 +18,16 @@ const HAS_SERVICE_ROLE = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlemJueW1qY25tYXpkb25memt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2OTM1NjksImV4cCI6MjExMDI2OTU2OX0.ylsHBAZ1zo1z_aKpHx7hgl-yZu2yt2puFNhR8jBm6S4';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const PUBLIC_FETCH_TIMEOUT_MS = 6500;
+function fetchWithTimeout(input, init = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PUBLIC_FETCH_TIMEOUT_MS);
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  global: { fetch: fetchWithTimeout },
+});
 
 const PUBLIC_AD_COLUMNS =
   'id, reference_number, title, title_fa, category, country, city, area, price, price_type, description, contact_name, contact_phone, contact_whatsapp, contact_telegram, contact_email, contact_website, images, is_featured, status, views_count, created_at, updated_at, last_boosted_at, last_meaningful_activity_at, sort_timestamp, next_free_boost_at, boost_count, duplicate_detection_status, cleanup_warning_sent_at, scheduled_deletion_at, deleted_at, promotion_expires_at';
@@ -189,13 +198,64 @@ function validateWebsiteOrderFields(body) {
   };
 }
 
-async function getStripeConfig() {
-  const { data: stripeRow } = await supabase
+const DESCRIPTION_LINK_RE =
+  /(?:https?:\/\/|ftp:\/\/|www\.)\S+|(?<![a-z0-9._%+-]+@)\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:com|se|eu|nu|org|net|io|co|me|info|biz|app|dev|xyz|online|site|store|shop|tech|ir|de|no|dk|fi|nl|at|fr|uk|ch|be|es|it|pl|ca|us|au|tv|gg|ly|gl|link|click|page|cloud|ai| club)(?:\/\S*|\b)/i;
+
+function containsLinkInDescription(text) {
+  if (!text) return false;
+  return DESCRIPTION_LINK_RE.test(String(text));
+}
+
+function parseSafePrice(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const num = Number(raw);
+  return Number.isFinite(num) && num >= 0 && num <= 1e9 ? num : null;
+}
+
+const PUBLIC_SETTINGS_KEYS = [
+  'site_branding',
+  'seo_settings',
+  'portal_cities',
+  'portal_countries',
+  'stripe_settings',
+  'turnstile_settings',
+  'analytics_settings',
+  'ad_lifecycle_settings',
+  'podcast_settings',
+];
+const PUBLIC_SETTINGS_TTL_MS = 3 * 60 * 1000;
+let cachedSettingsMap = null;
+let cachedSettingsAt = 0;
+
+const PODCAST_FEED_TTL_MS = 5 * 60 * 1000;
+let cachedPodcastResponse = null;
+let cachedPodcastAt = 0;
+const resolvedYoutubeChannelIdCache = new Map();
+
+async function getCachedPublicSettingsMap() {
+  const now = Date.now();
+  if (cachedSettingsMap && now - cachedSettingsAt < PUBLIC_SETTINGS_TTL_MS) {
+    return cachedSettingsMap;
+  }
+  const { data, error } = await supabase
     .from('swedpersiska_settings')
-    .select('value')
-    .eq('key', 'stripe_settings')
-    .maybeSingle();
-  const stripeCfg = stripeRow?.value && typeof stripeRow.value === 'object' ? stripeRow.value : {};
+    .select('key, value')
+    .in('key', PUBLIC_SETTINGS_KEYS);
+  if (error || !data) {
+    return cachedSettingsMap || {};
+  }
+  const map = {};
+  for (const row of data) {
+    map[row.key] = row.value;
+  }
+  cachedSettingsMap = map;
+  cachedSettingsAt = now;
+  return map;
+}
+
+async function getStripeConfig() {
+  const map = await getCachedPublicSettingsMap();
+  const stripeCfg = map.stripe_settings && typeof map.stripe_settings === 'object' ? map.stripe_settings : {};
   const enabled = stripeCfg.enabled !== false;
   const mode = stripeCfg.mode === 'live' ? 'live' : 'test';
   const secretKey = String(process.env.STRIPE_SECRET_KEY || '').trim();
@@ -277,102 +337,131 @@ export default async function handler(req, res) {
       const { action, id } = req.query || {};
 
       if (action === 'bootstrap') {
-        const { data } = await supabase
-          .from('swedpersiska_settings')
-          .select('key, value')
-          .in('key', ['site_branding', 'seo_settings', 'portal_cities', 'portal_countries', 'stripe_settings', 'turnstile_settings', 'analytics_settings', 'ad_lifecycle_settings']);
+        const rawMap = await getCachedPublicSettingsMap();
+        const bootstrapKeys = [
+          'site_branding',
+          'seo_settings',
+          'portal_cities',
+          'portal_countries',
+          'stripe_settings',
+          'turnstile_settings',
+          'analytics_settings',
+          'ad_lifecycle_settings',
+        ];
 
         const settings = {};
-        (data || []).forEach((item) => {
-          if (item.key === 'stripe_settings' && item.value) {
-            const stripeMode = item.value.mode === 'live' ? 'live' : 'test';
+        for (const key of bootstrapKeys) {
+          const val = rawMap[key];
+          if (val === undefined) continue;
+          if (key === 'stripe_settings' && val) {
+            const stripeMode = val.mode === 'live' ? 'live' : 'test';
             const keyCheck = validateStripeSecretKeyForMode(process.env.STRIPE_SECRET_KEY, stripeMode);
             settings.stripe_settings = {
-              enabled: item.value.enabled,
-              mode: item.value.mode,
-              publishableKey: item.value.publishableKey,
-              vipPrice: item.value.vipPrice,
-              currency: item.value.currency,
-              vipDurationDays: item.value.vipDurationDays,
-              vipBadgeText: item.value.vipBadgeText,
+              enabled: val.enabled,
+              mode: val.mode,
+              publishableKey: val.publishableKey,
+              vipPrice: val.vipPrice,
+              currency: val.currency,
+              vipDurationDays: val.vipDurationDays,
+              vipBadgeText: val.vipBadgeText,
               stripeReady: Boolean(String(process.env.STRIPE_SECRET_KEY || '').trim()),
               stripeKeyMatchesMode: keyCheck.ok,
             };
-          } else if (item.key === 'turnstile_settings' && item.value) {
+          } else if (key === 'turnstile_settings' && val) {
             settings.turnstile_settings = {
-              enabled: item.value.enabled,
-              mode: item.value.mode === 'live' ? 'live' : 'test',
-              siteKey: String(item.value.siteKey || '').replace(/[\s\u200B-\u200D\uFEFF]/g, ''),
-              protectPostAd: item.value.protectPostAd
+              enabled: val.enabled,
+              mode: val.mode === 'live' ? 'live' : 'test',
+              siteKey: String(val.siteKey || '').replace(/[\s\u200B-\u200D\uFEFF]/g, ''),
+              protectPostAd: val.protectPostAd,
             };
-          } else if (item.key === 'site_branding' && item.value) {
-            const rawName = (item.value.siteName || '').trim();
+          } else if (key === 'site_branding' && val) {
+            const rawName = (val.siteName || '').trim();
             const isLegacy = !rawName || /سوئد\s*پرشیا|سوید\s*پرشیا|پرشیا\s*سو|فارسی\s*نور|swedpersiska|farsi\s*nord|faris\s*nord/i.test(rawName);
             settings.site_branding = {
-              ...item.value,
-              siteName: isLegacy ? 'لینک شو' : rawName
+              ...val,
+              siteName: isLegacy ? 'لینک شو' : rawName,
             };
           } else {
-            settings[item.key] = item.value;
+            settings[key] = val;
           }
-        });
+        }
 
         res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=600, stale-while-revalidate=3600');
         return res.status(200).json({ ok: true, settings });
       }
 
       if (action === 'get_podcast_feed') {
-        const { data: podcastRow } = await supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'podcast_settings')
-          .maybeSingle();
+        const now = Date.now();
+        if (cachedPodcastResponse && now - cachedPodcastAt < PODCAST_FEED_TTL_MS) {
+          res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+          return res.status(200).json(cachedPodcastResponse);
+        }
 
-        const podcast = (podcastRow && podcastRow.value) || {
+        const rawMap = await getCachedPublicSettingsMap();
+        const podcast = rawMap.podcast_settings || {
           enabled: true,
           title: 'پادکست خبری لینک شو',
-          subtitle: 'تازه‌ترین گزارش‌ها و پادکست‌های خبری فارسی‌زبانان اروپا',
+          subtitle: 'گزارش‌ها و پادکست‌های خبری فارسی‌زبانان اروپا',
           youtubeChannelUrl: '',
           youtubeChannelId: '',
           manualVideos: [],
         };
 
+        const YT_VID_RE = /^[a-zA-Z0-9_-]{11}$/;
         const manualList = Array.isArray(podcast.manualVideos)
-          ? podcast.manualVideos.filter((v) => v && v.videoId).map((v) => ({
-              videoId: v.videoId,
-              title: v.title || 'پادکست خبری',
-              publishedAt: v.addedAt || '',
-              description: '',
-              thumbnail: `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
-              watchUrl: v.url || `https://www.youtube.com/watch?v=${v.videoId}`,
-              source: 'pinned',
-            }))
+          ? podcast.manualVideos
+              .filter((v) => v && YT_VID_RE.test(String(v.videoId || '')))
+              .map((v) => ({
+                videoId: String(v.videoId),
+                title: v.title || 'پادکست خبری',
+                publishedAt: v.addedAt || '',
+                description: '',
+                thumbnail: `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
+                watchUrl: isSafeHttpUrl(v.url) ? v.url : `https://www.youtube.com/watch?v=${v.videoId}`,
+                source: 'pinned',
+              }))
           : [];
 
         let channelId = String(podcast.youtubeChannelId || '').trim();
         const chUrl = String(podcast.youtubeChannelUrl || '').trim();
         if (!/^UC[\w-]{10,}$/.test(channelId) && chUrl) {
-          const directMatch = chUrl.match(/youtube\.com\/channel\/(UC[\w-]{10,})/i);
-          if (directMatch) {
-            channelId = directMatch[1];
-          } else if (/^https?:\/\/(www\.|m\.)?youtube\.com\//i.test(chUrl)) {
-            try {
-              const ctrl = new AbortController();
-              const timer = setTimeout(() => ctrl.abort(), 5000);
-              const htmlRes = await fetch(chUrl, {
-                signal: ctrl.signal,
-                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkShoBot/1.0)' },
-              });
-              clearTimeout(timer);
-              if (htmlRes.ok) {
-                const html = await htmlRes.text();
-                const idMatch =
-                  html.match(/"channelId":"(UC[\w-]{10,})"/) ||
-                  html.match(/"externalId":"(UC[\w-]{10,})"/) ||
-                  html.match(/<link[^>]+rel="canonical"[^>]+href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{10,})"/i);
-                if (idMatch) channelId = idMatch[1];
-              }
-            } catch {}
+          if (resolvedYoutubeChannelIdCache.has(chUrl)) {
+            channelId = resolvedYoutubeChannelIdCache.get(chUrl);
+          } else {
+            const directMatch = chUrl.match(/youtube\.com\/channel\/(UC[\w-]{10,})/i);
+            if (directMatch) {
+              channelId = directMatch[1];
+              resolvedYoutubeChannelIdCache.set(chUrl, channelId);
+            } else {
+              try {
+                const parsedCh = new URL(chUrl);
+                const validYtHost =
+                  (parsedCh.protocol === 'https:' || parsedCh.protocol === 'http:') &&
+                  !parsedCh.username &&
+                  !parsedCh.password &&
+                  ['www.youtube.com', 'youtube.com', 'm.youtube.com'].includes(parsedCh.hostname.toLowerCase());
+                if (validYtHost) {
+                  const ctrl = new AbortController();
+                  const timer = setTimeout(() => ctrl.abort(), 5000);
+                  const htmlRes = await fetch(parsedCh.toString(), {
+                    signal: ctrl.signal,
+                    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkShoBot/1.0)' },
+                  });
+                  clearTimeout(timer);
+                  if (htmlRes.ok) {
+                    const html = await htmlRes.text();
+                    const idMatch =
+                      html.match(/"channelId":"(UC[\w-]{10,})"/) ||
+                      html.match(/"externalId":"(UC[\w-]{10,})"/) ||
+                      html.match(/<link[^>]+rel="canonical"[^>]+href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{10,})"/i);
+                    if (idMatch) {
+                      channelId = idMatch[1];
+                      resolvedYoutubeChannelIdCache.set(chUrl, channelId);
+                    }
+                  }
+                }
+              } catch {}
+            }
           }
         }
 
@@ -396,11 +485,11 @@ export default async function handler(req, res) {
                   .replace(/&#39;/g, "'");
               const entries = xml.match(/<entry>[\s\S]*?<\/entry>/g) || [];
               entries.slice(0, 15).forEach((entry) => {
-                const vid = (entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/) || [])[1];
+                const vid = String((entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/) || [])[1] || '').trim();
                 const title = decodeXml((entry.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '');
                 const published = (entry.match(/<published>([^<]+)<\/published>/) || [])[1] || '';
                 const desc = decodeXml((entry.match(/<media:description>([\s\S]*?)<\/media:description>/) || [])[1] || '');
-                if (vid) {
+                if (YT_VID_RE.test(vid)) {
                   rssEpisodes.push({
                     videoId: vid,
                     title: title || 'پادکست خبری',
@@ -425,8 +514,11 @@ export default async function handler(req, res) {
           episodes.push(ep);
         });
 
+        const payload = { ok: true, settings: podcast, channelId, episodes };
+        cachedPodcastResponse = payload;
+        cachedPodcastAt = Date.now();
         res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-        return res.status(200).json({ ok: true, settings: podcast, channelId, episodes });
+        return res.status(200).json(payload);
       }
 
       if (action === 'ad' && id) {
@@ -524,17 +616,21 @@ export default async function handler(req, res) {
           .order('id', { ascending: false });
       }
 
+      const canDeriveFeaturedFromMain =
+        includeFeatured && (!sort || sort === 'newest') && limit >= featuredLimit;
+
       const mainQueryPromise = q.range(from, to);
-      const featuredQueryPromise = includeFeatured
-        ? applyFilters(
-            supabase.from('swedpersiska_ads').select(PUBLIC_AD_LIST_COLUMNS),
-            true
-          )
-            .order('sort_timestamp', { ascending: false })
-            .order('created_at', { ascending: false })
-            .order('id', { ascending: false })
-            .range(0, featuredLimit - 1)
-        : Promise.resolve(null);
+      const featuredQueryPromise =
+        includeFeatured && !canDeriveFeaturedFromMain
+          ? applyFilters(
+              supabase.from('swedpersiska_ads').select(PUBLIC_AD_LIST_COLUMNS),
+              true
+            )
+              .order('sort_timestamp', { ascending: false })
+              .order('created_at', { ascending: false })
+              .order('id', { ascending: false })
+              .range(0, featuredLimit - 1)
+          : Promise.resolve(null);
 
       const [mainRes, featuredRes] = await Promise.all([mainQueryPromise, featuredQueryPromise]);
       if (mainRes.error) throw mainRes.error;
@@ -554,7 +650,25 @@ export default async function handler(req, res) {
       };
       if (total !== undefined) responseBody.total = total;
       if (includeFeatured) {
-        responseBody.featuredAds = (featuredRes?.data || []).map(normalizeListAd);
+        if (canDeriveFeaturedFromMain) {
+          const activeVipsInMain = normalizedAds.filter((a) => a.is_active_vip);
+          const allMainRowsWereFeatured = pageRows.length >= limit && pageRows.every((r) => r.is_featured);
+          if (!allMainRowsWereFeatured || activeVipsInMain.length >= featuredLimit) {
+            responseBody.featuredAds = activeVipsInMain.slice(0, featuredLimit);
+          } else {
+            const { data: fallbackFeatured } = await applyFilters(
+              supabase.from('swedpersiska_ads').select(PUBLIC_AD_LIST_COLUMNS),
+              true
+            )
+              .order('sort_timestamp', { ascending: false })
+              .order('created_at', { ascending: false })
+              .order('id', { ascending: false })
+              .range(0, featuredLimit - 1);
+            responseBody.featuredAds = (fallbackFeatured || []).map(normalizeListAd);
+          }
+        } else {
+          responseBody.featuredAds = (featuredRes?.data || []).map(normalizeListAd);
+        }
       }
 
       res.setHeader('Cache-Control', 'public, max-age=15, s-maxage=60, stale-while-revalidate=300');
@@ -604,6 +718,10 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: 'عنوان، توضیحات و نام تماس‌گیرنده الزامی است.' });
         }
 
+        if (containsLinkInDescription(cleanDesc)) {
+          return res.status(400).json({ ok: false, error: 'لینک در توضیحات مجاز نیست. آدرس سایت را در بخش وبسایت بنویسید.' });
+        }
+
         if (!cleanPhone && !cleanWa && !cleanTg && !cleanEmail && !cleanWebsite) {
           return res.status(400).json({ ok: false, error: 'حداقل یک راه تماس (تلفن، واتساپ، تلگرام، ایمیل یا وب‌سایت) الزامی است.' });
         }
@@ -613,21 +731,16 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: modReason });
         }
 
+        const settingsMap = await getCachedPublicSettingsMap();
+
         // Strict server-side Turnstile verification when live mode & secret key are configured
         const turnstileSecret = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
         if (turnstileSecret) {
           let requireLiveTurnstile = true;
-          try {
-            const { data: tsRow } = await supabase
-              .from('swedpersiska_settings')
-              .select('value')
-              .eq('key', 'turnstile_settings')
-              .maybeSingle();
-            const tsCfg = tsRow?.value;
-            if (tsCfg && (tsCfg.enabled === false || tsCfg.protectPostAd === false || tsCfg.mode !== 'live')) {
-              requireLiveTurnstile = false;
-            }
-          } catch {}
+          const tsCfg = settingsMap.turnstile_settings;
+          if (tsCfg && (tsCfg.enabled === false || tsCfg.protectPostAd === false || tsCfg.mode !== 'live')) {
+            requireLiveTurnstile = false;
+          }
 
           if (requireLiveTurnstile) {
             const cleanToken = String(turnstileToken || '').trim();
@@ -688,7 +801,7 @@ export default async function handler(req, res) {
           country: cleanCountry,
           city: cleanCity,
           area: cleanArea,
-          price: price ? parseFloat(price) : null,
+          price: parseSafePrice(price),
           contact_phone: cleanPhone,
           contact_whatsapp: cleanWa,
           contact_telegram: cleanTg,
@@ -700,19 +813,16 @@ export default async function handler(req, res) {
 
         const prepared = prepareIncomingAdFingerprint(incomingAd);
 
-        const [{ data: lifecycleRow }, { data: candidatesRaw }] = await Promise.all([
-          supabase.from('swedpersiska_settings').select('value').eq('key', 'ad_lifecycle_settings').maybeSingle(),
-          supabase.rpc('get_duplicate_candidates', {
-            p_country: cleanCountry,
-            p_category: cleanCategory,
-            p_owner_hashes: prepared.contactHashes,
-            p_image_hashes: prepared.imageSignatures,
-            p_content_hash: prepared.contentHash,
-            p_exclude_ad_id: null,
-          }),
-        ]);
+        const { data: candidatesRaw } = await supabase.rpc('get_duplicate_candidates', {
+          p_country: cleanCountry,
+          p_category: cleanCategory,
+          p_owner_hashes: prepared.contactHashes,
+          p_image_hashes: prepared.imageSignatures,
+          p_content_hash: prepared.contentHash,
+          p_exclude_ad_id: null,
+        });
 
-        const lifecycleConfig = lifecycleRow?.value || {};
+        const lifecycleConfig = settingsMap.ad_lifecycle_settings || {};
         const candidates = Array.isArray(candidatesRaw) ? candidatesRaw : [];
         const dupResult = detectDuplicates(incomingAd, candidates, lifecycleConfig);
 
@@ -792,7 +902,7 @@ export default async function handler(req, res) {
               `${CANONICAL_ORIGIN}/?c=${encodeURIComponent(cleanCountry)}&cat=${encodeURIComponent(cleanCategory)}`,
               `${CANONICAL_ORIGIN}/`,
             ],
-            { origin: CANONICAL_ORIGIN }
+            { origin: CANONICAL_ORIGIN, timeoutMs: 1200 }
           ).catch(() => {});
         }
 
@@ -832,9 +942,22 @@ export default async function handler(req, res) {
       }
 
       if (action === 'owner_list_ads') {
-        const creds = Array.isArray(body.credentials) ? body.credentials.slice(0, 20) : [];
+        const rawCreds = Array.isArray(body.credentials) ? body.credentials.slice(0, 20) : [];
+        const seenRefs = new Set();
+        const creds = [];
+        for (const item of rawCreds) {
+          const ref = String(item?.reference_number || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 32);
+          const pin = String(item?.pin_code || '').trim().slice(0, 16);
+          if (ref && pin && !seenRefs.has(ref)) {
+            seenRefs.add(ref);
+            creds.push({ reference_number: ref, pin_code: pin });
+          }
+        }
         if (!checkSubRateLimit(req, { bucket: 'owner_list', maxAttempts: 40, windowMs: 15 * 60 * 1000, cost: Math.max(1, creds.length) })) {
           return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است.' });
+        }
+        if (creds.length === 0) {
+          return res.status(200).json({ ok: true, ads: [], count: 0 });
         }
         const { data, error } = await supabase.rpc('owner_list_ads', { p_credentials: creds });
         if (error) throw error;
@@ -903,21 +1026,39 @@ export default async function handler(req, res) {
 
         const cleanTitle = String(title || '').trim().slice(0, 160);
         const cleanDesc = String(description || '').trim().slice(0, 4000);
-        const modReason = checkProhibitedText({ title: cleanTitle, description: cleanDesc, area });
+        const cleanArea = area !== undefined ? String(area || '').trim().slice(0, 80) : undefined;
+        const cleanPhone = contact_phone !== undefined ? String(contact_phone || '').trim().slice(0, 40) : undefined;
+        const safePrice = parseSafePrice(price);
+
+        if (containsLinkInDescription(cleanDesc)) {
+          return res.status(400).json({ ok: false, error: 'لینک در توضیحات مجاز نیست. آدرس سایت را در بخش وبسایت بنویسید.' });
+        }
+
+        const modReason = checkProhibitedText({ title: cleanTitle, description: cleanDesc, area: cleanArea });
         if (modReason) {
           return res.status(400).json({ ok: false, error: modReason });
         }
 
-        // Verify ownership first & prevent editing an ad into an exact duplicate of another ad
-        const { data: verified, error: verifyErr } = await supabase.rpc('owner_list_ads', {
-          p_credentials: [{ reference_number: body.reference_number || '', pin_code }],
-        });
-        if (verifyErr) throw verifyErr;
-
-        let targetMeta = Array.isArray(verified?.ads) ? verified.ads.find((x) => x.id === id) : null;
-        if (!targetMeta && cleanTitle && cleanDesc) {
-          // If reference_number wasn't passed, rely on owner_update_ad PIN check; run duplicate check with fallback meta
-          targetMeta = { country: body.country || 'se', category: body.category || 'bostad', city: body.city || 'Stockholm' };
+        let targetMeta = null;
+        if (body.country && body.category && body.city && cleanTitle && cleanDesc) {
+          targetMeta = {
+            country: String(body.country).toLowerCase().slice(0, 10),
+            category: String(body.category).slice(0, 40),
+            city: String(body.city).slice(0, 80),
+            title: cleanTitle,
+            description: cleanDesc,
+          };
+        } else {
+          const { data: existingAd } = await supabase
+            .from('swedpersiska_ads')
+            .select('country, category, city, title, description')
+            .eq('id', id)
+            .maybeSingle();
+          targetMeta = existingAd || {
+            country: body.country || 'se',
+            category: body.category || 'bostad',
+            city: body.city || 'Stockholm',
+          };
         }
 
         const incomingUpdated = {
@@ -927,9 +1068,9 @@ export default async function handler(req, res) {
           category: targetMeta?.category || 'bostad',
           country: targetMeta?.country || 'se',
           city: targetMeta?.city || 'Stockholm',
-          area,
-          price,
-          contact_phone,
+          area: cleanArea,
+          price: safePrice,
+          contact_phone: cleanPhone,
         };
         const prepared = prepareIncomingAdFingerprint(incomingUpdated);
 
@@ -958,11 +1099,11 @@ export default async function handler(req, res) {
           p_pin_code: String(pin_code).trim(),
           p_updates: {
             title: cleanTitle,
-            price: price !== undefined && price !== '' && price !== null ? parseFloat(price) : null,
-            area: area !== undefined ? area : undefined,
+            price: safePrice,
+            area: cleanArea,
             description: cleanDesc,
             status: safeOwnerStatus,
-            contact_phone,
+            contact_phone: cleanPhone,
             normalized_title: prepared.titleNorm,
             normalized_text: prepared.normalizedText,
             content_hash: prepared.contentHash,
@@ -1007,6 +1148,9 @@ export default async function handler(req, res) {
       if (action === 'submit_website_order') {
         if (!checkSubRateLimit(req, { bucket: 'web_order', maxAttempts: 10 })) {
           return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است.' });
+        }
+        if (!HAS_SERVICE_ROLE) {
+          return res.status(503).json({ ok: false, error: 'تنظیمات امنیتی سرور تکمیل نشده است.' });
         }
         const validated = validateWebsiteOrderFields(body);
         if (!validated.ok) {
@@ -1058,16 +1202,20 @@ export default async function handler(req, res) {
           createdAt,
         };
 
-        await supabase.from('swedpersiska_settings').upsert({
+        const { error: upsertErr } = await supabase.from('swedpersiska_settings').upsert({
           key: 'seller_deployments',
           value: [newOrder, ...prev].slice(0, 500),
           updated_at: createdAt,
         });
+        if (upsertErr) throw upsertErr;
 
         return res.status(200).json({ ok: true, order: newOrder });
       }
 
       if (action === 'create_website_checkout') {
+        if (!checkSubRateLimit(req, { bucket: 'stripe_api', maxAttempts: 15, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌های پرداخت زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
         const validated = validateWebsiteOrderFields(body);
         if (!validated.ok) {
           return res.status(400).json({ ok: false, error: validated.error });
@@ -1103,6 +1251,12 @@ export default async function handler(req, res) {
       }
 
       if (action === 'verify_website_checkout') {
+        if (!checkSubRateLimit(req, { bucket: 'stripe_api', maxAttempts: 15, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
+        if (!HAS_SERVICE_ROLE) {
+          return res.status(503).json({ ok: false, error: 'تنظیمات امنیتی سرور تکمیل نشده است.' });
+        }
         const sessionId = String(body.sessionId || '').trim();
         if (!sessionId || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
           return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
@@ -1121,10 +1275,17 @@ export default async function handler(req, res) {
           .maybeSingle();
         const prev = Array.isArray(existingRow?.value) ? existingRow.value : [];
 
-        // Idempotency: return sanitized order if this session was already redeemed (never leak admin-populated credentials/notes)
+        // Idempotency: return sanitized order + manageCode/email if this session was already redeemed (never leak admin-populated credentials/notes)
         const existingOrder = prev.find((item) => item?.stripeSessionId === sessionId);
         if (existingOrder) {
-          return res.status(200).json({ ok: true, order: sanitizePublicSubscription(existingOrder) });
+          return res.status(200).json({
+            ok: true,
+            order: {
+              ...sanitizePublicSubscription(existingOrder),
+              manageCode: existingOrder.manageCode,
+              email: existingOrder.email,
+            },
+          });
         }
 
         const session = await retrieveStripeCheckoutSession(secretKey, sessionId);
@@ -1165,11 +1326,12 @@ export default async function handler(req, res) {
           createdAt,
         };
 
-        await supabase.from('swedpersiska_settings').upsert({
+        const { error: upsertErr } = await supabase.from('swedpersiska_settings').upsert({
           key: 'seller_deployments',
           value: [newOrder, ...prev].slice(0, 500),
           updated_at: createdAt,
         });
+        if (upsertErr) throw upsertErr;
 
         return res.status(200).json({ ok: true, order: newOrder });
       }
@@ -1180,6 +1342,9 @@ export default async function handler(req, res) {
             ok: false,
             error: 'تعداد درخواست‌های شما زیاد است. لطفاً چند دقیقه دیگر دوباره تلاش کنید.',
           });
+        }
+        if (!HAS_SERVICE_ROLE) {
+          return res.status(503).json({ ok: false, error: 'تنظیمات امنیتی سرور تکمیل نشده است.' });
         }
 
         const cleanCode = String(body.manageCode || '').replace(/\D/g, '').trim();
@@ -1237,11 +1402,12 @@ export default async function handler(req, res) {
               renewRequestedAt: new Date().toISOString(),
             };
             const nextList = list.map((x, i) => (i === idx ? updated : x));
-            await supabase.from('swedpersiska_settings').upsert({
+            const { error: upsertErr } = await supabase.from('swedpersiska_settings').upsert({
               key: 'seller_deployments',
               value: nextList,
               updated_at: new Date().toISOString(),
             });
+            if (upsertErr) throw upsertErr;
             return res.status(200).json({
               ok: true,
               subscription: sanitizePublicSubscription(updated),
@@ -1259,11 +1425,12 @@ export default async function handler(req, res) {
             renewRequestedAt: '',
           };
           const nextList = list.map((x, i) => (i === idx ? updated : x));
-          await supabase.from('swedpersiska_settings').upsert({
+          const { error: upsertErr } = await supabase.from('swedpersiska_settings').upsert({
             key: 'seller_deployments',
             value: nextList,
             updated_at: new Date().toISOString(),
           });
+          if (upsertErr) throw upsertErr;
           return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(updated) });
         }
 
@@ -1274,11 +1441,12 @@ export default async function handler(req, res) {
             cancelledAt: new Date().toISOString(),
           };
           const nextList = list.map((x, i) => (i === idx ? updated : x));
-          await supabase.from('swedpersiska_settings').upsert({
+          const { error: upsertErr } = await supabase.from('swedpersiska_settings').upsert({
             key: 'seller_deployments',
             value: nextList,
             updated_at: new Date().toISOString(),
           });
+          if (upsertErr) throw upsertErr;
           return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(updated) });
         }
 
@@ -1286,6 +1454,12 @@ export default async function handler(req, res) {
       }
 
       if (action === 'verify_website_renew') {
+        if (!checkSubRateLimit(req, { bucket: 'stripe_api', maxAttempts: 15, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
+        if (!HAS_SERVICE_ROLE) {
+          return res.status(503).json({ ok: false, error: 'تنظیمات امنیتی سرور تکمیل نشده است.' });
+        }
         const sessionId = String(body.sessionId || '').trim();
         if (!sessionId || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
           return res.status(400).json({ ok: false, error: 'شناسه پرداخت Stripe نامعتبر است.' });
@@ -1338,11 +1512,12 @@ export default async function handler(req, res) {
           renewRequestedAt: '',
         };
         const nextList = list.map((x, i) => (i === idx ? updated : x));
-        await supabase.from('swedpersiska_settings').upsert({
+        const { error: upsertErr } = await supabase.from('swedpersiska_settings').upsert({
           key: 'seller_deployments',
           value: nextList,
           updated_at: new Date().toISOString(),
         });
+        if (upsertErr) throw upsertErr;
 
         return res.status(200).json({ ok: true, subscription: sanitizePublicSubscription(updated) });
       }
@@ -1359,6 +1534,9 @@ export default async function handler(req, res) {
       }
 
       if (action === 'promote_ad') {
+        if (!checkSubRateLimit(req, { bucket: 'stripe_api', maxAttempts: 15, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
         if (!HAS_SERVICE_ROLE) {
           return res.status(503).json({ ok: false, error: 'تنظیمات امنیتی سرور پرداخت تکمیل نشده است.' });
         }
@@ -1476,6 +1654,9 @@ export default async function handler(req, res) {
       }
 
       if (action === 'verify_vip_checkout') {
+        if (!checkSubRateLimit(req, { bucket: 'stripe_api', maxAttempts: 15, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌ها زیاد است. لطفاً کمی بعد تلاش کنید.' });
+        }
         if (!HAS_SERVICE_ROLE) {
           return res.status(503).json({ ok: false, error: 'متغیر امنیتی SUPABASE_SERVICE_ROLE_KEY روی سرور تنظیم نشده است.' });
         }

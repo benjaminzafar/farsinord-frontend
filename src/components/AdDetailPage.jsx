@@ -519,18 +519,26 @@ export default function AdDetailPage({
                       )}
 
                       {/* Telegram */}
-                      {ad.contact_telegram && (
-                        <a
-                          href={/^https?:\/\//i.test(ad.contact_telegram.trim()) ? ad.contact_telegram.trim() : `https://t.me/${ad.contact_telegram.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="گفتگو در تلگرام"
-                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
-                        >
-                          <Send size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
-                          <span>تلگرام</span>
-                        </a>
-                      )}
+                      {ad.contact_telegram && (() => {
+                        const cleanTgHandle = ad.contact_telegram
+                          .trim()
+                          .replace(/^@+/, '')
+                          .replace(/^https?:\/\/(?:www\.)?(?:t\.me|telegram\.me)\//i, '')
+                          .replace(/[^a-zA-Z0-9_+]/g, '');
+                        if (!cleanTgHandle) return null;
+                        return (
+                          <a
+                            href={`https://t.me/${cleanTgHandle}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="گفتگو در تلگرام"
+                            className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
+                          >
+                            <Send size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
+                            <span>تلگرام</span>
+                          </a>
+                        );
+                      })()}
 
                       {/* Email */}
                       {ad.contact_email && (

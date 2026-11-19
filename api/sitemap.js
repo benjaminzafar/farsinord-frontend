@@ -17,6 +17,9 @@ const supabaseKey =
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const COUNTRY_ISO_MAP = new Map(SEO_COUNTRIES.map((c) => [c.id, c.iso || c.id.toUpperCase()]));
+const SITEMAP_CACHE_TTL_MS = 10 * 60 * 1000;
+const SITEMAP_DEGRADED_TTL_MS = 60 * 1000;
+const sitemapMemoryCache = new Map(); // cacheKey -> { xml, lastModDate, degraded, expiresAt }
 
 async function runWithAbortTimeout(buildQuery, ms = 4500) {
   const controller = new AbortController();
@@ -65,7 +68,8 @@ export default async function handler(req, res) {
 
   const baseUrl = CANONICAL_ORIGIN;
   const todayIso = new Date().toISOString().slice(0, 10);
-  const mode = String(req.query?.mode || '').trim().toLowerCase();
+  const rawMode = String(req.query?.mode || '').trim().toLowerCase();
+  const mode = rawMode === 'index' || rawMode === 'static' || rawMode === 'ads' ? rawMode : 'full';
 
   if (mode === 'index') {
     const indexXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -83,6 +87,15 @@ export default async function handler(req, res) {
     return sendXmlResponse(req, res, indexXml, { lastModDate: new Date(), degraded: false });
   }
 
+  const now = Date.now();
+  const cachedEntry = sitemapMemoryCache.get(mode);
+  if (cachedEntry && cachedEntry.expiresAt > now) {
+    return sendXmlResponse(req, res, cachedEntry.xml, {
+      lastModDate: cachedEntry.lastModDate,
+      degraded: cachedEntry.degraded,
+    });
+  }
+
   let countries = SEO_COUNTRIES.map((c) => ({ id: c.id, iso: c.iso }));
   const latestByCountry = new Map();
   const latestByCountryCategory = new Map();
@@ -90,6 +103,10 @@ export default async function handler(req, res) {
   let latestGlobalMod = '';
   let latestGlobalTs = 0;
   let degraded = false;
+  const selectColumns =
+    mode === 'static'
+      ? 'country, category, updated_at, sort_timestamp, created_at'
+      : 'id, reference_number, country, category, images, updated_at, sort_timestamp, created_at';
 
   try {
     const [settingsResult, adsResult] = await Promise.all([
@@ -109,7 +126,7 @@ export default async function handler(req, res) {
         (signal) =>
           supabase
             .from('swedpersiska_ads')
-            .select('id, reference_number, country, category, images, updated_at, sort_timestamp, created_at')
+            .select(selectColumns)
             .eq('status', 'active')
             .is('deleted_at', null)
             .order('sort_timestamp', { ascending: false })
@@ -144,11 +161,6 @@ export default async function handler(req, res) {
     const ads = adsResult?.data;
     if (Array.isArray(ads)) {
       for (const ad of ads) {
-        const slug = encodeURIComponent(ad.reference_number || ad.id);
-        const loc = `${baseUrl}/?ad=${slug}`;
-        if (seenAdLocs.has(loc)) continue;
-        seenAdLocs.add(loc);
-
         const rawTimestamp = ad.updated_at || ad.sort_timestamp || ad.created_at || '';
         const parsedTs = Date.parse(rawTimestamp);
         if (Number.isFinite(parsedTs) && parsedTs > latestGlobalTs) {
@@ -171,18 +183,25 @@ export default async function handler(req, res) {
           }
         }
 
-        const safeImages = (Array.isArray(ad.images) ? ad.images : [])
-          .map((img) => normalizePublicHttpUrl(img))
-          .filter(Boolean)
-          .slice(0, 3);
+        if (mode !== 'static') {
+          const slug = encodeURIComponent(ad.reference_number || ad.id);
+          const loc = `${baseUrl}/?ad=${slug}`;
+          if (seenAdLocs.has(loc)) continue;
+          seenAdLocs.add(loc);
 
-        adUrlEntries.push({
-          loc,
-          lastmod: mod,
-          changefreq: 'weekly',
-          priority: '0.7',
-          images: safeImages,
-        });
+          const safeImages = (Array.isArray(ad.images) ? ad.images : [])
+            .map((img) => normalizePublicHttpUrl(img))
+            .filter(Boolean)
+            .slice(0, 3);
+
+          adUrlEntries.push({
+            loc,
+            lastmod: mod,
+            changefreq: 'weekly',
+            priority: '0.7',
+            images: safeImages,
+          });
+        }
       }
     }
   } catch {
@@ -264,6 +283,13 @@ ${urls
   })
   .join('\n')}
 </urlset>`;
+
+  sitemapMemoryCache.set(mode, {
+    xml,
+    lastModDate,
+    degraded,
+    expiresAt: Date.now() + (degraded ? SITEMAP_DEGRADED_TTL_MS : SITEMAP_CACHE_TTL_MS),
+  });
 
   return sendXmlResponse(req, res, xml, { lastModDate, degraded });
 }

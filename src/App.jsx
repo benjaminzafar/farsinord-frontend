@@ -429,7 +429,9 @@ export default function App() {
             vipPrice: stripe.vipPrice,
             currency: stripe.currency,
             vipDurationDays: stripe.vipDurationDays,
-            vipBadgeText: stripe.vipBadgeText
+            vipBadgeText: stripe.vipBadgeText,
+            stripeReady: Boolean(stripe.stripeReady),
+            stripeKeyMatchesMode: Boolean(stripe.stripeKeyMatchesMode),
           });
         }
         if (settings.turnstile_settings) {
@@ -1228,13 +1230,20 @@ export default function App() {
         return pb - pa;
       });
     }
+    const tsMap = new Map();
+    const getSortTs = (ad) => {
+      let ts = tsMap.get(ad);
+      if (ts === undefined) {
+        ts = Date.parse(ad.sort_timestamp || ad.created_at || 0) || 0;
+        tsMap.set(ad, ts);
+      }
+      return ts;
+    };
     return copy.sort((a, b) => {
       const vA = isVip(a);
       const vB = isVip(b);
       if (vA !== vB) return vB ? 1 : -1;
-      const tA = Date.parse(a.sort_timestamp || a.created_at || 0) || 0;
-      const tB = Date.parse(b.sort_timestamp || b.created_at || 0) || 0;
-      return tB - tA;
+      return getSortTs(b) - getSortTs(a);
     });
   }, [filteredAds, sortBy, renderNow]);
 

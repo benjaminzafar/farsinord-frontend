@@ -12,6 +12,10 @@ function encodeRfc3986(str) {
   return encodeURIComponent(str).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 }
 
+const R2_CONFIG_TTL_MS = 3 * 60 * 1000;
+let cachedR2Config = null;
+let cachedR2ConfigAt = 0;
+
 export async function resolveR2Config(supabase) {
   if (
     process.env.R2_ACCOUNT_ID &&
@@ -30,6 +34,11 @@ export async function resolveR2Config(supabase) {
     };
   }
 
+  const now = Date.now();
+  if (cachedR2Config && now - cachedR2ConfigAt < R2_CONFIG_TTL_MS) {
+    return cachedR2Config;
+  }
+
   if (!supabase) return null;
   const { data } = await supabase
     .from('swedpersiska_settings')
@@ -42,10 +51,17 @@ export async function resolveR2Config(supabase) {
     return null;
   }
 
-  return {
+  const resolved = {
     ...val,
+    accountId: String(val.accountId).trim(),
+    accessKeyId: String(val.accessKeyId).trim(),
+    secretAccessKey: String(val.secretAccessKey).trim(),
+    bucketName: String(val.bucketName).trim(),
     publicUrl: String(val.publicUrl).trim().replace(/\/+$/, ''),
   };
+  cachedR2Config = resolved;
+  cachedR2ConfigAt = now;
+  return resolved;
 }
 
 const STRICT_AD_OBJECT_KEY_RE = /^ads\/\d+-[a-f0-9]{16}\.(jpg|png|webp|avif)$/i;
@@ -119,62 +135,63 @@ export async function deleteR2ObjectsForAd(supabase, imageUrls = [], excludeAdId
   const failedKeys = [];
   let skippedExternal = 0;
 
-  for (const url of urls) {
-    const objectKey = extractOwnedObjectKey(url, r2.publicUrl);
-    if (!objectKey) {
-      skippedExternal++;
-      continue;
-    }
+  await Promise.all(
+    urls.map(async (url) => {
+      const objectKey = extractOwnedObjectKey(url, r2.publicUrl);
+      if (!objectKey) {
+        skippedExternal++;
+        return;
+      }
 
-    const canonicalUrl = `${r2.publicUrl}/${objectKey}`;
+      const canonicalUrl = `${r2.publicUrl}/${objectKey}`;
 
-    // Never delete if another ad still references either the canonical URL or raw URL
-    if (supabase && excludeAdId) {
-      try {
-        const urlsToCheck = canonicalUrl === url ? [canonicalUrl] : [canonicalUrl, url];
-        let stillReferenced = false;
-        for (const checkUrl of urlsToCheck) {
-          const { count } = await supabase
-            .from('swedpersiska_ads')
-            .select('id', { count: 'exact', head: true })
-            .neq('id', excludeAdId)
-            .contains('images', [checkUrl]);
-          if ((count || 0) > 0) {
-            stillReferenced = true;
-            break;
+      // Never delete if another ad still references either the canonical URL or raw URL
+      if (supabase && excludeAdId) {
+        try {
+          const urlsToCheck = canonicalUrl === url ? [canonicalUrl] : [canonicalUrl, url];
+          const refChecks = await Promise.all(
+            urlsToCheck.map((checkUrl) =>
+              supabase
+                .from('swedpersiska_ads')
+                .select('id', { count: 'exact', head: true })
+                .neq('id', excludeAdId)
+                .contains('images', [checkUrl])
+            )
+          );
+          if (refChecks.some((r) => (r?.count || 0) > 0)) {
+            return;
           }
+        } catch {
+          // Fail safe: skip deletion if we cannot verify shared references
+          return;
         }
-        if (stillReferenced) continue;
-      } catch {
-        // Fail safe: skip deletion if we cannot verify shared references
-        continue;
       }
-    }
 
-    try {
-      const { endpoint, headers } = createR2SignedDeleteHeaders({
-        accountId: r2.accountId,
-        accessKeyId: r2.accessKeyId,
-        secretAccessKey: r2.secretAccessKey,
-        bucketName: r2.bucketName,
-        objectKey,
-      });
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 8000);
       try {
-        const delRes = await fetch(endpoint, { method: 'DELETE', headers, signal: ctrl.signal });
-        if (delRes.ok || delRes.status === 204 || delRes.status === 404) {
-          deletedKeys.push(objectKey);
-        } else {
-          failedKeys.push(objectKey);
+        const { endpoint, headers } = createR2SignedDeleteHeaders({
+          accountId: r2.accountId,
+          accessKeyId: r2.accessKeyId,
+          secretAccessKey: r2.secretAccessKey,
+          bucketName: r2.bucketName,
+          objectKey,
+        });
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        try {
+          const delRes = await fetch(endpoint, { method: 'DELETE', headers, signal: ctrl.signal });
+          if (delRes.ok || delRes.status === 204 || delRes.status === 404) {
+            deletedKeys.push(objectKey);
+          } else {
+            failedKeys.push(objectKey);
+          }
+        } finally {
+          clearTimeout(timer);
         }
-      } finally {
-        clearTimeout(timer);
+      } catch {
+        failedKeys.push(objectKey);
       }
-    } catch {
-      failedKeys.push(objectKey);
-    }
-  }
+    })
+  );
 
   return { deletedKeys, failedKeys, skippedExternal };
 }

@@ -15,6 +15,8 @@ const DEFAULT_ORIGINS = [
   'https://linksho.eu',
   'https://www.swedpersiska.se',
   'https://swedpersiska.se',
+  'https://swedpersiska.vercel.app',
+  'https://farsinord.vercel.app',
   'https://farsinord-frontend.vercel.app',
   'https://farsinord-admin.vercel.app',
 ];
@@ -43,16 +45,15 @@ function setCorsHeaders(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
 }
 
 const uploadRateMap = new Map();
 function checkUploadRateLimit(req) {
-  const ip = String(
-    req.headers?.['x-real-ip'] ||
-      req.headers?.['x-vercel-forwarded-for'] ||
-      req.headers?.['x-forwarded-for']?.split(',').pop() ||
-      'unknown'
-  ).trim();
+  const realIp = req?.headers?.['x-real-ip'];
+  const vercelFwd = req?.headers?.['x-vercel-forwarded-for']?.split(',').pop()?.trim();
+  const fwd = req?.headers?.['x-forwarded-for']?.split(',').pop()?.trim();
+  const ip = String(realIp || vercelFwd || fwd || 'unknown').trim();
   const now = Date.now();
   const windowMs = 10 * 60 * 1000;
   const maxReqs = 24;
@@ -199,8 +200,18 @@ async function resolveR2Config() {
     .eq('key', 'r2_settings')
     .maybeSingle();
 
-  if (!data || !data.value || !data.value.enabled) return null;
-  cachedR2Config = data.value;
+  const val = data?.value;
+  if (!val?.enabled || !val.accountId || !val.accessKeyId || !val.secretAccessKey || !val.bucketName || !val.publicUrl) {
+    return null;
+  }
+  cachedR2Config = {
+    ...val,
+    accountId: String(val.accountId).trim(),
+    accessKeyId: String(val.accessKeyId).trim(),
+    secretAccessKey: String(val.secretAccessKey).trim(),
+    bucketName: String(val.bucketName).trim(),
+    publicUrl: String(val.publicUrl).trim().replace(/\/+$/, ''),
+  };
   cachedR2At = Date.now();
   return cachedR2Config;
 }

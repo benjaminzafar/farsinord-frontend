@@ -1,4 +1,12 @@
-// Fast, zero-lag Google-style smart search with Persian/Arabic normalization & typo tolerance
+// Fast, zero-lag Google-style smart search with Persian/Arabic normalization, WeakMap token cache & typo tolerance
+
+const NON_WORD_RE = /[^a-z0-9\u0600-\u06FF]+/;
+const adSearchCache = new WeakMap();
+const entitySearchCache = new WeakMap();
+
+let lastRawQuery = null;
+let lastNormQuery = '';
+let lastQueryTokens = [];
 
 export function normalizeSearchText(input) {
   if (!input) return '';
@@ -13,14 +21,67 @@ export function normalizeSearchText(input) {
     .trim();
 }
 
+function getParsedQuery(rawQuery) {
+  if (rawQuery === lastRawQuery) {
+    return { normQuery: lastNormQuery, queryTokens: lastQueryTokens };
+  }
+  const normQuery = normalizeSearchText(rawQuery);
+  const queryTokens = normQuery ? normQuery.split(' ').filter(Boolean) : [];
+  lastRawQuery = rawQuery;
+  lastNormQuery = normQuery;
+  lastQueryTokens = queryTokens;
+  return { normQuery, queryTokens };
+}
+
+function getAdSearchIndex(ad) {
+  if (!ad || typeof ad !== 'object') {
+    return { haystack: '', haystackWords: [], rawTitle: '', normTitle: '', titleWords: [] };
+  }
+  const stamp = `${ad.updated_at || ''}|${ad.sort_timestamp || ''}|${ad.title || ''}|${ad.description?.length || 0}`;
+  const cached = adSearchCache.get(ad);
+  if (cached && cached.stamp === stamp) return cached;
+
+  const haystack = normalizeSearchText(
+    [ad.title, ad.title_fa, ad.description, ad.city, ad.area, ad.reference_number].filter(Boolean).join(' ')
+  );
+  const haystackWords = haystack ? haystack.split(NON_WORD_RE).filter(Boolean) : [];
+  const rawTitle = (ad.title_fa || ad.title || '').trim();
+  const normTitle = normalizeSearchText(rawTitle);
+  const titleWords = normTitle ? normTitle.split(NON_WORD_RE).filter(Boolean) : [];
+
+  const entry = { stamp, haystack, haystackWords, rawTitle, normTitle, titleWords };
+  adSearchCache.set(ad, entry);
+  return entry;
+}
+
+function getEntitySearchIndex(entity, textBuilder) {
+  if (!entity || typeof entity !== 'object') {
+    const norm = normalizeSearchText(textBuilder());
+    return { norm, words: norm ? norm.split(' ').filter(Boolean) : [] };
+  }
+  const cached = entitySearchCache.get(entity);
+  if (cached) return cached;
+  const norm = normalizeSearchText(textBuilder());
+  const entry = { norm, words: norm ? norm.split(' ').filter(Boolean) : [] };
+  entitySearchCache.set(entity, entry);
+  return entry;
+}
+
+let dpPrev = new Int32Array(128);
+let dpCurr = new Int32Array(128);
+
 function boundedEditDistance(a, b, maxDist) {
   const la = a.length;
   const lb = b.length;
   if (Math.abs(la - lb) > maxDist) return maxDist + 1;
   if (a === b) return 0;
 
-  let prev = new Array(lb + 1);
-  let curr = new Array(lb + 1);
+  if (lb + 1 > dpPrev.length) {
+    dpPrev = new Int32Array(lb + 32);
+    dpCurr = new Int32Array(lb + 32);
+  }
+  let prev = dpPrev;
+  let curr = dpCurr;
   for (let j = 0; j <= lb; j++) prev[j] = j;
 
   for (let i = 1; i <= la; i++) {
@@ -63,26 +124,19 @@ function matchesToken(token, haystack, haystackWords) {
 }
 
 export function matchesSmartSearch(ad, rawQuery) {
-  const normQuery = normalizeSearchText(rawQuery);
+  const { normQuery, queryTokens } = getParsedQuery(rawQuery);
   if (!normQuery) return true;
 
-  const haystack = normalizeSearchText(
-    [ad.title, ad.title_fa, ad.description, ad.city, ad.area, ad.reference_number].filter(Boolean).join(' ')
-  );
-
+  const { haystack, haystackWords } = getAdSearchIndex(ad);
   if (haystack.includes(normQuery)) return true;
-
-  const queryTokens = normQuery.split(' ').filter(Boolean);
-  const haystackWords = haystack.split(/[^a-z0-9\u0600-\u06FF]+/).filter(Boolean);
 
   return queryTokens.every((tok) => matchesToken(tok, haystack, haystackWords));
 }
 
 export function getSearchSuggestions(rawQuery, { ads = [], cities = [], categories = [] } = {}) {
-  const normQuery = normalizeSearchText(rawQuery);
+  const { normQuery, queryTokens } = getParsedQuery(rawQuery);
   if (!normQuery || normQuery.length < 1) return [];
 
-  const queryTokens = normQuery.split(' ').filter(Boolean);
   const seen = new Set();
   const results = [];
 
@@ -96,8 +150,7 @@ export function getSearchSuggestions(rawQuery, { ads = [], cities = [], categori
   // 1. Categories
   for (const cat of categories) {
     if (cat.id === 'all') continue;
-    const normCat = normalizeSearchText(`${cat.fa} ${cat.sv || ''}`);
-    const words = normCat.split(' ');
+    const { norm: normCat, words } = getEntitySearchIndex(cat, () => `${cat.fa} ${cat.sv || ''}`);
     if (queryTokens.every((t) => matchesToken(t, normCat, words))) {
       pushUnique(cat.fa, 'دسته‌بندی');
     }
@@ -106,8 +159,7 @@ export function getSearchSuggestions(rawQuery, { ads = [], cities = [], categori
   // 2. Cities
   for (const city of cities) {
     if (city.id === 'all') continue;
-    const normCity = normalizeSearchText(`${city.fa} ${city.id}`);
-    const words = normCity.split(' ');
+    const { norm: normCity, words } = getEntitySearchIndex(city, () => `${city.fa} ${city.id}`);
     if (queryTokens.every((t) => matchesToken(t, normCity, words))) {
       pushUnique(city.fa, 'شهر');
     }
@@ -116,12 +168,10 @@ export function getSearchSuggestions(rawQuery, { ads = [], cities = [], categori
   // 3. Ad titles (prefix matches first, then fuzzy matches)
   for (const ad of ads) {
     if (results.length >= 6) break;
-    const title = (ad.title_fa || ad.title || '').trim();
-    if (!title) continue;
-    const normTitle = normalizeSearchText(title);
-    const words = normTitle.split(/[^a-z0-9\u0600-\u06FF]+/).filter(Boolean);
-    if (queryTokens.every((t) => matchesToken(t, normTitle, words))) {
-      pushUnique(title, 'آگهی');
+    const { rawTitle, normTitle, titleWords } = getAdSearchIndex(ad);
+    if (!rawTitle) continue;
+    if (queryTokens.every((t) => matchesToken(t, normTitle, titleWords))) {
+      pushUnique(rawTitle, 'آگهی');
     }
   }
 
