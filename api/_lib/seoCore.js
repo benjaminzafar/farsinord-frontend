@@ -100,6 +100,7 @@ export function escapeHtml(str) {
 
 export function escapeXml(str) {
   return String(str ?? '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -115,14 +116,21 @@ export function normalizeCanonicalCountry(rawCountry) {
   return null;
 }
 
-export function isValidPublicHttpUrl(rawUrl) {
-  if (!rawUrl || typeof rawUrl !== 'string') return false;
+export function normalizePublicHttpUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const cleaned = rawUrl.replace(/[\x00-\x1F\x7F]/g, '').trim();
+  if (!cleaned) return null;
   try {
-    const parsed = new URL(rawUrl.trim());
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    const parsed = new URL(cleaned);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    return parsed.toString();
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function isValidPublicHttpUrl(rawUrl) {
+  return Boolean(normalizePublicHttpUrl(rawUrl));
 }
 
 export function toAbsoluteMediaUrl(rawUrl, origin = CANONICAL_ORIGIN) {
@@ -130,7 +138,8 @@ export function toAbsoluteMediaUrl(rawUrl, origin = CANONICAL_ORIGIN) {
   const trimmed = String(rawUrl || '').trim();
   if (!trimmed) return `${base}/images/cities/stockholm.jpg`;
   if (trimmed.startsWith('/')) return `${base}${trimmed}`;
-  if (isValidPublicHttpUrl(trimmed)) return trimmed;
+  const normalized = normalizePublicHttpUrl(trimmed);
+  if (normalized) return normalized;
   return `${base}/images/cities/stockholm.jpg`;
 }
 
@@ -692,13 +701,16 @@ export function renderCrawlerHtml({
         canonicalUrl: effectiveCanonical,
       });
 
-  const hreflangTags = [
-    ...(countries || SEO_COUNTRIES).map(
-      (c) =>
-        `  <link rel="alternate" hreflang="fa-${escapeHtml(String(c.iso || c.id).toUpperCase())}" href="${escapeHtml(`${base}/?c=${encodeURIComponent(c.id)}`)}" />`
-    ),
-    `  <link rel="alternate" hreflang="x-default" href="${escapeHtml(`${base}/`)}" />`,
-  ].join('\n');
+  const showCountryHreflang = !activeAd && !categoryObj && pageMode === 'feed' && !isNotFound;
+  const hreflangTags = showCountryHreflang
+    ? [
+        ...(countries || SEO_COUNTRIES).map(
+          (c) =>
+            `  <link rel="alternate" hreflang="fa-${escapeHtml(String(c.iso || c.id).toUpperCase())}" href="${escapeHtml(`${base}/?c=${encodeURIComponent(c.id)}`)}" />`
+        ),
+        `  <link rel="alternate" hreflang="x-default" href="${escapeHtml(`${base}/`)}" />`,
+      ].join('\n')
+    : '';
 
   const safeJsonLd = jsonLd
     ? JSON.stringify(jsonLd).replace(/</g, '\\u003c')

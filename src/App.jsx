@@ -573,21 +573,23 @@ export default function App() {
     }
     canonicalEl.setAttribute('href', canonicalUrl);
 
-    // Localized hreflang alternate links for all active European countries + x-default
+    // Localized hreflang alternate links only on homepage / country landing views (avoid invalid non-reciprocal tags on ad/subpages)
     const countriesList = (portalCountries && portalCountries.length > 0) ? portalCountries : COUNTRIES;
-    document.querySelectorAll('link[rel="alternate"][data-linksho-hreflang="1"]').forEach((el) => el.remove());
-    const appendHreflang = (hreflang, href) => {
-      const linkEl = document.createElement('link');
-      linkEl.setAttribute('rel', 'alternate');
-      linkEl.setAttribute('hreflang', hreflang);
-      linkEl.setAttribute('href', href);
-      linkEl.setAttribute('data-linksho-hreflang', '1');
-      document.head.appendChild(linkEl);
-    };
-    countriesList.forEach((c) => {
-      appendHreflang(`fa-${String(c.id || 'se').toUpperCase()}`, `${origin}/?c=${c.id}`);
-    });
-    appendHreflang('x-default', `${origin}/`);
+    document.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => el.remove());
+    if (!activeAdDetail && !catObj && pageMode === 'feed') {
+      const appendHreflang = (hreflang, href) => {
+        const linkEl = document.createElement('link');
+        linkEl.setAttribute('rel', 'alternate');
+        linkEl.setAttribute('hreflang', hreflang);
+        linkEl.setAttribute('href', href);
+        linkEl.setAttribute('data-linksho-hreflang', '1');
+        document.head.appendChild(linkEl);
+      };
+      countriesList.forEach((c) => {
+        appendHreflang(`fa-${String(c.iso || c.id || 'se').toUpperCase()}`, `${origin}/?c=${c.id}`);
+      });
+      appendHreflang('x-default', `${origin}/`);
+    }
 
     // Rich @graph structured data for Google & AI search engines
     let ldEl = document.getElementById('linksho-dynamic-ld');

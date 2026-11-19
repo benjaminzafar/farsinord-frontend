@@ -5,6 +5,8 @@ import {
   CANONICAL_ORIGIN,
   buildCanonicalUrl,
   buildSeoJsonLdGraph,
+  escapeXml,
+  normalizePublicHttpUrl,
   renderCrawlerHtml,
   renderLlmsTxt,
   renderLlmsFullTxt,
@@ -25,6 +27,7 @@ test('vercel.json bot rewrites compile as pure JS RegExp and route search/AI bot
 
   const botUas = [
     'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    'Mozilla/5.0 (compatible; Google-InspectionTool/1.0;)',
     'Googlebot-Image/1.0',
     'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
     'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot',
@@ -214,8 +217,11 @@ test('api/seo.js selects only valid swedpersiska_ads columns and sitemap.js supp
   await sitemapHandler({ method: 'GET', query: { mode: 'index' } }, resIndex);
   assert.equal(resIndex.statusCode, 200);
   assert.equal(resIndex.headers['content-type'], 'application/xml; charset=utf-8');
+  assert.ok(resIndex.headers['last-modified'], 'Expected Last-Modified header');
+  assert.ok(Number(resIndex.headers['content-length']) > 100, 'Expected Content-Length header');
   assert.ok(resIndex.body.includes('<sitemapindex'));
-  assert.ok(resIndex.body.includes(`${CANONICAL_ORIGIN}/sitemap.xml`));
+  assert.ok(resIndex.body.includes(`${CANONICAL_ORIGIN}/sitemap-static.xml`));
+  assert.ok(resIndex.body.includes(`${CANONICAL_ORIGIN}/sitemap-ads.xml`));
 
   const resHead = makeRes();
   await sitemapHandler({ method: 'HEAD', query: { mode: 'index' } }, resHead);
@@ -226,4 +232,9 @@ test('api/seo.js selects only valid swedpersiska_ads columns and sitemap.js supp
   const resPost = makeRes();
   await sitemapHandler({ method: 'POST', query: {} }, resPost);
   assert.equal(resPost.statusCode, 405);
+
+  assert.equal(vercelConfig.cleanUrls, undefined, 'cleanUrls must not break /index.html SPA rewrite');
+  assert.equal(escapeXml('hello\u0000\u0008<world>&"x"'), 'hello&lt;world&gt;&amp;&quot;x&quot;');
+  assert.equal(normalizePublicHttpUrl('  https://cdn.linksho.eu/my photo.jpg  '), 'https://cdn.linksho.eu/my%20photo.jpg');
+  assert.equal(normalizePublicHttpUrl('javascript:alert(1)'), null);
 });

@@ -1,91 +1,117 @@
 User-agent: Googlebot
 Allow: /
+Allow: /api/public
 Allow: /sitemap.xml
+Allow: /sitemap-index.xml
+Allow: /sitemap-static.xml
+Allow: /sitemap-ads.xml
 Allow: /feed.xml
 Disallow: /api/
 
 User-agent: Google-Extended
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: Bingbot
 Allow: /
+Allow: /api/public
 Allow: /sitemap.xml
+Allow: /sitemap-index.xml
 Allow: /feed.xml
 Disallow: /api/
 
 User-agent: OAI-SearchBot
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: ChatGPT-User
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: GPTBot
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: PerplexityBot
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: Perplexity-User
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: ClaudeBot
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: Claude-Web
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: Applebot
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /sitemap.xml
+Allow: /sitemap-index.xml
 Disallow: /api/
 
 User-agent: Applebot-Extended
 Allow: /
+Allow: /api/public
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /api/
 
 User-agent: Yandex
 Allow: /
+Allow: /api/public
 Allow: /sitemap.xml
+Allow: /sitemap-index.xml
 Disallow: /api/
 
 User-agent: DuckDuckBot
 Allow: /
+Allow: /api/public
 Allow: /sitemap.xml
+Allow: /sitemap-index.xml
 Disallow: /api/
 
 User-agent: *
 Allow: /
+Allow: /api/public
 Allow: /sitemap.xml
+Allow: /sitemap-index.xml
+Allow: /sitemap-static.xml
+Allow: /sitemap-ads.xml
 Allow: /llms.txt
 Allow: /llms-full.txt
 Allow: /feed.xml
 Disallow: /api/
 
+Sitemap: https://www.linksho.eu/sitemap-index.xml
 Sitemap: https://www.linksho.eu/sitemap.xml

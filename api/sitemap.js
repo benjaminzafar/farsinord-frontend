@@ -4,8 +4,8 @@ import {
   SEO_COUNTRIES,
   SEO_CATEGORIES,
   escapeXml,
-  isValidPublicHttpUrl,
   normalizeCanonicalCountry,
+  normalizePublicHttpUrl,
 } from './_lib/seoCore.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://bezbnymjcnmazdonfzky.supabase.co';
@@ -16,14 +16,45 @@ const supabaseKey =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlemJueW1qY25tYXpkb25memt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2OTM1NjksImV4cCI6MjExMDI2OTU2OX0.ylsHBAZ1zo1z_aKpHx7hgl-yZu2yt2puFNhR8jBm6S4';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-function withTimeout(promise, ms = 4500) {
-  let timer;
-  return Promise.race([
-    Promise.resolve(promise),
-    new Promise((resolve) => {
-      timer = setTimeout(() => resolve({ data: null, timedOut: true }), ms);
-    }),
-  ]).finally(() => clearTimeout(timer));
+const COUNTRY_ISO_MAP = new Map(SEO_COUNTRIES.map((c) => [c.id, c.iso || c.id.toUpperCase()]));
+
+async function runWithAbortTimeout(buildQuery, ms = 4500) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const query = buildQuery(controller.signal);
+    const result = await query;
+    return { data: result?.data ?? null, error: result?.error ?? null, timedOut: false };
+  } catch (err) {
+    const timedOut = err?.name === 'AbortError' || controller.signal.aborted;
+    return { data: null, error: err || new Error('Query failed'), timedOut };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function sendXmlResponse(req, res, xml, { lastModDate, degraded = false } = {}) {
+  const byteLength = Buffer.byteLength(xml, 'utf8');
+  const lastModHttp = (lastModDate instanceof Date && !Number.isNaN(lastModDate.getTime())
+    ? lastModDate
+    : new Date()
+  ).toUTCString();
+
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.setHeader('Content-Length', String(byteLength));
+  res.setHeader('Last-Modified', lastModHttp);
+  res.setHeader(
+    'Cache-Control',
+    degraded
+      ? 'public, max-age=60, s-maxage=60'
+      : 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400'
+  );
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  if (req.method === 'HEAD') {
+    return res.status(200).end();
+  }
+  return res.status(200).send(xml);
 }
 
 export default async function handler(req, res) {
@@ -40,72 +71,96 @@ export default async function handler(req, res) {
     const indexXml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>${escapeXml(`${baseUrl}/sitemap.xml`)}</loc>
+    <loc>${escapeXml(`${baseUrl}/sitemap-static.xml`)}</loc>
+    <lastmod>${todayIso}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${escapeXml(`${baseUrl}/sitemap-ads.xml`)}</loc>
     <lastmod>${todayIso}</lastmod>
   </sitemap>
 </sitemapindex>`;
 
-    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    if (req.method === 'HEAD') {
-      res.setHeader('Content-Length', String(Buffer.byteLength(indexXml, 'utf8')));
-      return res.status(200).end();
-    }
-    return res.status(200).send(indexXml);
+    return sendXmlResponse(req, res, indexXml, { lastModDate: new Date(), degraded: false });
   }
 
-  let countryIds = SEO_COUNTRIES.map((c) => c.id);
+  let countries = SEO_COUNTRIES.map((c) => ({ id: c.id, iso: c.iso }));
   const latestByCountry = new Map();
   const latestByCountryCategory = new Map();
   const adUrlEntries = [];
+  let latestGlobalMod = '';
+  let latestGlobalTs = 0;
+  let degraded = false;
 
   try {
     const [settingsResult, adsResult] = await Promise.all([
-      withTimeout(
-        supabase
-          .from('swedpersiska_settings')
-          .select('value')
-          .eq('key', 'portal_countries')
-          .maybeSingle(),
+      mode === 'ads'
+        ? Promise.resolve({ data: null, error: null, timedOut: false })
+        : runWithAbortTimeout(
+            (signal) =>
+              supabase
+                .from('swedpersiska_settings')
+                .select('value')
+                .eq('key', 'portal_countries')
+                .abortSignal(signal)
+                .maybeSingle(),
+            4500
+          ),
+      runWithAbortTimeout(
+        (signal) =>
+          supabase
+            .from('swedpersiska_ads')
+            .select('id, reference_number, country, category, images, updated_at, sort_timestamp, created_at')
+            .eq('status', 'active')
+            .is('deleted_at', null)
+            .order('sort_timestamp', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(2500)
+            .abortSignal(signal),
         4500
-      ).catch(() => ({ data: null })),
-      withTimeout(
-        supabase
-          .from('swedpersiska_ads')
-          .select('id, reference_number, country, category, images, updated_at, sort_timestamp, created_at')
-          .eq('status', 'active')
-          .is('deleted_at', null)
-          .order('sort_timestamp', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(2500),
-        4500
-      ).catch(() => ({ data: null })),
+      ),
     ]);
+
+    if (adsResult.error || adsResult.timedOut) {
+      degraded = true;
+    }
 
     const settingsRow = settingsResult?.data;
     if (Array.isArray(settingsRow?.value) && settingsRow.value.length > 0) {
-      const enabledMap = new Map(SEO_COUNTRIES.map((c) => [c.id, true]));
+      const enabledMap = new Map(SEO_COUNTRIES.map((c) => [c.id, { id: c.id, iso: c.iso, enabled: true }]));
       for (const item of settingsRow.value) {
-        if (!item?.id) continue;
-        enabledMap.set(item.id, item.enabled !== false);
+        const cid = normalizeCanonicalCountry(item?.id);
+        if (!cid) continue;
+        const isoCandidate = String(item?.iso || COUNTRY_ISO_MAP.get(cid) || '').trim().toUpperCase();
+        const iso = /^[A-Z]{2}$/.test(isoCandidate) ? isoCandidate : (COUNTRY_ISO_MAP.get(cid) || null);
+        enabledMap.set(cid, { id: cid, iso, enabled: item.enabled !== false });
       }
-      const enabledIds = Array.from(enabledMap.entries())
-        .filter(([, enabled]) => enabled)
-        .map(([id]) => id);
-      if (enabledIds.length > 0) {
-        countryIds = enabledIds;
+      const enabledList = Array.from(enabledMap.values()).filter((c) => c.enabled);
+      if (enabledList.length > 0) {
+        countries = enabledList.map(({ id, iso }) => ({ id, iso }));
       }
     }
 
+    const seenAdLocs = new Set();
     const ads = adsResult?.data;
     if (Array.isArray(ads)) {
       for (const ad of ads) {
         const slug = encodeURIComponent(ad.reference_number || ad.id);
-        const rawMod = String(ad.updated_at || ad.sort_timestamp || ad.created_at || todayIso).slice(0, 10);
-        const mod = /^\d{4}-\d{2}-\d{2}$/.test(rawMod) ? rawMod : todayIso;
-        const cid = normalizeCanonicalCountry(ad.country) || 'se';
+        const loc = `${baseUrl}/?ad=${slug}`;
+        if (seenAdLocs.has(loc)) continue;
+        seenAdLocs.add(loc);
 
+        const rawTimestamp = ad.updated_at || ad.sort_timestamp || ad.created_at || '';
+        const parsedTs = Date.parse(rawTimestamp);
+        if (Number.isFinite(parsedTs) && parsedTs > latestGlobalTs) {
+          latestGlobalTs = parsedTs;
+        }
+        const rawMod = String(rawTimestamp || todayIso).slice(0, 10);
+        const mod = /^\d{4}-\d{2}-\d{2}$/.test(rawMod) ? rawMod : todayIso;
+        if (!latestGlobalMod || mod > latestGlobalMod) {
+          latestGlobalMod = mod;
+        }
+
+        const cid = normalizeCanonicalCountry(ad.country) || 'se';
         if (!latestByCountry.has(cid) || mod > latestByCountry.get(cid)) {
           latestByCountry.set(cid, mod);
         }
@@ -117,11 +172,12 @@ export default async function handler(req, res) {
         }
 
         const safeImages = (Array.isArray(ad.images) ? ad.images : [])
-          .filter((img) => isValidPublicHttpUrl(img))
+          .map((img) => normalizePublicHttpUrl(img))
+          .filter(Boolean)
           .slice(0, 3);
 
         adUrlEntries.push({
-          loc: `${baseUrl}/?ad=${slug}`,
+          loc,
           lastmod: mod,
           changefreq: 'weekly',
           priority: '0.7',
@@ -129,51 +185,59 @@ export default async function handler(req, res) {
         });
       }
     }
-  } catch {}
-
-  const urls = [
-    { loc: `${baseUrl}/`, lastmod: todayIso, changefreq: 'hourly', priority: '1.0', alternates: true },
-    { loc: `${baseUrl}/?page=podcast`, lastmod: todayIso, changefreq: 'daily', priority: '0.8' },
-    { loc: `${baseUrl}/?page=website-builder`, lastmod: todayIso, changefreq: 'weekly', priority: '0.9' },
-  ];
-
-  for (const cid of countryIds) {
-    urls.push({
-      loc: `${baseUrl}/?c=${cid}`,
-      lastmod: latestByCountry.get(cid) || todayIso,
-      changefreq: 'daily',
-      priority: '0.9',
-      alternates: true,
-    });
+  } catch {
+    degraded = true;
   }
 
-  for (const cat of SEO_CATEGORIES) {
-    urls.push({
-      loc: `${baseUrl}/?cat=${cat.id}`,
-      lastmod: todayIso,
-      changefreq: 'daily',
-      priority: '0.8',
-    });
-  }
+  const effectiveLastMod = latestGlobalMod || todayIso;
+  const lastModDate = latestGlobalTs > 0 ? new Date(latestGlobalTs) : new Date();
 
-  for (const cid of countryIds) {
-    for (const cat of SEO_CATEGORIES) {
-      urls.push({
-        loc: `${baseUrl}/?c=${cid}&cat=${cat.id}`,
-        lastmod: latestByCountryCategory.get(`${cid}|${cat.id}`) || latestByCountry.get(cid) || todayIso,
+  const seenLocs = new Set();
+  const urls = [];
+  const pushUnique = (entry) => {
+    if (!entry?.loc || seenLocs.has(entry.loc)) return;
+    seenLocs.add(entry.loc);
+    urls.push(entry);
+  };
+
+  if (mode !== 'ads') {
+    pushUnique({ loc: `${baseUrl}/`, lastmod: effectiveLastMod, changefreq: 'hourly', priority: '1.0', alternates: true });
+    pushUnique({ loc: `${baseUrl}/?page=podcast`, lastmod: effectiveLastMod, changefreq: 'daily', priority: '0.8' });
+    pushUnique({ loc: `${baseUrl}/?page=website-builder`, lastmod: effectiveLastMod, changefreq: 'weekly', priority: '0.9' });
+
+    for (const c of countries) {
+      pushUnique({
+        loc: `${baseUrl}/?c=${encodeURIComponent(c.id)}`,
+        lastmod: latestByCountry.get(c.id) || effectiveLastMod,
         changefreq: 'daily',
-        priority: '0.8',
+        priority: '0.9',
+        alternates: true,
       });
+    }
+
+    for (const c of countries) {
+      for (const cat of SEO_CATEGORIES) {
+        pushUnique({
+          loc: `${baseUrl}/?c=${encodeURIComponent(c.id)}&cat=${encodeURIComponent(cat.id)}`,
+          lastmod: latestByCountryCategory.get(`${c.id}|${cat.id}`) || latestByCountry.get(c.id) || effectiveLastMod,
+          changefreq: 'daily',
+          priority: '0.8',
+        });
+      }
     }
   }
 
-  urls.push(...adUrlEntries);
+  for (const adEntry of adUrlEntries) {
+    pushUnique(adEntry);
+  }
 
   const hreflangLinks = [
-    ...countryIds.map(
-      (cid) =>
-        `    <xhtml:link rel="alternate" hreflang="fa-${cid.toUpperCase()}" href="${escapeXml(`${baseUrl}/?c=${cid}`)}" />`
-    ),
+    ...countries
+      .filter((c) => c.iso && /^[A-Z]{2}$/.test(c.iso))
+      .map(
+        (c) =>
+          `    <xhtml:link rel="alternate" hreflang="fa-${c.iso}" href="${escapeXml(`${baseUrl}/?c=${encodeURIComponent(c.id)}`)}" />`
+      ),
     `    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(`${baseUrl}/`)}" />`,
   ].join('\n');
 
@@ -201,12 +265,5 @@ ${urls
   .join('\n')}
 </urlset>`;
 
-  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  if (req.method === 'HEAD') {
-    res.setHeader('Content-Length', String(Buffer.byteLength(xml, 'utf8')));
-    return res.status(200).end();
-  }
-  return res.status(200).send(xml);
+  return sendXmlResponse(req, res, xml, { lastModDate, degraded });
 }

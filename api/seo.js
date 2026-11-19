@@ -61,7 +61,7 @@ async function fetchSeoPortalSettings() {
     const { data } = await supabase
       .from('swedpersiska_settings')
       .select('key, value')
-      .in('key', ['site_settings', 'seo_settings', 'portal_countries']);
+      .in('key', ['site_branding', 'site_settings', 'seo_settings', 'portal_countries']);
 
     const map = {};
     for (const row of data || []) {
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
     }
 
     const settingsMap = await fetchSeoPortalSettings();
-    const siteSettings = settingsMap.site_settings || {};
+    const siteSettings = settingsMap.site_branding || settingsMap.site_settings || {};
     const seoSettings = settingsMap.seo_settings || {};
     const countries = mergeCountriesForSeo(settingsMap.portal_countries);
     const siteName = String(siteSettings.siteName || 'لینک شو').trim() || 'لینک شو';

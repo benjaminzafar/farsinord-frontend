@@ -1,8 +1,7 @@
 {
   "framework": "vite",
-  "buildCommand": "vite build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "cleanUrls": true,
   "crons": [
     {
       "path": "/api/cron-cleanup",
@@ -19,8 +18,8 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/sitemap-index.xml",
-      "destination": "/api/sitemap?mode=index"
+      "source": "/sitemap-ads.xml",
+      "destination": "/api/sitemap?mode=ads"
     },
     {
       "source": "/sitemap_index.xml",
@@ -43,10 +42,6 @@
       "destination": "/api/seo?mode=feed"
     },
     {
-      "source": "/linksho8f4c2e9a7b1d4e6f9a3c5b7d2e8f.txt",
-      "destination": "/api/seo?mode=indexnow-key"
-    },
-    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },
@@ -56,7 +51,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([gG]ooglebot|[gG]oogle-[eE]xtended|[bB]ingbot|[yY]andex|[dD]uck[dD]uck[bB]ot|[bB]aiduspider|[oO][aA][iI]-[sS]earch[bB]ot|[cC]hat[gG][pP][tT]-[uU]ser|[gG][pP][tT][bB]ot|[pP]erplexity[bB]ot|[pP]erplexity-[uU]ser|[cC]laude[bB]ot|[cC]laude-[wW]eb|[aA]nthropic-[aA][iI]|[aA]pplebot|[fF]acebookexternalhit|[tT]elegram[bB]ot|[wW]hats[aA]pp|[tT]witter[bB]ot|[lL]inked[iI]n[bB]ot|[sS]lackbot|[dD]iscordbot).*"
+          "value": ".*([gG]ooglebot|[gG]oogle-[eE]xtended|[gG]oogle-[iI]nspection[tT]ool|[gG]oogle[oO]ther|[sS]torebot-[gG]oogle|[aA]ds[bB]ot-[gG]oogle|[bB]ingbot|[yY]andex|[dD]uck[dD]uck[bB]ot|[bB]aiduspider|[oO][aA][iI]-[sS]earch[bB]ot|[cC]hat[gG][pP][tT]-[uU]ser|[gG][pP][tT][bB]ot|[pP]erplexity[bB]ot|[pP]erplexity-[uU]ser|[cC]laude[bB]ot|[cC]laude-[wW]eb|[aA]nthropic-[aA][iI]|[aA]pplebot|[fF]acebookexternalhit|[tT]elegram[bB]ot|[wW]hats[aA]pp|[tT]witter[bB]ot|[lL]inked[iI]n[bB]ot|[sS]lackbot|[dD]iscordbot).*"
         }
       ],
       "destination": "/api/seo?mode=html"
@@ -67,7 +62,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([gG]ooglebot|[gG]oogle-[eE]xtended|[bB]ingbot|[yY]andex|[dD]uck[dD]uck[bB]ot|[bB]aiduspider|[oO][aA][iI]-[sS]earch[bB]ot|[cC]hat[gG][pP][tT]-[uU]ser|[gG][pP][tT][bB]ot|[pP]erplexity[bB]ot|[pP]erplexity-[uU]ser|[cC]laude[bB]ot|[cC]laude-[wW]eb|[aA]nthropic-[aA][iI]|[aA]pplebot|[fF]acebookexternalhit|[tT]elegram[bB]ot|[wW]hats[aA]pp|[tT]witter[bB]ot|[lL]inked[iI]n[bB]ot|[sS]lackbot|[dD]iscordbot).*"
+          "value": ".*([gG]ooglebot|[gG]oogle-[eE]xtended|[gG]oogle-[iI]nspection[tT]ool|[gG]oogle[oO]ther|[sS]torebot-[gG]oogle|[aA]ds[bB]ot-[gG]oogle|[bB]ingbot|[yY]andex|[dD]uck[dD]uck[bB]ot|[bB]aiduspider|[oO][aA][iI]-[sS]earch[bB]ot|[cC]hat[gG][pP][tT]-[uU]ser|[gG][pP][tT][bB]ot|[pP]erplexity[bB]ot|[pP]erplexity-[uU]ser|[cC]laude[bB]ot|[cC]laude-[wW]eb|[aA]nthropic-[aA][iI]|[aA]pplebot|[fF]acebookexternalhit|[tT]elegram[bB]ot|[wW]hats[aA]pp|[tT]witter[bB]ot|[lL]inked[iI]n[bB]ot|[sS]lackbot|[dD]iscordbot).*"
         }
       ],
       "destination": "/api/seo?mode=html&ad=:adRef"
@@ -84,6 +79,19 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(sitemap-index\\.xml|sitemap-static\\.xml)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, must-revalidate"
         }
       ]
     },
