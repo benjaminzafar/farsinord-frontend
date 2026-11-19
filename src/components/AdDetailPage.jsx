@@ -448,7 +448,7 @@ export default function AdDetailPage({
               <div className="pt-6 border-t border-[#F0F2F5] dark:border-white/[0.025] flex flex-col items-center text-center space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-sm font-extrabold text-[#1D1D1F] dark:text-white">راه‌های ارتباطی</h3>
-                  {ad.contact_name && (
+                  {ad.contact_name && ad.contact_name !== 'آگهی‌دهنده' && (
                     <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
                       آگهی‌دهنده: <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{ad.contact_name}</span>
                     </p>
@@ -511,19 +511,28 @@ export default function AdDetailPage({
                         </a>
                       )}
 
-                      {/* WhatsApp */}
-                      {ad.contact_whatsapp && (
-                        <a
-                          href={`https://wa.me/${ad.contact_whatsapp.replace(/[^0-9]/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="پیام در واتساپ"
-                          className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
-                        >
-                          <MessageSquare size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
-                          <span>واتساپ</span>
-                        </a>
-                      )}
+                      {/* WhatsApp (supports both phone numbers & WhatsApp usernames) */}
+                      {ad.contact_whatsapp && (() => {
+                        const rawWa = ad.contact_whatsapp.trim();
+                        const strippedUrl = rawWa.replace(/^https?:\/\/(?:www\.)?(?:wa\.me|api\.whatsapp\.com\/send\?phone=)\/?/i, '');
+                        const isUsername = /[a-zA-Z]/.test(strippedUrl) || strippedUrl.startsWith('@');
+                        const waSlug = isUsername
+                          ? strippedUrl.replace(/^@+/, '').replace(/[^a-zA-Z0-9._-]/g, '')
+                          : strippedUrl.replace(/[^0-9]/g, '');
+                        if (!waSlug) return null;
+                        return (
+                          <a
+                            href={`https://wa.me/${waSlug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="پیام در واتساپ"
+                            className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-white/[0.05] hover:bg-[#EBEBF0] dark:hover:bg-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] border border-[#ECEFF4] dark:border-white/[0.03] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.96] shadow-none"
+                          >
+                            <MessageSquare size={15} className="text-[#6E6E73] dark:text-[#98989F]" />
+                            <span>{isUsername ? `واتساپ (@${waSlug})` : 'واتساپ'}</span>
+                          </a>
+                        );
+                      })()}
 
                       {/* Telegram */}
                       {ad.contact_telegram && (() => {
@@ -577,6 +586,12 @@ export default function AdDetailPage({
                           </a>
                         );
                       })()}
+
+                      {!ad.contact_phone && !ad.contact_whatsapp && !ad.contact_telegram && !ad.contact_email && !ad.contact_website && (
+                        <p className="text-xs text-[#6E6E73] dark:text-[#98989F]">
+                          راه تماسی برای این آگهی ثبت نشده است.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

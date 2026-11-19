@@ -372,6 +372,42 @@ export const publicApi = {
     return { ...res, ad: normalizeClientAd(res.ad) };
   },
 
+  async geocodeLocation({ q, country = '' }) {
+    const cleanQ = String(q || '').trim();
+    if (cleanQ.length < 2) return null;
+    try {
+      const qs = new URLSearchParams({ action: 'geocode', q: cleanQ });
+      if (country) qs.set('country', country);
+      const res = await fetch(`${API_BASE}/api/public?${qs.toString()}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return null;
+      const json = await res.json().catch(() => null);
+      return json?.ok ? (json.result || null) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async reverseGeocodeLocation({ lat, lng }) {
+    if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return '';
+    try {
+      const qs = new URLSearchParams({
+        action: 'reverse_geocode',
+        lat: String(lat),
+        lng: String(lng),
+      });
+      const res = await fetch(`${API_BASE}/api/public?${qs.toString()}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return '';
+      const json = await res.json().catch(() => null);
+      return json?.ok && typeof json.label === 'string' ? json.label : '';
+    } catch {
+      return '';
+    }
+  },
+
   async presignUpload({ fileName, contentType, fileSize }) {
     const res = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',

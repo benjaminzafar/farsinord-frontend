@@ -37,6 +37,26 @@ const PUBLIC_AD_LIST_COLUMNS =
   'id, reference_number, title, title_fa, category, country, city, area, price, price_type, description, images, is_featured, views_count, created_at, sort_timestamp, promotion_expires_at';
 
 const ALLOWED_VIP_COUNTRIES = new Set(['se', 'no', 'dk', 'fi', 'de', 'at', 'nl', 'fr']);
+const GEOCODE_CACHE_TTL_MS = 10 * 60 * 1000;
+const geocodeCache = new Map();
+
+function getGeocodeCached(key) {
+  const entry = geocodeCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() - entry.ts > GEOCODE_CACHE_TTL_MS) {
+    geocodeCache.delete(key);
+    return undefined;
+  }
+  return entry.val;
+}
+
+function setGeocodeCached(key, val) {
+  if (geocodeCache.size >= 200) {
+    const oldestKey = geocodeCache.keys().next().value;
+    if (oldestKey !== undefined) geocodeCache.delete(oldestKey);
+  }
+  geocodeCache.set(key, { val, ts: Date.now() });
+}
 
 function safeEqual(a, b) {
   const bufA = Buffer.from(String(a || ''), 'utf8');
@@ -390,6 +410,115 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, settings });
       }
 
+      if (action === 'geocode') {
+        if (!checkSubRateLimit(req, { bucket: 'geocode', maxAttempts: 40, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌های نقشه زیاد است.' });
+        }
+        const q = String(req.query.q || '').trim().slice(0, 160);
+        const cc = /^[a-z]{2}$/i.test(String(req.query.country || '')) ? String(req.query.country).toLowerCase() : '';
+        if (q.length < 2) {
+          return res.status(200).json({ ok: true, result: null });
+        }
+        const cacheKey = `g:${cc}:${q.toLowerCase()}`;
+        const cached = getGeocodeCached(cacheKey);
+        if (cached !== undefined) {
+          res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
+          return res.status(200).json({ ok: true, result: cached });
+        }
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 3500);
+        try {
+          const qs = new URLSearchParams({
+            q,
+            format: 'jsonv2',
+            limit: '1',
+            addressdetails: '1',
+          });
+          if (cc) qs.set('countrycodes', cc);
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?${qs.toString()}`, {
+            headers: {
+              'User-Agent': 'LinkSho/1.0 (+https://www.linksho.eu)',
+              'Accept-Language': 'en,sv,fa',
+            },
+            signal: ctrl.signal,
+          });
+          const geoJson = geoRes.ok ? await geoRes.json().catch(() => []) : [];
+          const hit = Array.isArray(geoJson) && geoJson[0] ? geoJson[0] : null;
+          const lat = hit ? Number(hit.lat) : NaN;
+          const lng = hit ? Number(hit.lon) : NaN;
+          const addr = hit?.address || {};
+          const shortParts = [
+            addr.road ? `${addr.road}${addr.house_number ? ` ${addr.house_number}` : ''}` : '',
+            addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || '',
+          ].filter(Boolean);
+          const result = Number.isFinite(lat) && Number.isFinite(lng)
+            ? {
+                lat: Number(lat.toFixed(6)),
+                lng: Number(lng.toFixed(6)),
+                label: shortParts.join('، ') || String(hit.display_name || '').split(',').slice(0, 2).join('، ').trim(),
+              }
+            : null;
+          setGeocodeCached(cacheKey, result);
+          res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
+          return res.status(200).json({ ok: true, result });
+        } catch {
+          return res.status(200).json({ ok: true, result: null });
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      if (action === 'reverse_geocode') {
+        if (!checkSubRateLimit(req, { bucket: 'geocode', maxAttempts: 40, windowMs: 15 * 60 * 1000 })) {
+          return res.status(429).json({ ok: false, error: 'تعداد درخواست‌های نقشه زیاد است.' });
+        }
+        const lat = Number(req.query.lat);
+        const lng = Number(req.query.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          return res.status(400).json({ ok: false, error: 'Invalid coordinates' });
+        }
+        const rLat = Number(lat.toFixed(4));
+        const rLng = Number(lng.toFixed(4));
+        const cacheKey = `r:${rLat},${rLng}`;
+        const cached = getGeocodeCached(cacheKey);
+        if (cached !== undefined) {
+          res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
+          return res.status(200).json({ ok: true, label: cached });
+        }
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 3500);
+        try {
+          const qs = new URLSearchParams({
+            lat: String(rLat),
+            lon: String(rLng),
+            format: 'jsonv2',
+            zoom: '16',
+            addressdetails: '1',
+          });
+          const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?${qs.toString()}`, {
+            headers: {
+              'User-Agent': 'LinkSho/1.0 (+https://www.linksho.eu)',
+              'Accept-Language': 'en,sv,fa',
+            },
+            signal: ctrl.signal,
+          });
+          const revJson = revRes.ok ? await revRes.json().catch(() => null) : null;
+          const addr = revJson?.address || {};
+          const parts = [
+            addr.road ? `${addr.road}${addr.house_number ? ` ${addr.house_number}` : ''}` : '',
+            addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || '',
+          ].filter(Boolean);
+          const label = parts.join('، ').slice(0, 120) || '';
+          setGeocodeCached(cacheKey, label);
+          res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
+          return res.status(200).json({ ok: true, label });
+        } catch {
+          return res.status(200).json({ ok: true, label: '' });
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
       if (action === 'get_podcast_feed') {
         const now = Date.now();
         if (cachedPodcastResponse && now - cachedPodcastAt < PODCAST_FEED_TTL_MS) {
@@ -706,24 +835,20 @@ export default async function handler(req, res) {
 
         const cleanTitle = String(title || '').trim().slice(0, 160);
         const cleanDesc = String(description || '').trim().slice(0, 4000);
-        const cleanName = String(contact_name || '').trim().slice(0, 100);
-        const cleanArea = area ? String(area).trim().slice(0, 80) : null;
+        const cleanName = String(contact_name || '').trim().slice(0, 100) || 'آگهی‌دهنده';
+        const cleanArea = area ? String(area).trim().slice(0, 160) : null;
         const cleanPhone = contact_phone ? String(contact_phone).trim().slice(0, 40) : null;
-        const cleanWa = contact_whatsapp ? String(contact_whatsapp).trim().slice(0, 40) : null;
+        const cleanWa = contact_whatsapp ? String(contact_whatsapp).trim().slice(0, 80) : null;
         const cleanTg = contact_telegram ? String(contact_telegram).trim().slice(0, 80) : null;
         const cleanEmail = contact_email ? String(contact_email).trim().slice(0, 120) : null;
         const cleanWebsite = body.contact_website && isSafeHttpUrl(body.contact_website) ? String(body.contact_website).trim().slice(0, 300) : null;
 
-        if (!cleanTitle || !cleanDesc || !cleanName) {
-          return res.status(400).json({ ok: false, error: 'عنوان، توضیحات و نام تماس‌گیرنده الزامی است.' });
+        if (!cleanTitle || !cleanDesc) {
+          return res.status(400).json({ ok: false, error: 'عنوان و توضیحات آگهی الزامی است.' });
         }
 
         if (containsLinkInDescription(cleanDesc)) {
           return res.status(400).json({ ok: false, error: 'لینک در توضیحات مجاز نیست. آدرس سایت را در بخش وبسایت بنویسید.' });
-        }
-
-        if (!cleanPhone && !cleanWa && !cleanTg && !cleanEmail && !cleanWebsite) {
-          return res.status(400).json({ ok: false, error: 'حداقل یک راه تماس (تلفن، واتساپ، تلگرام، ایمیل یا وب‌سایت) الزامی است.' });
         }
 
         const modReason = checkProhibitedText({ title: cleanTitle, description: cleanDesc, area: cleanArea, contact_name: cleanName });
@@ -841,7 +966,11 @@ export default async function handler(req, res) {
           : (dupResult.decision === 'suspected' ? 'suspected' : 'clean');
 
         const refNum = generateReferenceNumber();
-        const finalPin = generatePinCode();
+        const rawCustomPin = String(body.pin_code || '')
+          .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+          .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+          .trim();
+        const finalPin = /^[0-9A-Za-z]{6,12}$/.test(rawCustomPin) ? rawCustomPin : generatePinCode();
 
         const { data: createRes, error: createErr } = await supabase.rpc('create_ad_secure', {
           p_payload: {

@@ -98,6 +98,15 @@ export function extractContactHashes({
 
   for (const d of normalizePhoneDigits(contact_phone)) tokens.add(`tel:${d}`);
   for (const d of normalizePhoneDigits(contact_whatsapp)) tokens.add(`wa:${d}`);
+  const waHandle = String(contact_whatsapp || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^@+/, '')
+    .replace(/^https?:\/\/(?:www\.)?(?:wa\.me|api\.whatsapp\.com\/send\?phone=)\/?/i, '')
+    .split(/[/?#]/)[0];
+  if (waHandle && /[a-z]/i.test(waHandle) && waHandle.length >= 3) {
+    tokens.add(`wauser:${waHandle}`);
+  }
 
   // Also cross-match phone/whatsapp digits regardless of channel label
   for (const d of normalizePhoneDigits(contact_phone)) tokens.add(`num:${d}`);
