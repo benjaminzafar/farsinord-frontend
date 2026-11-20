@@ -1486,7 +1486,7 @@ export default function App() {
 
               {/* Flat Unified Search Capsule — Hairline-Divided (No Box-in-Box) */}
               <div className="pt-2 sm:pt-3 px-1 hidden md:block">
-                <div className="bg-[#FBFBFC] dark:bg-[#171920] rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.24)] border border-white/50 dark:border-white/[0.08] max-w-2xl mx-auto flex items-center gap-1.5 transition-all focus-within:ring-2 focus-within:ring-[#0066CC]/30">
+                <div className="bg-white dark:bg-[#171920] rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.24)] border border-white/50 dark:border-white/[0.08] max-w-2xl mx-auto flex items-center gap-1.5 transition-all focus-within:ring-2 focus-within:ring-[#0066CC]/30">
                   
                   {/* Keyword Input with Google-style Smart Autocomplete (Right side in RTL) */}
                   <div className="relative flex-1 flex items-center gap-2 h-10 px-3 min-w-0">
@@ -1536,7 +1536,7 @@ export default function App() {
                           setHighlightedSuggestionIndex(-1);
                         }
                       }}
-                      className="w-full h-full bg-transparent border-0 text-xs font-medium leading-normal text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] focus:outline-none text-right min-w-0"
+                      className="w-full h-full bg-transparent border-0 text-[14px] font-medium leading-normal text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] focus:outline-none text-right min-w-0"
                     />
                     {searchDraft && (
                       <button
@@ -1550,7 +1550,7 @@ export default function App() {
                     )}
 
                     {heroSearchFocused && searchDraft.trim() && searchSuggestions.length > 0 && (
-                      <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] rounded-2xl shadow-[0_18px_45px_rgba(15,23,42,0.16)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.55)] p-1.5 z-50 space-y-0.5 text-right">
+                      <div className="absolute inset-x-0 top-full mt-2.5 bg-white dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] rounded-2xl shadow-[0_18px_45px_rgba(15,23,42,0.16)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.55)] p-2 z-50 flex flex-col gap-1 text-right">
                         {searchSuggestions.map((item, idx) => {
                           const isHighlighted = idx === highlightedSuggestionIndex;
                           return (
@@ -1562,18 +1562,14 @@ export default function App() {
                                 e.preventDefault();
                                 handleCommitSearch(item.label);
                               }}
-                              className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl transition-colors cursor-pointer ${
+                              className={`w-full text-right py-2.5 px-3.5 rounded-xl transition-colors cursor-pointer ${
                                 isHighlighted
-                                  ? 'bg-[#0066CC]/10 dark:bg-[#0066CC]/20 text-[#0066CC] dark:text-[#58A6FF]'
-                                  : 'hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] text-[#1D1D1F] dark:text-white'
+                                  ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF]'
+                                  : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06]'
                               }`}
                             >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Search size={14} strokeWidth={2} className={`block shrink-0 ${isHighlighted ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`} />
-                                <span className="text-xs font-semibold leading-none truncate">{item.label}</span>
-                              </div>
-                              <span className="text-[10px] font-bold leading-none px-2 py-1 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#98989F] shrink-0">
-                                {item.badge}
+                              <span className="block text-[14px] font-medium leading-relaxed truncate">
+                                {item.label}
                               </span>
                             </button>
                           );
@@ -1617,7 +1613,7 @@ export default function App() {
                       <div
                         role="listbox"
                         aria-label="فهرست شهرها"
-                        className="absolute end-0 top-full mt-2.5 w-72 sm:w-80 rounded-2xl bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_18px_45px_rgba(0,0,0,0.12)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.65)] p-2 z-50 flex flex-col gap-1 text-right animate-in fade-in zoom-in-95 duration-150"
+                        className="absolute end-0 top-full mt-2.5 w-72 sm:w-80 rounded-2xl bg-white dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_18px_45px_rgba(0,0,0,0.12)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.65)] p-2 z-50 flex flex-col gap-1 text-right animate-in fade-in zoom-in-95 duration-150"
                         dir="rtl"
                       >
                         <div className="max-h-72 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-0.5">
@@ -1633,43 +1629,32 @@ export default function App() {
                                   handleCityChange(c.id);
                                   setHeroCityOpen(false);
                                 }}
-                                  className={`w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-colors cursor-pointer text-right ${
-                                    isSelected
-                                      ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF] font-semibold'
-                                      : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] active:bg-[#0066CC]/15 font-medium'
-                                  }`}
-                                >
-                                  <span className="text-[14.5px] leading-relaxed truncate">
-                                    {c.fa}
-                                  </span>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    {c.id !== 'all' && (
-                                      <span className="text-[12px] font-normal text-[#86868B] dark:text-[#8E8E93] leading-none" dir="ltr">
-                                        {c.id}
-                                      </span>
-                                    )}
-                                    {isSelected && (
-                                      <Check size={16} strokeWidth={2.2} className="text-[#0066CC] dark:text-[#58A6FF] shrink-0" />
-                                    )}
-                                  </div>
-                                </button>
-                              );
-                            })}
+                                className={`w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-colors cursor-pointer text-right ${
+                                  isSelected
+                                    ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF] font-semibold'
+                                    : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] active:bg-[#0066CC]/15 font-medium'
+                                }`}
+                              >
+                                <span className="text-[14.5px] leading-relaxed truncate">
+                                  {c.fa}
+                                </span>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {c.id !== 'all' && (
+                                    <span className="text-[12px] font-normal text-[#86868B] dark:text-[#8E8E93] leading-none" dir="ltr">
+                                      {c.id}
+                                    </span>
+                                  )}
+                                  {isSelected && (
+                                    <Check size={16} strokeWidth={2.2} className="text-[#0066CC] dark:text-[#58A6FF] shrink-0" />
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
                   </div>
-
-                  {/* Dedicated Search Action Button (Google model: executes search) */}
-                  <button
-                    type="button"
-                    onClick={handleHeroSearchSubmit}
-                    className="inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold transition-all duration-200 active:scale-95 cursor-pointer shadow-xs select-none shrink-0"
-                    aria-label="جستجو در آگهی‌ها"
-                  >
-                    <Search size={14} strokeWidth={2.5} className="block" />
-                    <span>جستجو</span>
-                  </button>
 
                 </div>
               </div>
