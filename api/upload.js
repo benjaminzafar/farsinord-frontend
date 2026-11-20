@@ -196,9 +196,108 @@ async function resolveR2Config() {
   return cachedR2Config;
 }
 
+let corsConfigured = false;
+
+async function ensureR2BucketCors(r2) {
+  if (corsConfigured || !r2?.accountId || !r2?.accessKeyId || !r2?.secretAccessKey || !r2?.bucketName) {
+    return;
+  }
+  try {
+    const host = `${r2.accountId}.r2.cloudflarestorage.com`;
+    const region = 'auto';
+    const service = 's3';
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
+    const dateStamp = amzDate.slice(0, 8);
+    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+    const canonicalUri = `/${r2.bucketName}`;
+    const canonicalQuery = 'cors=';
+
+    const corsXml =
+      '<CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+      '<CORSRule>' +
+      '<AllowedOrigin>*</AllowedOrigin>' +
+      '<AllowedMethod>GET</AllowedMethod>' +
+      '<AllowedMethod>PUT</AllowedMethod>' +
+      '<AllowedMethod>HEAD</AllowedMethod>' +
+      '<AllowedMethod>POST</AllowedMethod>' +
+      '<AllowedMethod>DELETE</AllowedMethod>' +
+      '<AllowedHeader>*</AllowedHeader>' +
+      '<ExposeHeader>ETag</ExposeHeader>' +
+      '<MaxAgeSeconds>86400</MaxAgeSeconds>' +
+      '</CORSRule>' +
+      '</CORSConfiguration>';
+
+    const payloadHash = sha256Hex(corsXml);
+    const md5Base64 = crypto.createHash('md5').update(corsXml, 'utf8').digest('base64');
+
+    const headers = {
+      'content-md5': md5Base64,
+      'content-type': 'application/xml',
+      'host': host,
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+    };
+
+    const headerKeys = Object.keys(headers).sort();
+    const signedHeaders = headerKeys.join(';');
+    const canonicalHeaders = headerKeys.map((k) => `${k}:${headers[k]}\n`).join('');
+
+    const canonicalRequest = [
+      'PUT',
+      canonicalUri,
+      canonicalQuery,
+      canonicalHeaders,
+      signedHeaders,
+      payloadHash,
+    ].join('\n');
+
+    const stringToSign = [
+      'AWS4-HMAC-SHA256',
+      amzDate,
+      credentialScope,
+      sha256Hex(canonicalRequest),
+    ].join('\n');
+
+    const kDate = hmacSha256(`AWS4${r2.secretAccessKey}`, dateStamp);
+    const kRegion = hmacSha256(kDate, region);
+    const kService = hmacSha256(kRegion, service);
+    const kSigning = hmacSha256(kService, 'aws4_request');
+    const signature = crypto.createHmac('sha256', kSigning).update(stringToSign, 'utf8').digest('hex');
+
+    const authHeader = `AWS4-HMAC-SHA256 Credential=${r2.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+    const res = await fetch(`https://${host}${canonicalUri}?cors`, {
+      method: 'PUT',
+      headers: {
+        ...headers,
+        Authorization: authHeader,
+      },
+      body: corsXml,
+    });
+
+    if (res.ok) {
+      corsConfigured = true;
+      console.log('[upload] S3 PutBucketCors succeeded (HTTP', res.status, ')');
+    } else {
+      console.warn('[upload] S3 PutBucketCors response:', res.status, await res.text().catch(() => ''));
+    }
+  } catch (err) {
+    console.warn('[upload] PutBucketCors error:', err?.message || err);
+  }
+}
+
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  if (req.method === 'GET' && String(req.url || '').includes('action=set_cors')) {
+    const r2 = await resolveR2Config();
+    if (!r2) return res.status(503).json({ ok: false, error: 'R2 not configured' });
+    await ensureR2BucketCors(r2);
+    return res.status(200).json({ ok: true, message: 'CORS configuration applied' });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
   }
@@ -245,6 +344,8 @@ export default async function handler(req, res) {
         error: 'فضای ابری تصاویر (کلودفلر) هنوز در پنل مدیریت فعال و تنظیم نشده است.'
       });
     }
+
+    ensureR2BucketCors(r2).catch(() => {});
 
     const randomToken = crypto.randomBytes(8).toString('hex');
     const objectKey = `ads/${Date.now()}-${randomToken}.${ext}`;
