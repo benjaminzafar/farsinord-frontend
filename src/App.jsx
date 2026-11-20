@@ -1158,9 +1158,7 @@ export default function App() {
 
   const [heroSearchFocused, setHeroSearchFocused] = useState(false);
   const [heroCityOpen, setHeroCityOpen] = useState(false);
-  const [heroCityQuery, setHeroCityQuery] = useState('');
   const heroCityRef = useRef(null);
-  const heroCityInputRef = useRef(null);
   const feedSectionRef = useRef(null);
 
   const handleSearchDraftChange = useCallback((val) => {
@@ -1233,16 +1231,6 @@ export default function App() {
   const heroHeading = activeCountrySeo?.heroHeading || `نیازمندی‌های فارسی‌زبانان ${currentCountryObj.nameFa}`;
   const heroSubheading = activeCountrySeo?.heroSubheading || `مسکن، رستوران، خدمات و کاریابی در سراسر ${currentCountryObj.nameFa}`;
 
-  const filteredHeroCities = useMemo(() => {
-    const q = heroCityQuery.trim().toLowerCase();
-    if (!q) return availableCities;
-    return availableCities.filter(
-      (c) =>
-        (c.fa && c.fa.toLowerCase().includes(q)) ||
-        (c.id && c.id !== 'all' && c.id.toLowerCase().includes(q))
-    );
-  }, [availableCities, heroCityQuery]);
-
   const handleHeroSearchSubmit = useCallback(() => {
     handleCommitSearch(searchDraft);
   }, [handleCommitSearch, searchDraft]);
@@ -1255,14 +1243,12 @@ export default function App() {
       }
       if (heroCityOpen && heroCityRef.current && !heroCityRef.current.contains(e.target)) {
         setHeroCityOpen(false);
-        setHeroCityQuery('');
       }
     };
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setSortMenuOpen(false);
         setHeroCityOpen(false);
-        setHeroCityQuery('');
       }
     };
     document.addEventListener('mousedown', handleOutside);
@@ -1603,12 +1589,7 @@ export default function App() {
                       onClick={() => {
                         setHeroCityOpen((prev) => {
                           const next = !prev;
-                          if (next) {
-                            setHeroSearchFocused(false);
-                            setTimeout(() => heroCityInputRef.current?.focus(), 40);
-                          } else {
-                            setHeroCityQuery('');
-                          }
+                          if (next) setHeroSearchFocused(false);
                           return next;
                         });
                       }}
@@ -1636,53 +1617,22 @@ export default function App() {
                       <div
                         role="listbox"
                         aria-label="فهرست شهرها"
-                        className="absolute end-0 top-full mt-2.5 w-72 sm:w-80 rounded-2xl bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_18px_45px_rgba(0,0,0,0.12)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.65)] p-2 z-50 flex flex-col gap-1.5 text-right animate-in fade-in zoom-in-95 duration-150"
+                        className="absolute end-0 top-full mt-2.5 w-72 sm:w-80 rounded-2xl bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_18px_45px_rgba(0,0,0,0.12)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.65)] p-2 z-50 flex flex-col gap-1 text-right animate-in fade-in zoom-in-95 duration-150"
                         dir="rtl"
                       >
-                        {availableCities.length > 5 && (
-                          <div className="flex items-center h-11 rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] border border-transparent focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/20 px-3.5 gap-2.5 transition-all">
-                            <Search size={16} strokeWidth={2.2} className="shrink-0 text-[#86868B]" />
-                            <input
-                              ref={heroCityInputRef}
-                              type="text"
-                              value={heroCityQuery}
-                              onChange={(e) => setHeroCityQuery(e.target.value)}
-                              placeholder="جستجوی سریع شهر..."
-                              className="w-full h-full bg-transparent text-[14.5px] font-medium leading-normal text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] placeholder:text-[13.5px] focus:outline-none min-w-0 text-right"
-                              dir="rtl"
-                            />
-                            {heroCityQuery && (
-                              <button
-                                type="button"
-                                onClick={() => setHeroCityQuery('')}
-                                className="flex h-7 w-7 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white shrink-0 cursor-pointer active:scale-90 transition-colors"
-                                aria-label="پاک کردن جستجوی شهر"
-                              >
-                                <X size={15} strokeWidth={2.2} />
-                              </button>
-                            )}
-                          </div>
-                        )}
-
                         <div className="max-h-72 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-0.5">
-                          {filteredHeroCities.length === 0 ? (
-                            <div className="py-6 text-center text-[13.5px] font-medium text-[#86868B]">
-                              شهری با این نام یافت نشد
-                            </div>
-                          ) : (
-                            filteredHeroCities.map((c) => {
-                              const isSelected = selectedCity === c.id;
-                              return (
-                                <button
-                                  key={c.id}
-                                  type="button"
-                                  role="option"
-                                  aria-selected={isSelected}
-                                  onClick={() => {
-                                    handleCityChange(c.id);
-                                    setHeroCityOpen(false);
-                                    setHeroCityQuery('');
-                                  }}
+                          {availableCities.map((c) => {
+                            const isSelected = selectedCity === c.id;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                onClick={() => {
+                                  handleCityChange(c.id);
+                                  setHeroCityOpen(false);
+                                }}
                                   className={`w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-colors cursor-pointer text-right ${
                                     isSelected
                                       ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF] font-semibold'
@@ -1704,8 +1654,7 @@ export default function App() {
                                   </div>
                                 </button>
                               );
-                            })
-                          )}
+                            })}
                         </div>
                       </div>
                     )}
