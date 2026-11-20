@@ -859,7 +859,7 @@ export default async function handler(req, res) {
       } else if (sort === 'price_desc') {
         q = q
           .order('is_featured', { ascending: false })
-          .order('price', { ascending: false, nullsFirst: true })
+          .order('price', { ascending: false, nullsFirst: false })
           .order('sort_timestamp', { ascending: false })
           .order('id', { ascending: false });
       } else {
@@ -1330,9 +1330,6 @@ export default async function handler(req, res) {
         if (!id || !cleanPin) {
           return res.status(400).json({ ok: false, error: 'شناسه آگهی و کد مدیریت الزامی است.' });
         }
-        // Only allow owner-safe terminal statuses; never allow self-approving pending/rejected ads to 'active'
-        const safeOwnerStatus = status === 'sold' || status === 'rented' ? status : undefined;
-
         const cleanTitle = String(title || '').trim().slice(0, 160);
         const cleanDesc = String(description || '').trim().slice(0, 4000);
         const cleanArea = area !== undefined ? String(area || '').trim().slice(0, 160) : undefined;
@@ -1348,27 +1345,30 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: modReason });
         }
 
-        let targetMeta = null;
-        if (body.country && body.category && body.city && cleanTitle && cleanDesc) {
-          targetMeta = {
-            country: String(body.country).toLowerCase().slice(0, 10),
-            category: String(body.category).slice(0, 40),
-            city: String(body.city).slice(0, 80),
-            title: cleanTitle,
-            description: cleanDesc,
-          };
+        const { data: existingAd } = await supabase
+          .from('swedpersiska_ads')
+          .select('country, category, city, title, description, status')
+          .eq('id', id)
+          .maybeSingle();
+
+        // Owner status permission logic:
+        // Already approved ads ('active', 'hidden', 'sold', 'rented') can toggle between these states.
+        // Pending or rejected ads cannot be self-approved to 'active'.
+        const currentAdStatus = existingAd?.status || 'pending';
+        let safeOwnerStatus;
+        if (['active', 'hidden', 'sold', 'rented'].includes(currentAdStatus)) {
+          safeOwnerStatus = ['active', 'hidden', 'sold', 'rented'].includes(status) ? status : undefined;
         } else {
-          const { data: existingAd } = await supabase
-            .from('swedpersiska_ads')
-            .select('country, category, city, title, description')
-            .eq('id', id)
-            .maybeSingle();
-          targetMeta = existingAd || {
-            country: body.country || 'se',
-            category: body.category || 'bostad',
-            city: body.city || 'Stockholm',
-          };
+          safeOwnerStatus = ['sold', 'rented'].includes(status) ? status : undefined;
         }
+
+        const targetMeta = existingAd || {
+          country: String(body.country || 'se').toLowerCase().slice(0, 10),
+          category: String(body.category || 'bostad').slice(0, 40),
+          city: String(body.city || 'Stockholm').slice(0, 80),
+          title: cleanTitle,
+          description: cleanDesc,
+        };
 
         const incomingUpdated = {
           id,

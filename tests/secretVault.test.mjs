@@ -62,7 +62,7 @@ test('AAD binding and GCM tag reject row-swap, version rollback, bit-flips, and 
 
   // 3. Ciphertext tamper MUST fail closed
   const parts = enc.ciphertext.split('.');
-  const flipped = parts[3].slice(0, -1) + (parts[3].endsWith('A') ? 'B' : 'A');
+  const flipped = (parts[3][0] === 'A' ? 'B' : 'A') + parts[3].slice(1);
   assert.throws(
     () =>
       decryptSecretValue(

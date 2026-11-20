@@ -916,9 +916,11 @@ export async function resolveStripeWebhookSecret(supabase, mode = 'live', { fres
   const primary = await getVaultSecret(supabase, primaryKey, { fresh });
   if (primary.value) return primary;
 
-  // Secondary fallback only if generic env isn't set and primary isn't set
-  const secondary = await getVaultSecret(supabase, secondaryKey, { fresh, allowEnvFallback: false });
-  if (secondary.value) return secondary;
+  // Secondary fallback strictly in test mode to assist dev setups (never fallback test secrets into live mode)
+  if (safeMode === 'test') {
+    const secondary = await getVaultSecret(supabase, secondaryKey, { fresh, allowEnvFallback: false });
+    if (secondary.value) return secondary;
+  }
 
   return primary;
 }

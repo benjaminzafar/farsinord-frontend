@@ -120,3 +120,19 @@ test('server-side search tokenizer and filter target only title/title_fa/descrip
   assert.ok(digitFilter.includes('title.ilike.%2%'));
   assert.ok(digitFilter.includes('title.ilike.%۲%'));
 });
+
+test('Google-style search contract: typing produces suggestions without mutating baseline matches', () => {
+  // Empty draft query matches all baseline ads without filtering
+  assert.equal(matchesSmartSearch(SAMPLE_ADS[0], ''), true);
+  assert.equal(matchesSmartSearch(SAMPLE_ADS[1], '   '), true);
+
+  // While typing a single prefix character or word, suggestions provide smart prediction
+  const pSuggestions = getSearchSuggestions('رس', { ads: SAMPLE_ADS });
+  assert.ok(pSuggestions.length > 0);
+  assert.equal(pSuggestions[0].label, 'رستوران ایرانی ونک (Restaurang Vanak)');
+  assert.equal(pSuggestions[0].badge, 'عنوان');
+
+  // Once committed, matchesSmartSearch targets strictly the exact keywords across title/desc
+  assert.equal(matchesSmartSearch(SAMPLE_ADS[1], 'رستوران'), true);
+  assert.equal(matchesSmartSearch(SAMPLE_ADS[0], 'رستوران'), false);
+});

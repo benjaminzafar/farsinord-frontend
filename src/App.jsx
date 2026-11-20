@@ -145,6 +145,16 @@ export default function App() {
     }
     return 'se';
   });
+  // Google-Style Search Architecture:
+  // searchDraft: What the user is actively typing in the search box (drives smart autocomplete predictions).
+  // searchQuery: The committed search query that filters ads & queries the backend. ONLY updates on Enter, Search button click, or suggestion click.
+  const [searchDraft, setSearchDraft] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('q') || '';
+    } catch {}
+    return '';
+  });
   const [searchQuery, setSearchQuery] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -162,20 +172,11 @@ export default function App() {
   });
   const [selectedCity, setSelectedCity] = useState('all');
   const [sortBy, setSortBy] = useState(null); // null | 'newest' | 'most_viewed' | 'price_asc' | 'price_desc'
-  const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => searchQuery.trim());
+  const deferredSearchDraft = useDeferredValue(searchDraft);
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1);
   const [initialAdResolved, setInitialAdResolved] = useState(() => !getInitialAdParamFromUrl());
   const lastVipFilterKeyRef = useRef('');
   const lastTrackedPathRef = useRef('');
-
-  useEffect(() => {
-    const nextTrimmed = searchQuery.trim();
-    if (nextTrimmed === debouncedSearchQuery) return;
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(nextTrimmed);
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [searchQuery, debouncedSearchQuery]);
 
   const handleCountryChange = (c) => {
     const valid = portalCountries.some(x => x.id === c) ? c : (portalCountries[0]?.id || 'se');
@@ -694,7 +695,7 @@ export default function App() {
         country: selectedCountry,
         category: selectedCategory,
         city: selectedCity,
-        q: debouncedSearchQuery,
+        q: searchQuery.trim(),
         sort: sortBy || '',
         includeFeatured: true,
       });
@@ -706,7 +707,7 @@ export default function App() {
       if (Array.isArray(mainRes.featuredAds)) {
         setFeaturedAdsList(mainRes.featuredAds);
       }
-      lastVipFilterKeyRef.current = `${selectedCountry}|${selectedCategory}|${selectedCity}|${debouncedSearchQuery}`;
+      lastVipFilterKeyRef.current = `${selectedCountry}|${selectedCategory}|${selectedCity}|${searchQuery.trim()}`;
     } catch (err) {
       console.error('Error fetching ads:', err);
     } finally {
@@ -722,7 +723,7 @@ export default function App() {
     if (!isFeedActiveView) return;
     let cancelled = false;
     const reqSeq = ++feedRequestSeqRef.current;
-    const vipFilterKey = `${selectedCountry}|${selectedCategory}|${selectedCity}|${debouncedSearchQuery}`;
+    const vipFilterKey = `${selectedCountry}|${selectedCategory}|${selectedCity}|${searchQuery.trim()}`;
     const shouldIncludeFeatured = lastVipFilterKeyRef.current !== vipFilterKey;
 
     const loadPageOne = async () => {
@@ -739,7 +740,7 @@ export default function App() {
           country: selectedCountry,
           category: selectedCategory,
           city: selectedCity,
-          q: debouncedSearchQuery,
+          q: searchQuery.trim(),
           sort: sortBy || '',
           includeFeatured: shouldIncludeFeatured,
         });
@@ -767,7 +768,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCountry, selectedCategory, selectedCity, debouncedSearchQuery, sortBy, isFeedActiveView]);
+  }, [selectedCountry, selectedCategory, selectedCity, searchQuery, sortBy, isFeedActiveView]);
 
   const loadMoreAds = async () => {
     if (loading || loadingMoreRef.current || !hasMoreAds) return;
@@ -782,7 +783,7 @@ export default function App() {
         country: selectedCountry,
         category: selectedCategory,
         city: selectedCity,
-        q: debouncedSearchQuery,
+        q: searchQuery.trim(),
         sort: sortBy || '',
       });
       if (reqSeq !== feedRequestSeqRef.current) return;
@@ -792,7 +793,9 @@ export default function App() {
         const uniqueNew = incoming.filter((item) => !existingIds.has(item.id));
         return uniqueNew.length > 0 ? [...prev, ...uniqueNew] : prev;
       });
-      setTotalAdsCount(res.total || 0);
+      if (typeof res.total === 'number') {
+        setTotalAdsCount(res.total);
+      }
       setFeedPage(nextPage);
       setHasMoreAds(Boolean(res.hasMore));
     } catch (err) {
@@ -1144,22 +1147,63 @@ export default function App() {
   };
 
   // Auto-return to feed when user searches or changes city while viewing an ad detail page
-  const clearAdDetailForFilter = () => {
-    if (!activeAdDetail) return;
+  const clearAdDetailForFilter = useCallback(() => {
     setActiveAdDetail(null);
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete('ad');
       window.history.replaceState({}, '', url.toString());
     } catch {}
-  };
+  }, []);
 
-  const handleSearchChange = (val) => {
-    setSearchQuery(val);
-    if (val && activeAdDetail) {
-      clearAdDetailForFilter();
+  const [heroSearchFocused, setHeroSearchFocused] = useState(false);
+  const [heroCityOpen, setHeroCityOpen] = useState(false);
+  const [heroCityQuery, setHeroCityQuery] = useState('');
+  const heroCityRef = useRef(null);
+  const heroCityInputRef = useRef(null);
+  const feedSectionRef = useRef(null);
+
+  const handleSearchDraftChange = useCallback((val) => {
+    setSearchDraft(val);
+    setHighlightedSuggestionIndex(-1);
+  }, []);
+
+  const handleCommitSearch = useCallback((rawQuery) => {
+    const text = String(rawQuery !== undefined ? rawQuery : searchDraft).trim();
+    setSearchDraft(text);
+    setSearchQuery(text);
+    setHeroSearchFocused(false);
+    setHeroCityOpen(false);
+    setHighlightedSuggestionIndex(-1);
+
+    try {
+      const url = new URL(window.location.href);
+      if (text) {
+        url.searchParams.set('q', text);
+      } else {
+        url.searchParams.delete('q');
+      }
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+
+    clearAdDetailForFilter();
+
+    if (feedSectionRef.current) {
+      feedSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
+  }, [searchDraft, clearAdDetailForFilter]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchDraft('');
+    setSearchQuery('');
+    setHeroSearchFocused(false);
+    setHighlightedSuggestionIndex(-1);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('q');
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+  }, []);
 
   const handleCityChange = (cityVal) => {
     setSelectedCity(cityVal);
@@ -1189,13 +1233,6 @@ export default function App() {
   const heroHeading = activeCountrySeo?.heroHeading || `نیازمندی‌های فارسی‌زبانان ${currentCountryObj.nameFa}`;
   const heroSubheading = activeCountrySeo?.heroSubheading || `مسکن، رستوران، خدمات و کاریابی در سراسر ${currentCountryObj.nameFa}`;
 
-  const [heroSearchFocused, setHeroSearchFocused] = useState(false);
-  const [heroCityOpen, setHeroCityOpen] = useState(false);
-  const [heroCityQuery, setHeroCityQuery] = useState('');
-  const heroCityRef = useRef(null);
-  const heroCityInputRef = useRef(null);
-  const feedSectionRef = useRef(null);
-
   const filteredHeroCities = useMemo(() => {
     const q = heroCityQuery.trim().toLowerCase();
     if (!q) return availableCities;
@@ -1207,13 +1244,8 @@ export default function App() {
   }, [availableCities, heroCityQuery]);
 
   const handleHeroSearchSubmit = useCallback(() => {
-    setDebouncedSearchQuery(searchQuery.trim());
-    setHeroSearchFocused(false);
-    setHeroCityOpen(false);
-    if (feedSectionRef.current) {
-      feedSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [searchQuery]);
+    handleCommitSearch(searchDraft);
+  }, [handleCommitSearch, searchDraft]);
 
   useEffect(() => {
     if (!sortMenuOpen && !heroCityOpen) return;
@@ -1267,18 +1299,18 @@ export default function App() {
   }, [featuredAdsList, countryAds, selectedCountry, selectedCategory, selectedCity]);
 
   const searchSuggestions = useMemo(
-    () => getSearchSuggestions(deferredSearchQuery, { ads: scopedAdsForSearch }),
-    [deferredSearchQuery, scopedAdsForSearch]
+    () => getSearchSuggestions(deferredSearchDraft, { ads: scopedAdsForSearch }),
+    [deferredSearchDraft, scopedAdsForSearch]
   );
 
   const filteredAds = useMemo(() => {
     return countryAds.filter(ad => {
       const matchCat = selectedCategory === 'all' || ad.category === selectedCategory;
       const matchCity = selectedCity === 'all' || ad.city === selectedCity;
-      const matchSearch = matchesSmartSearch(ad, deferredSearchQuery);
+      const matchSearch = matchesSmartSearch(ad, searchQuery);
       return matchCat && matchCity && matchSearch;
     });
-  }, [countryAds, selectedCategory, selectedCity, deferredSearchQuery]);
+  }, [countryAds, selectedCategory, selectedCity, searchQuery]);
 
   // Sort ads according to selected sort option while preserving Paid VIP ranking & boost sort_timestamp
   const sortedAds = useMemo(() => {
@@ -1314,19 +1346,19 @@ export default function App() {
       }
       return ts;
     };
-    const hasSearchQuery = Boolean(deferredSearchQuery.trim());
+    const hasSearchQuery = Boolean(searchQuery.trim());
     return copy.sort((a, b) => {
       const vA = isVip(a);
       const vB = isVip(b);
       if (vA !== vB) return vB ? 1 : -1;
       if (hasSearchQuery) {
-        const sA = scoreSmartSearchMatch(a, deferredSearchQuery);
-        const sB = scoreSmartSearchMatch(b, deferredSearchQuery);
+        const sA = scoreSmartSearchMatch(a, searchQuery);
+        const sB = scoreSmartSearchMatch(b, searchQuery);
         if (sA !== sB) return sB - sA;
       }
       return getSortTs(b) - getSortTs(a);
     });
-  }, [filteredAds, sortBy, renderNow, deferredSearchQuery]);
+  }, [filteredAds, sortBy, renderNow, searchQuery]);
 
   // Active Featured (VIP) ads subset
   const featuredAds = useMemo(
@@ -1335,14 +1367,14 @@ export default function App() {
         const matchCountry = a.country === selectedCountry || (!a.country && selectedCountry === 'se');
         const matchCat = selectedCategory === 'all' || a.category === selectedCategory;
         const matchCity = selectedCity === 'all' || a.city === selectedCity;
-        const matchSearch = matchesSmartSearch(a, deferredSearchQuery);
+        const matchSearch = matchesSmartSearch(a, searchQuery);
         const vipActive =
           a.is_active_vip !== undefined
             ? Boolean(a.is_active_vip)
             : Boolean(a.is_featured && (!a.promotion_expires_at || Date.parse(a.promotion_expires_at) > renderNow));
         return matchCountry && matchCat && matchCity && matchSearch && vipActive;
       }),
-    [featuredAdsList, selectedCountry, selectedCategory, selectedCity, deferredSearchQuery, renderNow]
+    [featuredAdsList, selectedCountry, selectedCategory, selectedCity, searchQuery, renderNow]
   );
 
   return (
@@ -1373,8 +1405,12 @@ export default function App() {
         selectedCity={selectedCity}
         onSelectCity={handleCityChange}
         availableCities={availableCities}
-        searchQuery={searchQuery}
-        onSearchChange={handleSearchChange}
+        searchDraft={searchDraft}
+        searchQuery={searchDraft}
+        onSearchDraftChange={handleSearchDraftChange}
+        onSearchChange={handleSearchDraftChange}
+        onCommitSearch={handleCommitSearch}
+        onClearSearch={handleClearSearch}
         searchSuggestions={searchSuggestions}
         onOpenPostAd={handleOpenPostAd}
         onOpenManageAd={handleOpenManageAd}
@@ -1474,27 +1510,52 @@ export default function App() {
                     <input
                       type="text"
                       placeholder={currentT.searchPlaceholder}
-                      value={searchQuery}
+                      value={searchDraft}
                       onFocus={() => {
                         setHeroSearchFocused(true);
                         setHeroCityOpen(false);
+                        setHighlightedSuggestionIndex(-1);
                       }}
-                      onBlur={() => setTimeout(() => setHeroSearchFocused(false), 160)}
-                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onBlur={() => setTimeout(() => {
+                        setHeroSearchFocused(false);
+                        setHighlightedSuggestionIndex(-1);
+                      }, 180)}
+                      onChange={(e) => handleSearchDraftChange(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'ArrowDown') {
                           e.preventDefault();
-                          handleHeroSearchSubmit();
+                          if (searchSuggestions.length > 0) {
+                            setHeroSearchFocused(true);
+                            setHighlightedSuggestionIndex((prev) =>
+                              prev + 1 < searchSuggestions.length ? prev + 1 : 0
+                            );
+                          }
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          if (searchSuggestions.length > 0) {
+                            setHeroSearchFocused(true);
+                            setHighlightedSuggestionIndex((prev) =>
+                              prev > 0 ? prev - 1 : searchSuggestions.length - 1
+                            );
+                          }
+                        } else if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (highlightedSuggestionIndex >= 0 && searchSuggestions[highlightedSuggestionIndex]) {
+                            handleCommitSearch(searchSuggestions[highlightedSuggestionIndex].label);
+                          } else {
+                            handleHeroSearchSubmit();
+                          }
                         } else if (e.key === 'Escape') {
                           setHeroSearchFocused(false);
+                          setHighlightedSuggestionIndex(-1);
                         }
                       }}
                       className="w-full h-full bg-transparent border-0 text-xs font-medium leading-normal text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] focus:outline-none text-right min-w-0"
                     />
-                    {searchQuery && (
+                    {searchDraft && (
                       <button
                         type="button"
-                        onClick={() => handleSearchChange('')}
+                        onClick={handleClearSearch}
                         className="flex h-6 w-6 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white cursor-pointer transition-colors shrink-0"
                         aria-label="پاک کردن جستجو"
                       >
@@ -1502,29 +1563,35 @@ export default function App() {
                       </button>
                     )}
 
-                    {heroSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
+                    {heroSearchFocused && searchDraft.trim() && searchSuggestions.length > 0 && (
                       <div className="absolute inset-x-0 top-full mt-2.5 bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] rounded-2xl shadow-[0_18px_45px_rgba(15,23,42,0.16)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.55)] p-1.5 z-50 space-y-0.5 text-right">
-                        {searchSuggestions.map((item, idx) => (
-                          <button
-                            key={`${item.label}-${idx}`}
-                            type="button"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleSearchChange(item.label);
-                              setDebouncedSearchQuery(item.label.trim());
-                              setHeroSearchFocused(false);
-                            }}
-                            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Search size={14} strokeWidth={2} className="block text-[#86868B] shrink-0" />
-                              <span className="text-xs font-semibold leading-none text-[#1D1D1F] dark:text-white truncate">{item.label}</span>
-                            </div>
-                            <span className="text-[10px] font-bold leading-none px-2 py-1 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#98989F] shrink-0">
-                              {item.badge}
-                            </span>
-                          </button>
-                        ))}
+                        {searchSuggestions.map((item, idx) => {
+                          const isHighlighted = idx === highlightedSuggestionIndex;
+                          return (
+                            <button
+                              key={`${item.label}-${idx}`}
+                              type="button"
+                              onMouseEnter={() => setHighlightedSuggestionIndex(idx)}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleCommitSearch(item.label);
+                              }}
+                              className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl transition-colors cursor-pointer ${
+                                isHighlighted
+                                  ? 'bg-[#0066CC]/10 dark:bg-[#0066CC]/20 text-[#0066CC] dark:text-[#58A6FF]'
+                                  : 'hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] text-[#1D1D1F] dark:text-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Search size={14} strokeWidth={2} className={`block shrink-0 ${isHighlighted ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`} />
+                                <span className="text-xs font-semibold leading-none truncate">{item.label}</span>
+                              </div>
+                              <span className="text-[10px] font-bold leading-none px-2 py-1 rounded-full bg-[#F5F5F7] dark:bg-white/[0.06] text-[#6E6E73] dark:text-[#98989F] shrink-0">
+                                {item.badge}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -1641,6 +1708,17 @@ export default function App() {
                     )}
                   </div>
 
+                  {/* Dedicated Search Action Button (Google model: executes search) */}
+                  <button
+                    type="button"
+                    onClick={handleHeroSearchSubmit}
+                    className="inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full bg-[#0066CC] hover:bg-[#0055AA] text-white text-xs font-bold transition-all duration-200 active:scale-95 cursor-pointer shadow-xs select-none shrink-0"
+                    aria-label="جستجو در آگهی‌ها"
+                  >
+                    <Search size={14} strokeWidth={2.5} className="block" />
+                    <span>جستجو</span>
+                  </button>
+
                 </div>
               </div>
 
@@ -1736,7 +1814,7 @@ export default function App() {
                 {currentT.recentAds}
               </h2>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] text-[11px] font-bold tabular-nums">
-                {(searchQuery.trim() === debouncedSearchQuery ? totalAdsCount : sortedAds.length).toLocaleString('fa-IR')} آگهی
+                {(searchQuery.trim() ? sortedAds.length : totalAdsCount).toLocaleString('fa-IR')} آگهی
               </span>
               {selectedCategory !== 'all' && (
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EAF2FB] dark:bg-[#0066CC]/20 text-[#0066CC] dark:text-[#58A6FF] text-xs font-semibold border border-[#CDE0F5] dark:border-[#0066CC]/30">
@@ -1770,7 +1848,7 @@ export default function App() {
                   <span className="truncate max-w-[140px]">«{searchQuery.trim()}»</span>
                   <button
                     type="button"
-                    onClick={() => handleSearchChange('')}
+                    onClick={handleClearSearch}
                     className="text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white p-0.5 cursor-pointer"
                     title="حذف جستجو"
                   >
@@ -1784,7 +1862,7 @@ export default function App() {
                   onClick={() => {
                     handleCategoryChange('all');
                     handleCityChange('all');
-                    handleSearchChange('');
+                    handleClearSearch();
                   }}
                   className="text-xs font-semibold text-[#515154] hover:text-[#1D1D1F] dark:text-[#A1A1A6] dark:hover:text-white flex items-center gap-1 cursor-pointer"
                 >

@@ -43,8 +43,12 @@ export default function Navbar({
   selectedCity = 'all',
   onSelectCity,
   availableCities = [],
+  searchDraft = '',
   searchQuery = '',
+  onSearchDraftChange,
   onSearchChange,
+  onCommitSearch,
+  onClearSearch,
   searchSuggestions = [],
   onOpenPostAd, 
   onOpenManageAd,
@@ -68,6 +72,23 @@ export default function Navbar({
   const moreMenuRef = useRef(null);
   const mobileCityRef = useRef(null);
   const mobileCityInputRef = useRef(null);
+
+  const currentDraft = searchDraft || searchQuery || '';
+  const handleDraftInput = (val) => {
+    onSearchDraftChange?.(val);
+    onSearchChange?.(val);
+  };
+  const handleCommit = (val) => {
+    const text = val !== undefined ? val : currentDraft;
+    onCommitSearch?.(text);
+  };
+  const handleClear = () => {
+    if (onClearSearch) {
+      onClearSearch();
+    } else {
+      handleDraftInput('');
+    }
+  };
 
   // Close dropdowns on click outside or Escape
   useEffect(() => {
@@ -136,25 +157,40 @@ export default function Navbar({
 
             {/* Search Input (Icon on Right — exact same vertical center as City Selector) */}
             <div className="relative flex-1 flex items-center gap-2 min-w-0 h-full">
-              <span className="flex h-5 w-5 items-center justify-center shrink-0 text-[#86868B] pointer-events-none">
+              <button
+                type="button"
+                onClick={() => {
+                  handleCommit(currentDraft);
+                  setMobileSearchFocused(false);
+                }}
+                className="flex h-5 w-5 items-center justify-center shrink-0 text-[#86868B] hover:text-[#0066CC] active:scale-95 cursor-pointer"
+                aria-label="جستجو"
+              >
                 <Search size={15} strokeWidth={2} className="block" />
-              </span>
+              </button>
               <input
                 type="text"
-                value={searchQuery}
+                value={currentDraft}
                 onFocus={() => {
                   setMobileSearchFocused(true);
                   setMobileCityOpen(false);
                 }}
-                onBlur={() => setTimeout(() => setMobileSearchFocused(false), 150)}
-                onChange={(e) => onSearchChange?.(e.target.value)}
+                onBlur={() => setTimeout(() => setMobileSearchFocused(false), 180)}
+                onChange={(e) => handleDraftInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCommit(currentDraft);
+                    setMobileSearchFocused(false);
+                  }
+                }}
                 placeholder="جستجو در آگهی‌ها..."
                 className="w-full h-full bg-transparent text-[13px] leading-normal text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none min-w-0"
               />
-              {searchQuery && (
+              {currentDraft && (
                 <button
                   type="button"
-                  onClick={() => onSearchChange?.('')}
+                  onClick={handleClear}
                   className="flex h-9 w-9 -me-1.5 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white active:scale-95 shrink-0 cursor-pointer"
                   aria-label="پاک کردن متن جستجو"
                 >
@@ -281,7 +317,7 @@ export default function Navbar({
           </div>
 
           {/* Google-style Smart Autocomplete Suggestions (Mobile) */}
-          {mobileSearchFocused && searchQuery.trim() && searchSuggestions.length > 0 && (
+          {mobileSearchFocused && currentDraft.trim() && searchSuggestions.length > 0 && (
             <div className="pointer-events-auto absolute inset-x-0 top-[62px] bg-[#FBFBFC] dark:bg-[#171920] border border-[#ECEFF4] dark:border-white/[0.08] rounded-2xl shadow-[0_10px_30px_rgba(29,29,31,0.08)] dark:shadow-[0_14px_40px_rgba(0,0,0,0.5)] p-1.5 z-50 space-y-0.5">
               {searchSuggestions.map((item, idx) => (
                 <button
@@ -289,10 +325,10 @@ export default function Navbar({
                   type="button"
                   onMouseDown={(e) => {
                     e.preventDefault();
-                    onSearchChange?.(item.label);
+                    handleCommit(item.label);
                     setMobileSearchFocused(false);
                   }}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] text-right transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] active:bg-[#0066CC]/10 text-right transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="flex h-4 w-4 items-center justify-center shrink-0">
