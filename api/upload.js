@@ -57,7 +57,7 @@ function checkUploadRateLimit(req) {
   const ip = String(realIp || vercelFwd || fwd || 'unknown').trim();
   const now = Date.now();
   const windowMs = 10 * 60 * 1000;
-  const maxReqs = 24;
+  const maxReqs = 48;
   let entry = uploadRateMap.get(ip);
   if (!entry || now - entry.start > windowMs) {
     entry = { count: 1, start: now };
@@ -215,15 +215,27 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const contentType = String(body.contentType || '').toLowerCase().trim();
-    const fileSize = Number(body.fileSize || 0);
+    let fileSize = Number(body.fileSize || 0);
 
     const ext = ALLOWED_MIME_TYPES[contentType];
     if (!ext) {
       return res.status(400).json({ ok: false, error: 'فقط فرمت‌های تصویری مجاز هستند (JPG, PNG, WebP).' });
     }
 
-    if (!Number.isInteger(fileSize) || fileSize <= 0 || fileSize > MAX_FILE_BYTES) {
-      return res.status(400).json({ ok: false, error: 'حجم هر تصویر باید حداکثر ۱ مگابایت باشد.' });
+    const fileBase64 = typeof body.fileBase64 === 'string' ? body.fileBase64.trim() : '';
+    let imageBuf = null;
+
+    if (fileBase64) {
+      const cleanB64 = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
+      imageBuf = Buffer.from(cleanB64, 'base64');
+      if (!imageBuf.length || imageBuf.length > MAX_FILE_BYTES) {
+        return res.status(400).json({ ok: false, error: 'حجم هر تصویر باید حداکثر ۱ مگابایت باشد.' });
+      }
+      fileSize = imageBuf.length;
+    } else {
+      if (!Number.isInteger(fileSize) || fileSize <= 0 || fileSize > MAX_FILE_BYTES) {
+        return res.status(400).json({ ok: false, error: 'حجم هر تصویر باید حداکثر ۱ مگابایت باشد.' });
+      }
     }
 
     const r2 = await resolveR2Config();
@@ -250,6 +262,33 @@ export default async function handler(req, res) {
     });
 
     const publicUrl = `${r2.publicUrl.replace(/\/+$/, '')}/${objectKey}`;
+
+    if (imageBuf) {
+      // Server-to-server PUT to Cloudflare R2: completely eliminates browser CORS & preflight issues
+      const r2Res = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': IMMUTABLE_CACHE_CONTROL,
+        },
+        body: imageBuf,
+      });
+
+      if (!r2Res.ok) {
+        const errText = await r2Res.text().catch(() => '');
+        console.error('[upload] server-side R2 PUT failed:', r2Res.status, errText);
+        return res.status(502).json({ ok: false, error: 'خطا در ذخیره‌سازی تصویر در فضای ابری.' });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        publicUrl,
+        key: objectKey,
+        maxBytes: MAX_FILE_BYTES,
+        cacheControl: IMMUTABLE_CACHE_CONTROL,
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       uploadUrl,

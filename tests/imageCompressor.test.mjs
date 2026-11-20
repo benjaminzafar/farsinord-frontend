@@ -121,4 +121,17 @@ test('upload handler rejects file sizes above 1 MB or non-integer sizes with HTT
   );
   assert.equal(floatRes.statusCode, 400);
   assert.equal(floatRes.body.ok, false);
+
+  const bigB64Res = createMockRes();
+  const oversizedBase64 = Buffer.alloc(MAX_FILE_BYTES + 10).toString('base64');
+  await handler(
+    {
+      method: 'POST',
+      headers: { origin: 'https://www.linksho.eu' },
+      body: { contentType: 'image/webp', fileBase64: oversizedBase64 },
+    },
+    bigB64Res
+  );
+  assert.equal(bigB64Res.statusCode, 400);
+  assert.equal(bigB64Res.body.ok, false);
 });

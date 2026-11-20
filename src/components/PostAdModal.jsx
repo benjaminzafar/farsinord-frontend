@@ -465,27 +465,56 @@ export default function PostAdModal({
           if (readyFile.size > MAX_FILE_BYTES) {
             throw new Error('حداکثر حجم عکس ۱ مگابایت است.');
           }
-          const [fileHash, presignData] = await Promise.all([
+          const [fileHash, base64Part] = await Promise.all([
             computeFileSha256(readyFile),
-            publicApi.presignUpload({
-              fileName: readyFile.name,
-              contentType: readyFile.type,
-              fileSize: readyFile.size,
+            new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const res = String(reader.result || '');
+                const b64 = res.includes(',') ? res.split(',')[1] : res;
+                resolve(b64);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(readyFile);
             }),
           ]);
-          const putHeaders = { 'Content-Type': readyFile.type };
-          if (presignData.cacheControl) {
-            putHeaders['Cache-Control'] = presignData.cacheControl;
+
+          // Direct serverless upload eliminates cross-origin preflight / CORS issues completely
+          let uploadResult = null;
+          try {
+            uploadResult = await publicApi.uploadPhoto({
+              fileName: readyFile.name,
+              contentType: readyFile.type || 'image/webp',
+              fileSize: readyFile.size,
+              fileBase64: base64Part,
+            });
+          } catch (uploadErr) {
+            // Fallback to presigned PUT if direct upload was rejected
+            try {
+              const presignData = await publicApi.presignUpload({
+                fileName: readyFile.name,
+                contentType: readyFile.type || 'image/webp',
+                fileSize: readyFile.size,
+              });
+              const putHeaders = { 'Content-Type': readyFile.type || 'image/webp' };
+              if (presignData.cacheControl) {
+                putHeaders['Cache-Control'] = presignData.cacheControl;
+              }
+              const putRes = await fetch(presignData.uploadUrl, {
+                method: 'PUT',
+                headers: putHeaders,
+                body: readyFile,
+              });
+              if (!putRes.ok) {
+                throw new Error('آپلود عکس ناموفق بود.');
+              }
+              uploadResult = { publicUrl: presignData.publicUrl };
+            } catch {
+              throw new Error(uploadErr?.message || 'خطا در آپلود عکس');
+            }
           }
-          const putRes = await fetch(presignData.uploadUrl, {
-            method: 'PUT',
-            headers: putHeaders,
-            body: readyFile,
-          });
-          if (!putRes.ok) {
-            throw new Error('آپلود عکس ناموفق بود.');
-          }
-          return { publicUrl: presignData.publicUrl, fileHash };
+
+          return { publicUrl: uploadResult.publicUrl, fileHash };
         })
       );
       const uploadedUrls = results.map((r) => r.publicUrl).filter(Boolean);

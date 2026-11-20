@@ -441,4 +441,17 @@ export const publicApi = {
     }
     return json;
   },
+
+  async uploadPhoto({ fileName, contentType, fileSize, fileBase64 }) {
+    const res = await fetch(`${API_BASE}/api/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName, contentType, fileSize, fileBase64 }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || 'خطا در آپلود تصویر');
+    }
+    return json;
+  },
 };
