@@ -501,17 +501,50 @@ export async function getVaultSecret(supabase, secretKey, { fresh = false, allow
   const row = rows.get(secretKey);
 
   if (row) {
-    // Fail-closed: decryption error on an existing DB row MUST propagate (never silently downgrade)
-    const { plaintext, usedPreviousKey } = decryptSecretValue(secretKey, row);
-    return {
-      value: plaintext,
-      source: 'vault',
-      masked: row.masked_value || maskSecretValue(secretKey, plaintext),
-      updatedAt: row.updated_at || null,
-      keyVersion: row.key_version || 1,
-      metadata: row.metadata || {},
-      usedPreviousKey,
-    };
+    try {
+      const { plaintext, usedPreviousKey } = decryptSecretValue(secretKey, row);
+      return {
+        value: plaintext,
+        source: 'vault',
+        masked: row.masked_value || maskSecretValue(secretKey, plaintext),
+        updatedAt: row.updated_at || null,
+        keyVersion: row.key_version || 1,
+        metadata: row.metadata || {},
+        usedPreviousKey,
+      };
+    } catch (err) {
+      if (err instanceof SecretVaultDecryptionError) {
+        console.warn(`[secretVault] Secret "${secretKey}" cannot be decrypted under active key (${err.message}). Treating as needs re-entry.`);
+        if (allowEnvFallback) {
+          const envVal = readEnvFallback(secretKey);
+          if (envVal) {
+            return {
+              value: envVal,
+              source: 'env',
+              masked: maskSecretValue(secretKey, envVal),
+              updatedAt: null,
+              keyVersion: null,
+              metadata: {},
+              usedPreviousKey: false,
+              decryptionFailed: true,
+              needsRewrap: true,
+            };
+          }
+        }
+        return {
+          value: '',
+          source: 'vault',
+          masked: row.masked_value || '••••••••',
+          updatedAt: row.updated_at || null,
+          keyVersion: row.key_version || 1,
+          metadata: row.metadata || {},
+          decryptionFailed: true,
+          needsRewrap: true,
+          usedPreviousKey: false,
+        };
+      }
+      throw err;
+    }
   }
 
   if (allowEnvFallback) {
@@ -736,6 +769,8 @@ export async function rewrapAllVaultSecrets(supabase, adminEmail = 'admin') {
  */
 export async function listVaultSecretsStatus(supabase) {
   const activeKid = computeKeyId();
+  const prevIkm = getPreviousMasterIkm();
+  const prevKid = prevIkm ? computeKeyId(prevIkm) : '';
   const { rows, tableMissing } = await fetchAllVaultRows(supabase, { fresh: true });
   const secrets = {};
   let needsRewrapCount = 0;
@@ -744,22 +779,24 @@ export async function listVaultSecretsStatus(supabase) {
     if (spec.internalOnly) continue;
     const row = rows.get(secretKey);
     const envVal = readEnvFallback(secretKey);
-    const vaultConfigured = Boolean(row);
-    const envConfigured = Boolean(envVal);
     const rowKid = row ? extractEnvelopeKeyId(row.ciphertext) : '';
+    const canDecrypt = row ? (rowKid === activeKid || Boolean(prevKid && rowKid === prevKid)) : false;
     const needsRewrap = Boolean(row && activeKid && rowKid && rowKid !== activeKid);
     if (needsRewrap) needsRewrapCount += 1;
 
-    const source = vaultConfigured ? 'vault' : envConfigured ? 'env' : 'none';
-    const masked = vaultConfigured
-      ? row.masked_value || '••••••••'
+    const vaultConfigured = Boolean(row && canDecrypt);
+    const envConfigured = Boolean(envVal);
+    const source = vaultConfigured ? 'vault' : envConfigured ? 'env' : (row ? 'vault' : 'none');
+    const configured = vaultConfigured || envConfigured;
+    const masked = row
+      ? (row.masked_value || '••••••••')
       : envConfigured
         ? maskSecretValue(secretKey, envVal)
         : '';
 
     secrets[secretKey] = {
       secretKey,
-      configured: source !== 'none',
+      configured,
       vaultConfigured,
       envConfigured,
       source,
@@ -769,6 +806,8 @@ export async function listVaultSecretsStatus(supabase) {
       updatedAt: row?.updated_at || null,
       updatedBy: row?.updated_by || null,
       needsRewrap,
+      canDecrypt: Boolean(row ? canDecrypt : true),
+      needsReentry: Boolean(row && !canDecrypt && !envConfigured),
     };
   }
 
