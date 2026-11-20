@@ -357,8 +357,7 @@ export default async function handler(req, res) {
       bucketName: r2.bucketName,
       objectKey,
       contentType,
-      contentLength: fileSize,
-      cacheControl: IMMUTABLE_CACHE_CONTROL,
+      // Do not sign content-length or cache-control for browser direct PUT to prevent SignatureDoesNotMatch
       expiresSeconds: 300,
     });
 

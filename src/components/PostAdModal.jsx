@@ -465,9 +465,26 @@ export default function PostAdModal({
           if (readyFile.size > MAX_FILE_BYTES) {
             throw new Error('حداکثر حجم عکس ۱ مگابایت است.');
           }
-          const [fileHash, base64Part] = await Promise.all([
-            computeFileSha256(readyFile),
-            new Promise((resolve, reject) => {
+          const fileHash = await computeFileSha256(readyFile);
+
+          // 1. Request Presigned URL from Backend (Metadata ONLY, no image bytes sent to Backend)
+          const presignData = await publicApi.presignUpload({
+            fileName: readyFile.name,
+            contentType: readyFile.type || 'image/webp',
+            fileSize: readyFile.size,
+          });
+
+          // 2. Direct upload from Browser to Cloudflare R2
+          const putHeaders = { 'Content-Type': readyFile.type || 'image/webp' };
+          const putRes = await fetch(presignData.uploadUrl, {
+            method: 'PUT',
+            headers: putHeaders,
+            body: readyFile,
+          });
+
+          if (!putRes.ok) {
+            // Fallback to proxy upload only if direct R2 connection was blocked by browser/firewall
+            const base64Part = await new Promise((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = () => {
                 const res = String(reader.result || '');
@@ -476,45 +493,17 @@ export default function PostAdModal({
               };
               reader.onerror = reject;
               reader.readAsDataURL(readyFile);
-            }),
-          ]);
-
-          // Direct serverless upload eliminates cross-origin preflight / CORS issues completely
-          let uploadResult = null;
-          try {
-            uploadResult = await publicApi.uploadPhoto({
+            });
+            const fallbackRes = await publicApi.uploadPhoto({
               fileName: readyFile.name,
               contentType: readyFile.type || 'image/webp',
               fileSize: readyFile.size,
               fileBase64: base64Part,
             });
-          } catch (uploadErr) {
-            // Fallback to presigned PUT if direct upload was rejected
-            try {
-              const presignData = await publicApi.presignUpload({
-                fileName: readyFile.name,
-                contentType: readyFile.type || 'image/webp',
-                fileSize: readyFile.size,
-              });
-              const putHeaders = { 'Content-Type': readyFile.type || 'image/webp' };
-              if (presignData.cacheControl) {
-                putHeaders['Cache-Control'] = presignData.cacheControl;
-              }
-              const putRes = await fetch(presignData.uploadUrl, {
-                method: 'PUT',
-                headers: putHeaders,
-                body: readyFile,
-              });
-              if (!putRes.ok) {
-                throw new Error('آپلود عکس ناموفق بود.');
-              }
-              uploadResult = { publicUrl: presignData.publicUrl };
-            } catch {
-              throw new Error(uploadErr?.message || 'خطا در آپلود عکس');
-            }
+            return { publicUrl: fallbackRes.publicUrl, fileHash };
           }
 
-          return { publicUrl: uploadResult.publicUrl, fileHash };
+          return { publicUrl: presignData.publicUrl, fileHash };
         })
       );
       const uploadedUrls = results.map((r) => r.publicUrl).filter(Boolean);
