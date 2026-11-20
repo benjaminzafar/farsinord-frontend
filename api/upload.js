@@ -270,6 +270,17 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('[upload] error:', err?.message || err);
-    return res.status(500).json({ ok: false, error: 'خطا در آماده‌سازی آپلود تصویر' });
+    if (
+      err?.name === 'SecretVaultDecryptionError' ||
+      err?.message?.includes('Master key mismatch') ||
+      err?.message?.includes('cannot decrypt secret') ||
+      err?.message?.includes('authentication tag verification failed')
+    ) {
+      return res.status(500).json({
+        ok: false,
+        error: 'کلید SUPABASE_SERVICE_ROLE_KEY در ورسل اشتباه است. مقدار آن باید کد طولانی service_role از سوپابیس باشد (نه آدرس اینترنتی).'
+      });
+    }
+    return res.status(500).json({ ok: false, error: err?.message || 'خطا در آماده‌سازی آپلود تصویر' });
   }
 }
