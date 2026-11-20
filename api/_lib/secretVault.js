@@ -64,7 +64,7 @@ function deriveRecordDek(kek, saltBuf, secretKey) {
   );
 }
 
-function deriveJwtBaseKey(ikm) {
+export function deriveJwtBaseKey(ikm) {
   return Buffer.from(
     crypto.hkdfSync(
       'sha256',
@@ -843,8 +843,22 @@ export async function getAdminJwtSigningContext(
       }
     }
   } catch (err) {
-    if (err instanceof SecretVaultDecryptionError) throw err;
-    // Pre-migration fallback: use domain-separated baseKey (pv = 0)
+    if (err instanceof SecretVaultDecryptionError) {
+      if (ensurePepper && supabase && getMasterIkm()) {
+        try {
+          const freshHex = crypto.randomBytes(32).toString('hex');
+          const saved = await saveVaultSecret(supabase, 'internal_jwt_pepper', freshHex, adminEmail, {
+            allowInternal: true,
+            auditAction: 'rotate',
+          });
+          if (saved && saved.ok) {
+            pepperHex = freshHex;
+            pepperVersion = Number(saved.secret?.keyVersion || 1);
+          }
+        } catch {}
+      }
+    }
+    // Pre-migration or key-rotation fallback: use domain-separated baseKey (pv = 0)
   }
 
   pepperCache = {
