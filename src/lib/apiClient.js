@@ -1,5 +1,6 @@
 import { PUBLIC_AD_COLUMNS, PUBLIC_AD_LIST_COLUMNS } from './urlUtils';
 import { extractServerSearchTokens, buildTitleDescriptionOrFilter } from './smartSearch';
+import { searchWithCloudflareAi } from './cloudflareSearch';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
@@ -103,6 +104,35 @@ export const publicApi = {
   } = {}) {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(48, Math.max(1, Number(limit) || 16));
+    const trimmedQ = String(q || '').trim();
+
+    // 1. Cloudflare AI Search as PRIMARY provider for normal user search queries
+    if (trimmedQ && safePage === 1 && !featuredOnly) {
+      try {
+        const cfRes = await searchWithCloudflareAi({
+          query: trimmedQ,
+          country,
+          category,
+          city,
+          limit: safeLimit,
+        });
+        if (cfRes && Array.isArray(cfRes.ads) && cfRes.ads.length > 0) {
+          return {
+            ads: cfRes.ads.map(normalizeClientAd),
+            total: cfRes.total ?? cfRes.ads.length,
+            page: 1,
+            limit: safeLimit,
+            hasMore: Boolean(cfRes.hasMore),
+            source: 'cloudflare_ai',
+          };
+        }
+      } catch (cfErr) {
+        // Automatic fallback on any error, timeout, or rate-limit
+        console.warn('Cloudflare AI Search unavailable or unusable, falling back to Linksho search:', cfErr);
+      }
+    }
+
+    // 2. Existing Linksho Search Implementation (Reliable Fallback)
     const params = new URLSearchParams({
       page: String(safePage),
       limit: String(safeLimit),
