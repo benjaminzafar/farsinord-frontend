@@ -188,7 +188,11 @@ async function resolveR2Config() {
 
   const resolved = await resolveR2VaultConfig(supabase);
   if (!resolved?.configured) {
-    return null;
+    return {
+      configured: false,
+      missingServiceRole: !serviceRoleKey,
+      ...(resolved || {})
+    };
   }
 
   cachedR2Config = resolved;
@@ -227,7 +231,13 @@ export default async function handler(req, res) {
     }
 
     const r2 = await resolveR2Config();
-    if (!r2 || !r2.enabled || !r2.accountId || !r2.accessKeyId || !r2.secretAccessKey || !r2.bucketName || !r2.publicUrl) {
+    if (!r2?.configured || !r2.enabled || !r2.accountId || !r2.accessKeyId || !r2.secretAccessKey || !r2.bucketName || !r2.publicUrl) {
+      if (r2?.missingServiceRole) {
+        return res.status(503).json({
+          ok: false,
+          error: 'متغیر SUPABASE_SERVICE_ROLE_KEY روی سرور (Vercel در پروژه farsinord-frontend یا linksho.eu) تنظیم نشده است.'
+        });
+      }
       return res.status(503).json({
         ok: false,
         error: 'فضای ابری تصاویر (کلودفلر) هنوز در پنل مدیریت فعال و تنظیم نشده است.'
