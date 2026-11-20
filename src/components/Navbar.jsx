@@ -76,6 +76,9 @@ export default function Navbar({
 
   const currentDraft = searchDraft || searchQuery || '';
   const isSearchActive = mobileSearchFocused || Boolean(currentDraft.trim());
+  const isSuggestionsOpen = mobileSearchFocused && Boolean(currentDraft.trim()) && searchSuggestions.length > 0;
+  const isCityDropdownOpen = !isSearchActive && mobileCityOpen;
+  const isAnyMobileDropdownOpen = isSuggestionsOpen || isCityDropdownOpen;
 
   const handleDraftInput = (val) => {
     onSearchDraftChange?.(val);
@@ -159,9 +162,15 @@ export default function Navbar({
         <div ref={mobileSearchRef} className="relative flex md:hidden h-16 items-center">
 
           <div
-            className={`pointer-events-auto flex-1 flex items-center h-12 rounded-full backdrop-blur-md px-3.5 gap-2.5 transition-all min-w-0 ${
+            className={`pointer-events-auto flex-1 flex items-center h-12 backdrop-blur-md px-3.5 gap-2.5 transition-all min-w-0 ${
+              isAnyMobileDropdownOpen
+                ? 'rounded-t-2xl rounded-b-none border-b-0'
+                : 'rounded-full'
+            } ${
               isSearchActive
                 ? 'bg-white dark:bg-[#181A22] border border-[#0066CC] ring-2 ring-[#0066CC]/20 shadow-[0_4px_20px_rgba(0,102,204,0.18)] dark:shadow-[0_4px_24px_rgba(0,102,204,0.28)]'
+                : isCityDropdownOpen
+                ? 'bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]'
                 : 'bg-white/95 dark:bg-[#171920]/95 border border-[#ECEFF4] dark:border-white/[0.06] shadow-[0_1px_4px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.18)]'
             }`}
           >
@@ -271,9 +280,9 @@ export default function Navbar({
           </div>
 
           {/* Minimal Modern Autocomplete Suggestions (Mobile) */}
-          {mobileSearchFocused && currentDraft.trim() && searchSuggestions.length > 0 && (
+          {isSuggestionsOpen && (
             <div
-              className="pointer-events-auto absolute inset-x-0 top-[60px] bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] rounded-2xl shadow-[0_18px_45px_rgba(0,0,0,0.12)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.65)] p-2 z-50 flex flex-col gap-1"
+              className="pointer-events-auto absolute inset-x-0 top-[55px] bg-white dark:bg-[#181A22] border border-[#0066CC] border-t-0 rounded-b-2xl rounded-t-none shadow-[0_18px_45px_rgba(0,102,204,0.18)] dark:shadow-[0_22px_55px_rgba(0,102,204,0.35)] p-2 z-50 flex flex-col gap-1 border-t border-t-[#ECEFF4] dark:border-t-white/[0.08]"
               dir="rtl"
             >
               {searchSuggestions.map((item, idx) => (
@@ -297,12 +306,12 @@ export default function Navbar({
           )}
 
           {/* City Selection Dropdown (Mobile) - Exact Same Visual Language & Alignment */}
-          {!isSearchActive && mobileCityOpen && (
+          {isCityDropdownOpen && (
             <div
               ref={mobileCityDropdownRef}
               role="listbox"
               aria-label="فهرست شهرها"
-              className="pointer-events-auto absolute inset-x-0 top-[60px] bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] rounded-2xl shadow-[0_18px_45px_rgba(0,0,0,0.12)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.65)] p-2 z-50 flex flex-col gap-1 text-right animate-in fade-in zoom-in-95 duration-150"
+              className="pointer-events-auto absolute inset-x-0 top-[55px] bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] border-t-0 rounded-b-2xl rounded-t-none shadow-[0_18px_45px_rgba(0,0,0,0.14)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.7)] p-2 z-50 flex flex-col gap-1 text-right animate-in fade-in duration-100 border-t border-t-[#F0F2F5] dark:border-t-white/[0.06]"
               dir="rtl"
             >
               <div className="max-h-72 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-0.5">
