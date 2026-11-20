@@ -1615,7 +1615,7 @@ export default function App() {
                       aria-expanded={heroCityOpen}
                       aria-haspopup="listbox"
                       aria-label="انتخاب شهر"
-                      className={`inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-full text-xs font-bold leading-none text-[#FBFBFC] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer select-none shadow-xs ${
+                      className={`inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-full text-[13.5px] font-semibold leading-none text-[#FBFBFC] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.95] cursor-pointer select-none shadow-xs ${
                         heroCityOpen
                           ? 'bg-[#0055AA] ring-2 ring-[#0066CC]/30'
                           : 'bg-[#0066CC] hover:bg-[#0055AA]'
@@ -1636,35 +1636,37 @@ export default function App() {
                       <div
                         role="listbox"
                         aria-label="فهرست شهرها"
-                        className="absolute end-0 top-full mt-2.5 w-64 rounded-2xl bg-white dark:bg-[#171920] border border-slate-200/90 dark:border-white/[0.08] shadow-[0_18px_45px_rgba(15,23,42,0.16)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.55)] p-2 z-50 text-right animate-in fade-in zoom-in-95 duration-150"
+                        className="absolute end-0 top-full mt-2.5 w-72 sm:w-80 rounded-2xl bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] shadow-[0_18px_45px_rgba(0,0,0,0.12)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.65)] p-2 z-50 flex flex-col gap-1.5 text-right animate-in fade-in zoom-in-95 duration-150"
+                        dir="rtl"
                       >
                         {availableCities.length > 5 && (
-                          <div className="relative flex items-center mb-1.5 pb-1.5 border-b border-[#F0F2F5] dark:border-white/[0.06]">
-                            <Search size={13} className="absolute right-2.5 text-[#86868B] pointer-events-none" />
+                          <div className="flex items-center h-11 rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] border border-transparent focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/20 px-3.5 gap-2.5 transition-all">
+                            <Search size={16} strokeWidth={2.2} className="shrink-0 text-[#86868B]" />
                             <input
                               ref={heroCityInputRef}
                               type="text"
                               value={heroCityQuery}
                               onChange={(e) => setHeroCityQuery(e.target.value)}
                               placeholder="جستجوی سریع شهر..."
-                              className="w-full h-8 pr-8 pl-7 rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:ring-1 focus:ring-[#0066CC]"
+                              className="w-full h-full bg-transparent text-[14.5px] font-medium leading-normal text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] placeholder:text-[13.5px] focus:outline-none min-w-0 text-right"
+                              dir="rtl"
                             />
                             {heroCityQuery && (
                               <button
                                 type="button"
                                 onClick={() => setHeroCityQuery('')}
-                                className="absolute left-2 text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white cursor-pointer"
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white shrink-0 cursor-pointer active:scale-90 transition-colors"
                                 aria-label="پاک کردن جستجوی شهر"
                               >
-                                <X size={12} />
+                                <X size={15} strokeWidth={2.2} />
                               </button>
                             )}
                           </div>
                         )}
 
-                        <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-0.5 pr-0.5">
+                        <div className="max-h-72 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-0.5">
                           {filteredHeroCities.length === 0 ? (
-                            <div className="py-4 text-center text-xs text-[#86868B]">
+                            <div className="py-6 text-center text-[13.5px] font-medium text-[#86868B]">
                               شهری با این نام یافت نشد
                             </div>
                           ) : (
@@ -1681,23 +1683,24 @@ export default function App() {
                                     setHeroCityOpen(false);
                                     setHeroCityQuery('');
                                   }}
-                                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer ${
+                                  className={`w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-colors cursor-pointer text-right ${
                                     isSelected
-                                      ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF] font-bold'
-                                      : 'text-[#1D1D1F] dark:text-[#E5E5EA] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] font-semibold'
+                                      ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF] font-semibold'
+                                      : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] active:bg-[#0066CC]/15 font-medium'
                                   }`}
                                 >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <MapPin size={13} className={`shrink-0 ${isSelected ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`} />
-                                    <span className="truncate leading-none">{c.fa}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-[14.5px] leading-relaxed truncate">
+                                    {c.fa}
+                                  </span>
+                                  <div className="flex items-center gap-2 shrink-0">
                                     {c.id !== 'all' && (
-                                      <span className="text-[10px] font-medium text-[#86868B] dark:text-[#98989F] leading-none" dir="ltr">
+                                      <span className="text-[12px] font-normal text-[#86868B] dark:text-[#8E8E93] leading-none" dir="ltr">
                                         {c.id}
                                       </span>
                                     )}
-                                    {isSelected && <Check size={14} strokeWidth={2.5} className="text-[#0066CC] dark:text-[#58A6FF] shrink-0" />}
+                                    {isSelected && (
+                                      <Check size={16} strokeWidth={2.2} className="text-[#0066CC] dark:text-[#58A6FF] shrink-0" />
+                                    )}
                                   </div>
                                 </button>
                               );

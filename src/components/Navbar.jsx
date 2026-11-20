@@ -73,6 +73,7 @@ export default function Navbar({
   const mobileSearchRef = useRef(null);
   const mobileSearchInputRef = useRef(null);
   const mobileCityRef = useRef(null);
+  const mobileCityDropdownRef = useRef(null);
   const mobileCityInputRef = useRef(null);
 
   const currentDraft = searchDraft || searchQuery || '';
@@ -114,7 +115,11 @@ export default function Navbar({
       if (mobileSearchRef.current && !mobileSearchRef.current.contains(event.target)) {
         setMobileSearchFocused(false);
       }
-      if (mobileCityRef.current && !mobileCityRef.current.contains(event.target)) {
+      if (
+        mobileCityRef.current &&
+        !mobileCityRef.current.contains(event.target) &&
+        (!mobileCityDropdownRef.current || !mobileCityDropdownRef.current.contains(event.target))
+      ) {
         setMobileCityOpen(false);
         setMobileCityQuery('');
       }
@@ -242,7 +247,7 @@ export default function Navbar({
               <>
                 <div className="h-5 w-px bg-[#F0F2F5] dark:bg-white/[0.06] shrink-0" />
 
-                {/* City Selector on Left (Custom Popover instead of native <select>) */}
+                {/* City Selector on Left */}
                 <div ref={mobileCityRef} className="relative shrink-0 flex items-center h-full">
                   <button
                     type="button"
@@ -261,97 +266,22 @@ export default function Navbar({
                     aria-expanded={mobileCityOpen}
                     aria-haspopup="listbox"
                     aria-label="انتخاب شهر"
-                    className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full text-xs font-bold leading-none transition-colors cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[13.5px] font-semibold leading-none transition-colors cursor-pointer select-none ${
                       mobileCityOpen || selectedCity !== 'all'
                         ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF]'
-                        : 'text-[#1D1D1F] dark:text-[#F5F5F7]'
+                        : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
                     <span className={`flex h-4 w-4 items-center justify-center shrink-0 ${selectedCity !== 'all' || mobileCityOpen ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`}>
-                      <MapPin size={14} strokeWidth={2} className="block" />
+                      <MapPin size={15} strokeWidth={2} className="block" />
                     </span>
-                    <span className="truncate max-w-[92px] leading-none">
+                    <span className="truncate max-w-[96px] leading-none">
                       {cityLabel}
                     </span>
                     <span className="flex h-4 w-4 items-center justify-center shrink-0 text-[#86868B]">
                       <ChevronDown size={14} strokeWidth={2} className={`block transition-transform duration-200 ${mobileCityOpen ? 'rotate-180 text-[#0066CC] dark:text-[#58A6FF]' : ''}`} />
                     </span>
                   </button>
-
-                  {mobileCityOpen && (
-                    <div
-                      role="listbox"
-                      aria-label="فهرست شهرها"
-                      className="pointer-events-auto absolute end-0 top-[52px] w-64 rounded-2xl bg-white dark:bg-[#171920] border border-slate-200/90 dark:border-white/[0.08] shadow-[0_18px_45px_rgba(15,23,42,0.16)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.55)] p-2 z-50 text-right animate-in fade-in zoom-in-95 duration-150"
-                    >
-                      {availableCities.length > 5 && (
-                        <div className="relative flex items-center mb-1.5 pb-1.5 border-b border-[#F0F2F5] dark:border-white/[0.06]">
-                          <Search size={13} className="absolute right-2.5 text-[#86868B] pointer-events-none" />
-                          <input
-                            ref={mobileCityInputRef}
-                            type="text"
-                            value={mobileCityQuery}
-                            onChange={(e) => setMobileCityQuery(e.target.value)}
-                            placeholder="جستجوی سریع شهر..."
-                            className="w-full h-8 pr-8 pl-7 rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] text-xs font-medium text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:ring-1 focus:ring-[#0066CC]"
-                          />
-                          {mobileCityQuery && (
-                            <button
-                              type="button"
-                              onClick={() => setMobileCityQuery('')}
-                              className="absolute left-2 text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white cursor-pointer"
-                              aria-label="پاک کردن جستجوی شهر"
-                            >
-                              <X size={12} />
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-0.5 pr-0.5">
-                        {filteredMobileCities.length === 0 ? (
-                          <div className="py-4 text-center text-xs text-[#86868B]">
-                            شهری با این نام یافت نشد
-                          </div>
-                        ) : (
-                          filteredMobileCities.map((c) => {
-                            const isSelected = selectedCity === c.id;
-                            return (
-                              <button
-                                key={c.id}
-                                type="button"
-                                role="option"
-                                aria-selected={isSelected}
-                                onClick={() => {
-                                  onSelectCity?.(c.id);
-                                  setMobileCityOpen(false);
-                                  setMobileCityQuery('');
-                                }}
-                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF] font-bold'
-                                    : 'text-[#1D1D1F] dark:text-[#E5E5EA] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] font-semibold'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <MapPin size={13} className={`shrink-0 ${isSelected ? 'text-[#0066CC] dark:text-[#58A6FF]' : 'text-[#86868B]'}`} />
-                                  <span className="truncate leading-none">{c.fa}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  {c.id !== 'all' && (
-                                    <span className="text-[10px] font-medium text-[#86868B] dark:text-[#98989F] leading-none" dir="ltr">
-                                      {c.id}
-                                    </span>
-                                  )}
-                                  {isSelected && <Check size={14} strokeWidth={2.5} className="text-[#0066CC] dark:text-[#58A6FF] shrink-0" />}
-                                </div>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </>
             )}
@@ -381,6 +311,86 @@ export default function Navbar({
                   </span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* City Selection Dropdown (Mobile) - Exact Same Visual Language & Alignment */}
+          {!isSearchActive && mobileCityOpen && (
+            <div
+              ref={mobileCityDropdownRef}
+              role="listbox"
+              aria-label="فهرست شهرها"
+              className="pointer-events-auto absolute inset-x-0 top-[60px] bg-white dark:bg-[#161720] border border-[#ECEFF4] dark:border-white/[0.08] rounded-2xl shadow-[0_18px_45px_rgba(0,0,0,0.12)] dark:shadow-[0_22px_55px_rgba(0,0,0,0.65)] p-2 z-50 flex flex-col gap-1.5 text-right animate-in fade-in zoom-in-95 duration-150"
+              dir="rtl"
+            >
+              {availableCities.length > 5 && (
+                <div className="flex items-center h-11 rounded-xl bg-[#F5F5F7] dark:bg-white/[0.05] border border-transparent focus-within:border-[#0066CC] focus-within:ring-2 focus-within:ring-[#0066CC]/20 px-3.5 gap-2.5 transition-all">
+                  <Search size={16} strokeWidth={2.2} className="shrink-0 text-[#86868B]" />
+                  <input
+                    ref={mobileCityInputRef}
+                    type="text"
+                    value={mobileCityQuery}
+                    onChange={(e) => setMobileCityQuery(e.target.value)}
+                    placeholder="جستجوی سریع شهر..."
+                    className="w-full h-full bg-transparent text-[14.5px] font-medium leading-normal text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] placeholder:text-[13.5px] focus:outline-none min-w-0 text-right"
+                    dir="rtl"
+                  />
+                  {mobileCityQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setMobileCityQuery('')}
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white shrink-0 cursor-pointer active:scale-90 transition-colors"
+                      aria-label="پاک کردن جستجوی شهر"
+                    >
+                      <X size={15} strokeWidth={2.2} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="max-h-72 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-0.5">
+                {filteredMobileCities.length === 0 ? (
+                  <div className="py-6 text-center text-[13.5px] font-medium text-[#86868B]">
+                    شهری با این نام یافت نشد
+                  </div>
+                ) : (
+                  filteredMobileCities.map((c) => {
+                    const isSelected = selectedCity === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => {
+                          onSelectCity?.(c.id);
+                          setMobileCityOpen(false);
+                          setMobileCityQuery('');
+                        }}
+                        className={`w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-colors cursor-pointer text-right ${
+                          isSelected
+                            ? 'bg-[#EAF2FB] text-[#0066CC] dark:bg-[#0066CC]/20 dark:text-[#58A6FF] font-semibold'
+                            : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-white/[0.06] active:bg-[#0066CC]/15 font-medium'
+                        }`}
+                      >
+                        <span className="text-[14.5px] leading-relaxed truncate">
+                          {c.fa}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {c.id !== 'all' && (
+                            <span className="text-[12px] font-normal text-[#86868B] dark:text-[#8E8E93] leading-none" dir="ltr">
+                              {c.id}
+                            </span>
+                          )}
+                          {isSelected && (
+                            <Check size={16} strokeWidth={2.2} className="text-[#0066CC] dark:text-[#58A6FF] shrink-0" />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
           )}
 
