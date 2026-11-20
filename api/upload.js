@@ -188,11 +188,7 @@ async function resolveR2Config() {
 
   const resolved = await resolveR2VaultConfig(supabase);
   if (!resolved?.configured) {
-    return {
-      configured: false,
-      missingServiceRole: !serviceRoleKey,
-      ...(resolved || {})
-    };
+    return null;
   }
 
   cachedR2Config = resolved;
@@ -231,13 +227,7 @@ export default async function handler(req, res) {
     }
 
     const r2 = await resolveR2Config();
-    if (!r2?.configured || !r2.enabled || !r2.accountId || !r2.accessKeyId || !r2.secretAccessKey || !r2.bucketName || !r2.publicUrl) {
-      if (r2?.missingServiceRole) {
-        return res.status(503).json({
-          ok: false,
-          error: 'متغیر SUPABASE_SERVICE_ROLE_KEY روی سرور (Vercel در پروژه farsinord-frontend یا linksho.eu) تنظیم نشده است.'
-        });
-      }
+    if (!r2 || !r2.enabled || !r2.accountId || !r2.accessKeyId || !r2.secretAccessKey || !r2.bucketName || !r2.publicUrl) {
       return res.status(503).json({
         ok: false,
         error: 'فضای ابری تصاویر (کلودفلر) هنوز در پنل مدیریت فعال و تنظیم نشده است.'
@@ -270,17 +260,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('[upload] error:', err?.message || err);
-    if (
-      err?.name === 'SecretVaultDecryptionError' ||
-      err?.message?.includes('Master key mismatch') ||
-      err?.message?.includes('cannot decrypt secret') ||
-      err?.message?.includes('authentication tag verification failed')
-    ) {
-      return res.status(500).json({
-        ok: false,
-        error: 'کلید SUPABASE_SERVICE_ROLE_KEY در ورسل اشتباه است. مقدار آن باید کد طولانی service_role از سوپابیس باشد (نه آدرس اینترنتی).'
-      });
-    }
-    return res.status(500).json({ ok: false, error: err?.message || 'خطا در آماده‌سازی آپلود تصویر' });
+    return res.status(500).json({ ok: false, error: 'خطا در آماده‌سازی آپلود تصویر' });
   }
 }
